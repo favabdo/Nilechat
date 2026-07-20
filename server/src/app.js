@@ -36,7 +36,7 @@ app.use(cors({ origin: env.DASHBOARD_ORIGIN }));
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // لوحة التحكم (بناء الفرونت إند React/Vite الجاهز للإنتاج، جوا client/dist)
-const clientDistPath = path.join(__dirname, '..', '..', '..', 'client', 'dist');
+const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
 // بنتأكد إن الجداول موجودة قبل أي route تاني (مرة واحدة بس بفضل الـ cache)
