@@ -35,8 +35,9 @@ app.use(cors({ origin: env.DASHBOARD_ORIGIN }));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// لوحة التحكم (الفرونت إند الكامل بتاع public/)
-app.use(express.static(path.join(__dirname, '..', '..', '..', 'client', 'public')));
+// لوحة التحكم (بناء الفرونت إند React/Vite الجاهز للإنتاج، جوا client/dist)
+const clientDistPath = path.join(__dirname, '..', '..', '..', 'client', 'dist');
+app.use(express.static(clientDistPath));
 
 // بنتأكد إن الجداول موجودة قبل أي route تاني (مرة واحدة بس بفضل الـ cache)
 let schemaReady = null;
@@ -91,6 +92,15 @@ app.use('/', companyRoutes);
 app.use('/', teamsRoutes);
 app.use('/', webhookConfigRoutes);
 app.use('/', notificationRoutes);
+
+// أي رابط تاني مش API ولا ملف ستاتيك (زي /login أو /chats/123 بعد Refresh)
+// نرجّعله index.html عشان React Router يتولى فتح الصفحة الصحيحة من جوا المتصفح
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/webhook')) {
+    return next();
+  }
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
 
 // أي Error يوصل هنا (عن طريق asyncHandler أو next(err)) بيتحول لرد JSON موحد
 app.use(errorHandler);
