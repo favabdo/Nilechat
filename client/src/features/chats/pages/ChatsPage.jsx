@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import useChatsStore from '../store/chatsStore';
 import { conversationsApi } from '../services/chats.service';
-import { mapApiConversation, mediaKindLabel } from '../utils/mappers';
+import { mapApiConversation, mapApiMessage, mediaKindLabel } from '../utils/mappers';
 import { formatMessageTimestamp } from '../../../utils/dateFormat';
 import { useSocketContext } from '../../../hooks/useSocketContext';
 import useAuthStore from '../../../store/authStore';
@@ -219,6 +219,31 @@ export default function ChatsPage() {
       setTimeout(() => useAuthStore.getState().logout(), 1200);
     }
 
+    async function onReconnectResync() {
+      try {
+        const rows = await conversationsApi.list();
+        const mapped = rows.map(mapApiConversation);
+        useChatsStore.setState((s) => ({
+          conversations: mapped.map((m) => {
+            const prev = s.conversations.find((x) => x.id === m.id);
+            return prev
+              ? { ...m, messages: prev.messages, _messagesLoaded: prev._messagesLoaded, labels: prev.labels, teams: prev.teams }
+              : m;
+          }),
+        }));
+        const openId = useChatsStore.getState().selectedChatId;
+        if (openId) {
+          const data = await conversationsApi.messages(openId);
+          const messages = data.messages
+            .filter((m) => ['in', 'out', 'note', 'system'].includes(m.direction))
+            .map(mapApiMessage);
+          useChatsStore.getState().patchConversation(openId, { messages, _messagesLoaded: true });
+        }
+      } catch (err) {
+        console.error('[Reconnect] resync error:', err);
+      }
+    }
+
     socket.on('new_message', onNewMessage);
     socket.on('new_note', onNewNote);
     socket.on('message_failed', onMessageFailed);
@@ -231,8 +256,10 @@ export default function ChatsPage() {
     socket.on('conversation_labels_updated', onConvLabelsUpdated);
     socket.on('conversation_teams_updated', onConvTeamsUpdated);
     socket.on('agent_status_changed', onAgentStatusChanged);
+    socket.on('connect', onReconnectResync);
 
     return () => {
+      socket.off('connect', onReconnectResync);
       socket.off('new_message', onNewMessage);
       socket.off('new_note', onNewNote);
       socket.off('message_failed', onMessageFailed);

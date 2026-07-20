@@ -11,9 +11,7 @@ export default function MessageList({ conversation, searchQuery }) {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const isNewConv = prevConvId.current !== conversation.id;
-    const wasNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    if (isNewConv || wasNearBottom) el.scrollTop = el.scrollHeight;
+    el.scrollTop = el.scrollHeight;
     prevConvId.current = conversation.id;
   }, [conversation.id, conversation.messages]);
 
