@@ -43,8 +43,7 @@ h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
     .sidebar-btn{width:38px;height:38px;border-radius:13px}
 }
 
-.page{display:none;flex:1;overflow:hidden}
-.page.active{display:flex}
+.page{display:flex;flex:1;overflow:hidden}
 [data-drag-id]{cursor:default}
 [data-drag-id].dragging-now{opacity:.35}
 
