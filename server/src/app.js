@@ -39,6 +39,18 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');
 app.use(express.static(clientDistPath));
 
+// أي رابط داخلي بتاع React Router (زي /chats أو /login بعد Refresh) لازم يترجعله
+// index.html عشان المتصفح يشغّل الـ React app والراوتينج يحصل من جوا المتصفح نفسه.
+// ده لازم يتحط هنا *قبل* أي راوتر محمي بـ requireAuth، لأن الراوترات دي بتستخدم
+// router.use(requireAuth) من غير مسار محدد، فبترفض أي طلب يوصلها (حتى لو مش API
+// أصلاً زي /chats) بـ 401 قبل ما يوصل لأي fallback متحط بعدها.
+app.get('*', (req, res, next) => {
+  const isApiPath =
+    req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/webhook');
+  if (isApiPath) return next();
+  res.sendFile(path.join(clientDistPath, 'index.html'));
+});
+
 // بنتأكد إن الجداول موجودة قبل أي route تاني (مرة واحدة بس بفضل الـ cache)
 let schemaReady = null;
 app.use(async (req, res, next) => {
@@ -92,15 +104,6 @@ app.use('/', companyRoutes);
 app.use('/', teamsRoutes);
 app.use('/', webhookConfigRoutes);
 app.use('/', notificationRoutes);
-
-// أي رابط تاني مش API ولا ملف ستاتيك (زي /login أو /chats/123 بعد Refresh)
-// نرجّعله index.html عشان React Router يتولى فتح الصفحة الصحيحة من جوا المتصفح
-app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/auth') || req.path.startsWith('/webhook')) {
-    return next();
-  }
-  res.sendFile(path.join(clientDistPath, 'index.html'));
-});
 
 // أي Error يوصل هنا (عن طريق asyncHandler أو next(err)) بيتحول لرد JSON موحد
 app.use(errorHandler);
