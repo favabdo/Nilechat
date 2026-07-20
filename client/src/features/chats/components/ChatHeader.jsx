@@ -84,6 +84,7 @@ export default function ChatHeader({
       <div className={`chat-search-bar${searchOpen ? ' show' : ''}`}>
         <Search size={15} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
         <input
+          id="chat-search-input"
           type="text"
           placeholder="ابحث في الرسايل..."
           value={searchQuery}

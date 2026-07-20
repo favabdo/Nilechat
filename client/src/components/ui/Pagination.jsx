@@ -17,7 +17,7 @@ export default function Pagination({ page, totalPages, onChange }) {
   }
 
   return (
-    <div id="contacts-pagination" style={{ display: 'flex' }}>
+    <div id="contacts-pagination" className="contacts-pagination" style={{ display: 'flex' }}>
       <button onClick={() => onChange(page - 1)} disabled={page <= 1}>‹ Previous</button>
       {items}
       <button onClick={() => onChange(page + 1)} disabled={page >= totalPages}>Next ›</button>

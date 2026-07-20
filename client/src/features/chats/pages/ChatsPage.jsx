@@ -262,7 +262,7 @@ export default function ChatsPage() {
   }
 
   return (
-    <div id="page-chats" className="page">
+    <div id="page-chats" className={`page${selected ? ' mobile-chat-open' : ''}`}>
       <ChatListPanel currentAgentName={currentAgentName} />
       <ChatMainPanel conversation={selected} currentAgentName={currentAgentName} socketRef={socketRef} />
     </div>

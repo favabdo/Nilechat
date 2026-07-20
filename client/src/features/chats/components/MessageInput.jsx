@@ -253,6 +253,7 @@ export default function MessageInput({
 
         {!recording && (
           <textarea
+            id="msg-input"
             ref={textareaRef}
             rows={1}
             placeholder={noteMode ? 'Private Note' : 'Type a message...'}

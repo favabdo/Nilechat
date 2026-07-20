@@ -62,7 +62,7 @@ export default function GeneralSection() {
   if (!settings) {
     return (
       <div className="settings-content-section active" id="settings-sec-general">
-        <div className="page-content" style={{ maxWidth: 700 }}>
+        <div className="page-content">
           <div className="settings-top-row">
             <div>
               <h2>Account Settings</h2>
@@ -76,7 +76,7 @@ export default function GeneralSection() {
 
   return (
     <div className="settings-content-section active" id="settings-sec-general">
-      <div className="page-content" style={{ maxWidth: 700 }}>
+      <div className="page-content">
         <div className="settings-top-row">
           <div>
             <h2>Account Settings</h2>
