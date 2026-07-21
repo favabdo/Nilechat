@@ -109,8 +109,8 @@ h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
 .chat-item-msg span:last-child{flex-shrink:0;margin-left:8px}
 .unread-badge{width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 
-#chat-main-panel{flex:1;display:flex;overflow:hidden}
-#chat-area{flex:1;display:flex;flex-direction:column;background:var(--bg);position:relative}
+#chat-main-panel{flex:1;display:flex;overflow:hidden;min-width:0}
+#chat-area{flex:1;display:flex;flex-direction:column;background:var(--bg);position:relative;min-width:0}
 .chat-bg{flex:1;overflow-y:auto;padding:20px;background-color:#ece5f5;background-image:radial-gradient(ellipse at 15% 30%,rgba(108,92,231,0.04) 0%,transparent 60%),radial-gradient(ellipse at 85% 70%,rgba(0,210,255,0.03) 0%,transparent 60%),radial-gradient(ellipse at 50% 90%,rgba(108,92,231,0.02) 0%,transparent 50%)}
 .chat-header{padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px}
 .chat-header-left{display:flex;align-items:center;gap:12px;min-width:0;flex-shrink:1}
@@ -293,6 +293,15 @@ mark.search-hit.active{background:var(--warning);color:#1a1a2e}
 /* Customer Panel */
 #customer-panel{width:380px;min-width:380px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:margin-right .3s,opacity .3s}
 #customer-panel.hidden{margin-right:-380px;opacity:0;pointer-events:none}
+
+/* On medium-width windows (between the mobile breakpoint and a comfortably
+   wide desktop) the panel floats over the chat instead of squeezing into a
+   fixed extra 380px row. This is what used to make the panel disappear off
+   the edge of the screen at normal (100%) zoom on laptop-size windows. */
+@media (min-width:861px) and (max-width:1180px){
+    #customer-panel{position:fixed!important;inset:0 0 0 auto;top:0;bottom:0;width:380px!important;min-width:0!important;max-width:100%;margin-right:0!important;box-shadow:-6px 0 24px rgba(0,0,0,0.15);z-index:80;transition:transform .3s,opacity .3s;transform:translateX(0)}
+    #customer-panel.hidden{transform:translateX(100%);opacity:1;pointer-events:none}
+}
 .cp-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .cp-header h3{font-size:15px;font-weight:700}
 .cp-close-btn{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
