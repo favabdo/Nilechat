@@ -209,7 +209,7 @@ export default function MessageInput({
       {cannedResponses.length > 0 && (
         <div className="saved-replies-bar">
           <span className="sr-label">Quick Replies:</span>
-          {cannedResponses.slice(0, 4).map((r) => (
+          {cannedResponses.map((r) => (
             <button key={r.id} className="sr-chip" onClick={() => insertReply(r)}>
               {r.label}
             </button>
