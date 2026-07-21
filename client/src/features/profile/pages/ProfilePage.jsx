@@ -306,7 +306,7 @@ export default function ProfilePage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input
               type="password"
-              className="st-text-input"
+              className="iw-input"
               placeholder="Current password"
               autoComplete="current-password"
               value={pwCurrent}
@@ -314,7 +314,7 @@ export default function ProfilePage() {
             />
             <input
               type="password"
-              className="st-text-input"
+              className="iw-input"
               placeholder="New password"
               autoComplete="new-password"
               value={pwNew}
@@ -322,7 +322,7 @@ export default function ProfilePage() {
             />
             <input
               type="password"
-              className="st-text-input"
+              className="iw-input"
               placeholder="Confirm new password"
               autoComplete="new-password"
               value={pwConfirm}
@@ -363,9 +363,7 @@ export default function ProfilePage() {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
               type="text"
-              className="st-text-input"
-              style={{ flex: 1, minWidth: 220, fontFamily: 'monospace' }}
-              readOnly
+              className="iw-input readonly"
               value={tokenFieldValue}
             />
             <button
