@@ -7,6 +7,7 @@ import { SocketProvider } from '../../hooks/SocketContext';
 import useChatsStore from '../../features/chats/store/chatsStore';
 import useScheduledTasksStore from '../../features/scheduled-tasks/store/scheduledTasksStore';
 import useNotificationsStore from '../../features/notifications/store/notificationsStore';
+import useAuthStore from '../../store/authStore';
 import NotificationsPanel from '../../features/notifications/components/NotificationsPanel';
 import useToastStore from '../../store/toastStore';
 import '../../styles/dashboard-full.css';
@@ -25,27 +26,33 @@ export default function DashboardLayout() {
     onDisconnected: () => console.log('[Socket.io] Disconnected from backend'),
   });
 
+  const loadConversations = useChatsStore((s) => s.loadConversations);
+
   useEffect(() => {
     const t = setTimeout(() => setLoaderHidden(true), 150);
+    loadConversations().catch(() => {});
     loadTasks().catch(() => {});
     refreshUnreadCount();
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const currentUser = useAuthStore((s) => s.user);
+
   // السيرفر بيبعتها لأي إشعار جديد اتسجل (شوف notification.service.js -> emitToUser)
   useEffect(() => {
     const socket = socketRef?.current;
     if (!socket) return;
-    function onNewNotification({ notification } = {}) {
+    function onNewNotification({ userId, notification } = {}) {
       if (!notification) return;
+      if (!currentUser || String(userId) !== String(currentUser.id)) return;
       receiveNotification(notification);
       showToast(notification.title || 'إشعار جديد', 'info');
     }
     socket.on('new_notification', onNewNotification);
     return () => socket.off('new_notification', onNewNotification);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socketRef?.current]);
+  }, [socketRef?.current, currentUser?.id]);
 
   return (
     <SocketProvider value={{ socketRef, connected }}>
