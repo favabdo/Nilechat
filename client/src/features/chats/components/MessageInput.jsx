@@ -193,20 +193,17 @@ export default function MessageInput({
     }
   }
 
-  if (resolved) {
-    return (
-      <div className="resolved-banner show">
-        <Lock size={14} />
-        <span>المحادثة دي متقفلة (Resolved) — لازم تعمل Reopen عشان تقدر تبعت رسالة</span>
-      </div>
-    );
-  }
-
   const timeLabel = `${Math.floor(recordSeconds / 60)}:${String(recordSeconds % 60).padStart(2, '0')}`;
 
   return (
     <>
-      {cannedResponses.length > 0 && (
+      {resolved && (
+        <div className="resolved-banner show">
+          <Lock size={14} />
+          <span>المحادثة دي متقفلة (Resolved) — لازم تعمل Reopen عشان تقدر تبعت رسالة</span>
+        </div>
+      )}
+      {!resolved && cannedResponses.length > 0 && (
         <div className="saved-replies-bar">
           <span className="sr-label">Quick Replies:</span>
           {cannedResponses.map((r) => (
@@ -216,27 +213,29 @@ export default function MessageInput({
           ))}
         </div>
       )}
-      <div className="note-toggle-bar">
-        <button
-          className={`note-toggle-btn${noteMode ? ' active' : ''}`}
-          title="Private note (agents only, not sent to customer)"
-          aria-label="Private note (agents only, not sent to customer)"
-          onClick={onToggleNoteMode}
-        >
-          <Lock size={13} /> Private Note
-        </button>
-        <button
-          className={`note-toggle-btn${generating ? ' loading' : ''}`}
-          title="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
-          aria-label="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
-          onClick={generateReply}
-        >
-          {generating ? <Loader2 size={13} className="ai-spin" /> : <Sparkles size={13} />} Generate Reply
-        </button>
-      </div>
-      <div className={`chat-input-area${noteMode ? ' note-mode' : ''}`} id="chat-input-area">
+      {!resolved && (
+        <div className="note-toggle-bar">
+          <button
+            className={`note-toggle-btn${noteMode ? ' active' : ''}`}
+            title="Private note (agents only, not sent to customer)"
+            aria-label="Private note (agents only, not sent to customer)"
+            onClick={onToggleNoteMode}
+          >
+            <Lock size={13} /> Private Note
+          </button>
+          <button
+            className={`note-toggle-btn${generating ? ' loading' : ''}`}
+            title="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
+            aria-label="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
+            onClick={generateReply}
+          >
+            {generating ? <Loader2 size={13} className="ai-spin" /> : <Sparkles size={13} />} Generate Reply
+          </button>
+        </div>
+      )}
+      <div className={`chat-input-area${noteMode ? ' note-mode' : ''}${resolved ? ' resolved-locked' : ''}`} id="chat-input-area">
         <div className="input-actions">
-          <button className="input-action-btn" title="Emoji" aria-label="Emoji">
+          <button className="input-action-btn" title="Emoji" aria-label="Emoji" disabled={resolved}>
             <Smile size={20} />
           </button>
           <button
@@ -245,10 +244,11 @@ export default function MessageInput({
             aria-label="Attach"
             style={{ visibility: recording ? 'hidden' : 'visible' }}
             onClick={() => fileInputRef.current?.click()}
+            disabled={resolved}
           >
             <Paperclip size={20} />
           </button>
-          <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept={ACCEPT_TYPES} onChange={handleFileChosen} />
+          <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept={ACCEPT_TYPES} onChange={handleFileChosen} disabled={resolved} />
         </div>
 
         {!recording && (
@@ -256,11 +256,12 @@ export default function MessageInput({
             id="msg-input"
             ref={textareaRef}
             rows={1}
-            placeholder={noteMode ? 'Private Note' : 'Type a message...'}
+            placeholder={resolved ? 'المحادثة متقفلة — اعمل Reopen عشان تبعت' : noteMode ? 'Private Note' : 'Type a message...'}
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            disabled={resolved}
           />
         )}
 
@@ -276,6 +277,7 @@ export default function MessageInput({
           title={recording ? 'Stop & send' : 'Voice note'}
           aria-label={recording ? 'Stop & send' : 'Voice note'}
           onClick={toggleVoice}
+          disabled={resolved}
         >
           {recording ? <Square size={16} /> : <Mic size={20} />}
         </button>
@@ -285,6 +287,7 @@ export default function MessageInput({
           aria-label="Send"
           style={{ display: recording ? 'none' : 'flex' }}
           onClick={submit}
+          disabled={resolved}
         >
           <Send size={18} />
         </button>
