@@ -20,6 +20,13 @@ export default function ChatListPanel({ currentAgentName }) {
   }
   if (search) filtered = filtered.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()));
 
+  const counts = {
+    all: conversations.length,
+    me: conversations.filter((c) => c.status === 'open' && c.assignedTo === currentAgentName).length,
+    open: conversations.filter((c) => c.status === 'open').length,
+    resolved: conversations.filter((c) => c.status === 'resolved').length,
+  };
+
   return (
     <div id="chat-list-panel">
       <div className="cl-header">
@@ -42,7 +49,7 @@ export default function ChatListPanel({ currentAgentName }) {
             data-filter={f.key}
             onClick={() => setFilter(f.key)}
           >
-            {f.label}
+            {f.label} <span className="cl-filter-count">{counts[f.key]}</span>
           </button>
         ))}
       </div>
