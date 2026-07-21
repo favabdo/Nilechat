@@ -31,6 +31,11 @@ export function mapApiConversation(row) {
     _labelsLoaded: true,
     teams: parseLabelsJson(row.teams_json),
     _teamsLoaded: true,
+    // فروع العميل (كل فرع اسمه ومكانه) — لو الكونتاكت معندوش فروع متعددة مسجلة
+    // بيرجع مصفوفة فاضية، والفرونت إند وقتها بيرجع لعمود location القديم بتاع
+    // الكونتاكت (contact_location) كـ fallback واحد بس يتعرض مكان الفروع
+    branches: parseLabelsJson(row.branches_json),
+    location: row.contact_location || null,
     _messagesLoaded: false,
     _contactLoaded: false,
     _lastMessageAtRaw: row.last_message_at || null,

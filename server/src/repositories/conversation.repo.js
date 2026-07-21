@@ -192,6 +192,25 @@ async function listConversations(hideRatingMessages = false) {
     c.teams_json = JSON.stringify(teamsByConversation.get(String(c.id)) || []);
   }
 
+  // نفس فكرة الليبلز والتيمز بالظبط بس للفروع — الفرق إن الفرع مرتبط بالكونتاكت
+  // (contact_id) مش بالمحادثة نفسها، فبنجيب كل الفروع مرة واحدة ونربطها بكل
+  // محادثة حسب contact_id بتاعها، عشان بانل العميل جنب الشات يعرف يعرض اسم/مكان
+  // الفرع تحت اسم العميل حتى لو كونتاكتات قديمة معندهاش فروع متعددة (هترجع مصفوفة فاضية
+  // والفرونت إند وقتها بيرجع لعمود location القديم بتاع الكونتاكت كـ fallback)
+  const branchesResult = await pool.request().query(`
+    SELECT contact_id, name, location FROM [dbo].[NileChat_ContactBranches_byA]
+    ORDER BY contact_id, created_at ASC, id ASC
+  `);
+  const branchesByContact = new Map();
+  for (const row of branchesResult.recordset) {
+    const key = String(row.contact_id);
+    if (!branchesByContact.has(key)) branchesByContact.set(key, []);
+    branchesByContact.get(key).push({ name: row.name || null, location: row.location || null });
+  }
+  for (const c of conversations) {
+    c.branches_json = JSON.stringify(c.contact_id ? branchesByContact.get(String(c.contact_id)) || [] : []);
+  }
+
   return conversations;
 }
 
@@ -226,7 +245,23 @@ async function getConversationById(id) {
       ) mc
       WHERE c.id = @id
     `);
-  return result.recordset[0] || null;
+  const conversation = result.recordset[0] || null;
+  if (conversation && conversation.contact_id) {
+    const branchesResult = await pool
+      .request()
+      .input('contactId', sql.BigInt, conversation.contact_id)
+      .query(`
+        SELECT name, location FROM [dbo].[NileChat_ContactBranches_byA]
+        WHERE contact_id = @contactId
+        ORDER BY created_at ASC, id ASC
+      `);
+    conversation.branches_json = JSON.stringify(
+      branchesResult.recordset.map((r) => ({ name: r.name || null, location: r.location || null }))
+    );
+  } else if (conversation) {
+    conversation.branches_json = '[]';
+  }
+  return conversation;
 }
 
 async function assignConversation(conversationId, agentId) {

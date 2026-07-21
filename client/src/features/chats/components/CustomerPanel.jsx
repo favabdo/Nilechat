@@ -24,6 +24,13 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
   const c = conversation;
 
+  // المكان المعروض تحت اسم العميل: لو عنده فروع متعددة مسجلة بنجمع أسماءها،
+  // ولو معندوش فروع (كونتاكت قديم مثلاً) بنستخدم عمود location بتاعه كأنه
+  // هو الفرع نفسه، وآخر حل (لو مفيش حتى location) بنرجع للرقم عشان المكان
+  // ده متفضلش فاضية خالص
+  const branchNames = (c.branches || []).map((b) => b.name || b.location).filter(Boolean);
+  const branchDisplay = branchNames.length > 0 ? branchNames.join('، ') : c.location || c.phone;
+
   // نفس فكرة editPhoneLabel الأصلية بالظبط: prompt بسيط لكتابة/تعديل اسم ثانوي للرقم
   async function editPhoneLabel(idx) {
     if (!c.contactId) return showToast('اربط الرقم بكونتاكت الأول', 'error');
@@ -59,7 +66,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
             <Pencil size={12} />
           </button>
         </div>
-        <div className="cp-phone">{c.phone}</div>
+        <div className="cp-phone">{branchDisplay}</div>
       </div>
 
       <div className="cp-tabs">
