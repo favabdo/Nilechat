@@ -35,6 +35,10 @@ export function mapApiConversation(row) {
     _contactLoaded: false,
     _lastMessageAtRaw: row.last_message_at || null,
     _lastMessageDirection: row.last_message_direction || null,
+    // تاريخ انتهاء عقد الصيانة بتاع العميل ده (لو مسجل كـ "كارت عميل صيانة") —
+    // بيستخدم عشان نعرض شريط تحذير أحمر فوق الشات لو العقد منتهي (شوف
+    // MaintenanceBanner.jsx) — السيرفر بيبعتها دايمًا، كانت بس مش متربطة هنا
+    maintenanceEndDate: row.contact_maintenance_end_date || null,
   };
 }
 

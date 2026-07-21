@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, CheckCircle, RotateCcw, User, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Search, CheckCircle, RotateCcw, User, X, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 
 export default function ChatHeader({
@@ -37,6 +37,23 @@ export default function ChatHeader({
           : 'var(--text-secondary)';
 
   const activeLabel = c.labels && c.labels.length > 0 ? c.labels[0] : null;
+
+  // لو العميل ده كارت "عميل صيانة" (له maintenanceEndDate) وعقد الصيانة بتاعه
+  // عدى معاده، بنوري شريط تحذير أحمر فوق الشات عشان الإيجنت ياخد باله ومايكملش
+  // معاه عادي من غير ما يعرف إن العقد منتهي (نفس منطق applyMaintenanceBanner
+  // في النسخة القديمة قبل React، اللي وقع سهوًا وقت النقل)
+  let maintenanceBannerText = null;
+  if (c.maintenanceEndDate) {
+    const endDate = new Date(c.maintenanceEndDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((today - endDate) / (1000 * 60 * 60 * 24));
+    if (diffDays > 0) {
+      const endDateStr = endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      maintenanceBannerText = `عقد الصيانة الخاص بالعميل ده منتهي من ${diffDays} يوم (بتاريخ ${endDateStr}) — يرجى مراجعة الإدارة قبل الاستمرار في التعامل معاه`;
+    }
+  }
 
   return (
     <>
@@ -78,6 +95,13 @@ export default function ChatHeader({
           <span className="chlbl-dot" style={{ background: activeLabel.color || '#6C5CE7' }}></span>
           <span className="chlbl-name">{activeLabel.name}:</span>
           <span className="chlbl-desc">{activeLabel.description}</span>
+        </div>
+      )}
+
+      {maintenanceBannerText && (
+        <div className="chat-maintenance-banner show">
+          <AlertTriangle size={15} style={{ flexShrink: 0 }} />
+          <span>{maintenanceBannerText}</span>
         </div>
       )}
 
