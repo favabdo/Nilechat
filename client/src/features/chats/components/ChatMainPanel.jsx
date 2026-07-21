@@ -4,6 +4,7 @@ import useChatsStore from '../store/chatsStore';
 import { formatMessageTimestamp } from '../../../utils/dateFormat';
 import { conversationsApi } from '../services/chats.service';
 import { mediaKindLabel } from '../utils/mappers';
+import { compressImageIfNeeded } from '../utils/compressImage';
 import useToastStore from '../../../store/toastStore';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
@@ -145,7 +146,11 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
     patchConversation(c.id, { lastMsg: mediaKindLabel(kind) });
 
     try {
-      await conversationsApi.replyMedia(c.id, file, clientId);
+      // بنصغّر الصورة قبل الرفع (لو محتاجة) — مبيأثرش على الـ preview اللي
+      // ظهر فورًا فوق (localUrl) لأنه مبني على الملف الأصلي، بس اللي بيتبعت
+      // فعليًا للسيرفر هو النسخة المصغّرة عشان الرفع يخلص أسرع بكتير
+      const uploadFile = kind === 'image' ? await compressImageIfNeeded(file) : file;
+      await conversationsApi.replyMedia(c.id, uploadFile, clientId);
       // زي sendMessage تمامًا: الـ socket هو اللي هيأكد الرسالة فعليًا (new_message)
       // أو يعلّمها فشلت (message_failed) لما الرفع لواتساب يخلص فعليًا في الخلفية
     } catch (err) {

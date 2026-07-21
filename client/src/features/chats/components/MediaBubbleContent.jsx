@@ -1,12 +1,20 @@
-import { FileWarning, FileText } from 'lucide-react';
+import { FileWarning, Loader2, FileText } from 'lucide-react';
 import { docKindLabel } from '../utils/mappers';
 
 export default function MediaBubbleContent({ m, onOpenLightbox }) {
   if (!m.mediaUrl) {
+    // الرسالة الواردة بتوصل وتتسجل فورًا من غير ما تستنى تنزيل الملف من واتساب
+    // (شوف conversation.service.js) — لحد ما التنزيل يخلص في الخلفية، بنعرض
+    // حالة "بيتم التحميل" مش "Media unavailable" لأن دي مش حالة فشل غالبًا،
+    // مجرد ثواني قليلة استنى فيها التنزيل. لو فضلت أكتر من دقيقة فعلًا يبقى فشل.
     return (
       <>
         <div className="msg-media-unavailable">
-          <FileWarning size={14} /> Media unavailable
+          {m.from === 'customer' ? (
+            <><Loader2 size={14} className="msg-media-spinner" /> بيتم تحميل الوسائط…</>
+          ) : (
+            <><FileWarning size={14} /> Media unavailable</>
+          )}
         </div>
         {m.text && <div className="msg-media-caption">{m.text}</div>}
         <div className="msg-time" style={{ padding: '0 8px 6px' }}>{m.time}</div>

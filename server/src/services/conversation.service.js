@@ -166,21 +166,13 @@ async function processIncomingMessages(value, io, wabaId = null) {
     if (messageType === 'text') {
       messageText = msg.text?.body || null;
     } else if (['image', 'video', 'audio', 'document', 'sticker'].includes(messageType)) {
-      const mediaId = msg[messageType]?.id || null;
+      // مهم: هنا كنا بنستنى تنزيل الملف بالكامل من ميتا (٢ نداء HTTP + كتابة
+      // على الديسك) *قبل* ما نسجل الرسالة أو نظهرها للإيجنت — يعني لو التنزيل
+      // ياخد ٥-١٠ ثواني (صورة كبيرة / سيرفرات ميتا بطيئة)، الإيجنت يفضل مش شايف
+      // إن فيه رسالة جت أصلًا لحد ما التنزيل يخلص. دلوقتي بنسجل الرسالة فورًا
+      // من غير رابط، ونكمل التنزيل في الخلفية بعد ما نرجع من الدالة دي (تحت)
       messageText = msg[messageType]?.caption || null;
       mediaFileName = msg[messageType]?.filename || null;
-
-      // بننزّل الملف فعليًا من ميتا ونخزنه عندنا (الـ media id لوحده مش كافي —
-      // محتاج توكن صالح كل مرة وبينتهي، فبنحوّله لرابط ثابت نقدر نعرضه في الشات مباشرة)
-      const downloaded = await whatsappService.downloadIncomingMedia(mediaId, matchedInbox?.id || null);
-      if (downloaded) {
-        mediaUrl = downloaded.url;
-        mediaMime = downloaded.mimeType;
-      } else {
-        // فشل التنزيل (توكن منتهي، الملف اتمسح من عند ميتا...) — بنسجل الرسالة برضه
-        // من غير رابط عشان الإيجنت على الأقل يشوف إنها كانت وسائط، مش تختفي تمامًا
-        logger.error(`⚠️ تعذر تنزيل ميديا واردة (type=${messageType}, id=${mediaId})`);
-      }
     } else if (messageType === 'button') {
       messageText = msg.button?.text || null;
     } else if (messageType === 'interactive') {
@@ -263,6 +255,30 @@ async function processIncomingMessages(value, io, wabaId = null) {
 
     if (io) {
       io.emit('new_message', { conversationId, message: saved });
+    }
+
+    // دلوقتي بعد ما الرسالة اتسجلت وظهرت للإيجنت فورًا، لو دي رسالة وسائط
+    // بننزّل الملف الفعلي من ميتا في الخلفية (من غير await هنا عمدًا) وبمجرد
+    // ما يخلص بنحدّث الرسالة في الداتابيز ونبعت حدث socket يملي الصورة في
+    // فقاعة الشات مباشرة من غير ما الإيجنت يعمل ريفريش
+    if (['image', 'video', 'audio', 'document', 'sticker'].includes(messageType)) {
+      const mediaId = msg[messageType]?.id || null;
+      whatsappService
+        .downloadIncomingMedia(mediaId, matchedInbox?.id || null)
+        .then(async (downloaded) => {
+          if (!downloaded) {
+            logger.error(`⚠️ تعذر تنزيل ميديا واردة (type=${messageType}, id=${mediaId})`);
+            return;
+          }
+          const updated = await conversationRepo.updateMessageMedia(saved.id, {
+            mediaUrl: downloaded.url,
+            mediaMime: downloaded.mimeType,
+          });
+          if (io && updated) {
+            io.emit('message_media_ready', { conversationId, message: updated });
+          }
+        })
+        .catch((err) => logger.error('❌ خطأ غير متوقع أثناء تنزيل ميديا واردة:', err.message));
     }
 
     // Webhooks الصادرة: بنبعت حدث "رسالة جديدة" فورًا لأي Webhook مسجل ومشترك في

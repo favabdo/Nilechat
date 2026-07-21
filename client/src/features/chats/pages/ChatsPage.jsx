@@ -125,6 +125,24 @@ export default function ChatsPage() {
       state.patchConversation(c.id, patch);
     }
 
+    // الرسالة الواردة (صورة/فيديو/صوت/مستند) بتظهر فورًا من غير صورة (mediaUrl=null)
+    // في onNewMessage، وبمجرد ما التنزيل من واتساب يخلص في الخلفية الحدث ده بيوصل
+    // فيملي الصورة الفعلية في نفس الفقاعة من غير ما الإيجنت يعمل ريفريش
+    function onMessageMediaReady({ conversationId, message }) {
+      const state = useChatsStore.getState();
+      const c = state.conversations.find((x) => String(x.id) === String(conversationId));
+      if (!c) return;
+      state.replaceMessage(
+        c.id,
+        (m) => String(m.id) === String(message.id),
+        (m) => ({
+          ...m,
+          mediaUrl: message.media_url || m.mediaUrl,
+          mediaMime: message.media_mime || m.mediaMime,
+        })
+      );
+    }
+
     function onNewNote({ conversationId, note }) {
       const state = useChatsStore.getState();
       const c = state.conversations.find((x) => String(x.id) === String(conversationId));
@@ -245,6 +263,7 @@ export default function ChatsPage() {
     }
 
     socket.on('new_message', onNewMessage);
+    socket.on('message_media_ready', onMessageMediaReady);
     socket.on('new_note', onNewNote);
     socket.on('message_failed', onMessageFailed);
     socket.on('note_failed', onNoteFailed);
@@ -262,6 +281,7 @@ export default function ChatsPage() {
       socket.off('connect', onReconnectResync);
       socket.off('new_message', onNewMessage);
       socket.off('new_note', onNewNote);
+      socket.off('message_media_ready', onMessageMediaReady);
       socket.off('message_failed', onMessageFailed);
       socket.off('note_failed', onNoteFailed);
       socket.off('typing', onTyping);

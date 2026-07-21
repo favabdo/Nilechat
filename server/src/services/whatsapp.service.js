@@ -431,8 +431,11 @@ async function sendRatingFlowMessage(toNumber, { flowId, flowToken, bodyText }, 
  * 2) ننزّل الملف فعليًا ونخزنه على السيرفر بتاعنا، ونرجع رابط ثابت (public/uploads)
  *    نقدر نعرضه في لوحة التحكم مباشرة من غير ما نحتاج توكن ميتا تاني
  */
-async function downloadIncomingMedia(mediaId, inboxId = null) {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function downloadIncomingMedia(mediaId, inboxId = null, attempt = 1) {
   if (!mediaId) return null;
+  const MAX_ATTEMPTS = 3;
   try {
     const { accessToken } = await resolveCredentials(inboxId);
     if (!accessToken) return null;
@@ -440,6 +443,7 @@ async function downloadIncomingMedia(mediaId, inboxId = null) {
     const metaUrl = `https://graph.facebook.com/${GRAPH_API_VERSION}/${mediaId}`;
     const metaResponse = await axios.get(metaUrl, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      timeout: 15000,
     });
     const { url, mime_type: mimeType, file_size: fileSize } = metaResponse.data || {};
     if (!url) return null;
@@ -448,6 +452,7 @@ async function downloadIncomingMedia(mediaId, inboxId = null) {
       headers: { Authorization: `Bearer ${accessToken}` },
       responseType: 'arraybuffer',
       maxContentLength: 50 * 1024 * 1024, // حد أقصى 50MB لأي ملف وارد
+      timeout: 30000,
     });
 
     const buffer = Buffer.from(fileResponse.data);
@@ -455,7 +460,14 @@ async function downloadIncomingMedia(mediaId, inboxId = null) {
 
     return { url: publicUrl, mimeType: mimeType || null, fileSize: fileSize || null };
   } catch (err) {
-    logger.error('❌ فشل تنزيل ميديا واردة من واتساب:', err.response?.data?.error?.message || err.message);
+    // معظم الفشل هنا بيكون مؤقت (تايم أوت / انقطاع لحظي مع سيرفرات ميتا)، مش
+    // توكن غلط أو ملف اتمسح فعليًا — فبنعيد المحاولة كام مرة قبل ما نستسلم
+    // ونسجلها "Media unavailable" نهائيًا
+    if (attempt < MAX_ATTEMPTS) {
+      await sleep(attempt * 800);
+      return downloadIncomingMedia(mediaId, inboxId, attempt + 1);
+    }
+    logger.error('❌ فشل تنزيل ميديا واردة من واتساب بعد كل المحاولات:', err.response?.data?.error?.message || err.message);
     return null;
   }
 }

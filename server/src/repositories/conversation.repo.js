@@ -518,6 +518,28 @@ async function finalizeOutgoingMessage(id, { waMessageId = null, status }) {
   return result.recordset[0] || null;
 }
 
+/**
+ * بتحدّث رابط/نوع الوسائط لرسالة واردة موجودة بالفعل — مستخدمة لما التنزيل من
+ * ميتا بيحصل في الخلفية بعد ما الرسالة اتسجلت وظهرت للإيجنت على طول (mediaUrl=null
+ * مؤقتًا)، عشان تظهر الصورة فعليًا أول ما التنزيل يخلص من غير ما نستنى قبل كده
+ */
+async function updateMessageMedia(id, { mediaUrl, mediaMime }) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input('id', sql.BigInt, id)
+    .input('mediaUrl', sql.NVarChar(500), mediaUrl)
+    .input('mediaMime', sql.NVarChar(150), mediaMime)
+    .query(`
+      UPDATE [dbo].[${TABLE_NAME}]
+      SET media_url = @mediaUrl,
+          media_mime = COALESCE(@mediaMime, media_mime)
+      OUTPUT INSERTED.*
+      WHERE id = @id
+    `);
+  return result.recordset[0] || null;
+}
+
 // بيرجع الـ ids بتاعة الإيجنتس اللي ردوا/كتبوا نوت قبل كده في المحادثة دي (المشاركين
 // فيها) — مستخدمة عشان نبعت إشعار "رسالة جديدة في محادثة أنت مشارك فيها" لأي حد
 // شارك فيها قبل كده غير الإيجنت المعين عليها (ده بياخد إشعار تاني منفصل)
@@ -555,5 +577,6 @@ module.exports = {
   addPrivateNote,
   addSystemMessage,
   updateMessageStatusByWaId,
+  updateMessageMedia,
   finalizeOutgoingMessage,
 };
