@@ -86,6 +86,11 @@ export default function CustomerDetailsPage() {
 
   const currentContract = contracts.find((c) => c.status !== 'stopped');
   const remainingLabel = currentContract ? formatDurationDays(new Date().toISOString(), currentContract.end_date) : null;
+  // اسم/أسماء الفروع لو مسجلة، وإلا بنرجع لعمود location القديم بتاع العميل
+  // كأنه هو الفرع، عشان صف "الفروع" في الصفحة دي يفضل معروض له قيمة لكل
+  // العملاء بدل ما يفضل فاضي للعملاء اللي معندهمش فروع متعددة مسجلة
+  const branchNames = (contact.branches || []).map((b) => b.name || b.location).filter(Boolean);
+  const branchesDisplay = branchNames.length > 0 ? branchNames.join('، ') : contact.location || '-';
 
   return (
     <div id="page-customer-details" className="page">
@@ -130,12 +135,10 @@ export default function CustomerDetailsPage() {
               </span>
             </div>
           )}
-          {contact.branches && contact.branches.length > 0 && (
-            <div className="setting-row">
-              <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> الفروع</div></div>
-              <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{contact.branches.map((b) => b.name).join('، ')}</span>
-            </div>
-          )}
+          <div className="setting-row">
+            <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> الفروع</div></div>
+            <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{branchesDisplay}</span>
+          </div>
           {contact.modules && contact.modules.length > 0 && (
             <div style={{ padding: '12px 0 4px' }}>
               <div className="setting-label" style={{ marginBottom: 8 }}><Layers size={13} style={{ verticalAlign: -2 }} /> الموديولات المشترك فيها</div>
