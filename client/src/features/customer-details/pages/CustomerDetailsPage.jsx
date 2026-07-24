@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Building2, Phone, User, CalendarClock, Layers, CalendarPlus, FilePlus2, Briefcase, Pencil } from 'lucide-react';
+import { ArrowLeft, Building2, Phone, User, CalendarClock, Layers, CalendarPlus, FilePlus2, Briefcase, Pencil, Tag, Unlink, Crown, UserX } from 'lucide-react';
 import { customerDetailsApi } from '../services/customerDetails.service';
+import { contactsApi } from '../../contacts/services/contacts.service';
 import { formatSchedDate, formatDurationDays } from '../../../utils/dateFormat';
 import useChatsStore from '../../chats/store/chatsStore';
 import useAuthStore from '../../../store/authStore';
@@ -11,6 +12,7 @@ import VisitCard from '../components/VisitCard';
 import MaintenanceContractCard from '../components/MaintenanceContractCard';
 import AddVisitModal from '../components/AddVisitModal';
 import AddMaintenanceContractModal from '../components/AddMaintenanceContractModal';
+import UnlinkPhoneModal from '../components/UnlinkPhoneModal';
 import CustomerCardModal from '../../contacts/components/CustomerCardModal';
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
@@ -35,6 +37,7 @@ export default function CustomerDetailsPage() {
 
   const [addVisitOpen, setAddVisitOpen] = useState(false);
   const [addContractOpen, setAddContractOpen] = useState(false);
+  const [unlinkTarget, setUnlinkTarget] = useState(null);
 
   function loadContact() {
     setLoading(true);
@@ -69,6 +72,53 @@ export default function CustomerDetailsPage() {
     selectChat(conv.id);
   }
 
+  // نفس بالظبط لوجيك editCustomerDetailsPhoneLabel الأصلية — prompt بسيط
+  // لكتابة/تعديل اسم ثانوي للرقم، بيشتغل هنا على contact مباشرة (بدل ما
+  // يبقى محتاج محادثة مفتوحة أصلًا)
+  async function editPhoneLabel(phoneNumber) {
+    if (!contact) return;
+    const p = (contact.phones || []).find((ph) => ph.phone_number === phoneNumber);
+    const newLabel = window.prompt('اكتب اسم ثانوي للرقم ده (مثلاً: الشغل، الرقم الشخصي) — سيبه فاضي عشان تمسح الاسم الثانوي', (p && p.label) || '');
+    if (newLabel === null) return;
+    try {
+      await contactsApi.updatePhoneLabel(contactId, phoneNumber, newLabel.trim());
+      loadContact();
+      showToast('تم حفظ الاسم الثانوي بنجاح', 'success');
+    } catch (err) {
+      console.error('[API] editPhoneLabel error:', err);
+      showToast(err.response?.data?.error || 'فشل حفظ الاسم الثانوي', 'error');
+    }
+  }
+
+  // بيبدّل عمود is_vip (0/1) — عمود مستقل تمامًا عن is_inactive، يعني ممكن
+  // العميل يبقى VIP وغير نشط في نفس الوقت
+  async function toggleVip() {
+    if (!contact) return;
+    const nextValue = contact.is_vip === 1 ? 0 : 1;
+    try {
+      await contactsApi.setVip(contactId, nextValue);
+      loadContact();
+      showToast(nextValue === 1 ? 'تم تحديد العميل كـ VIP' : 'تم إلغاء تصنيف VIP', 'success');
+    } catch (err) {
+      console.error('[API] toggleVip error:', err);
+      showToast(err.response?.data?.error || 'فشل تحديث تصنيف VIP', 'error');
+    }
+  }
+
+  // بيبدّل عمود is_inactive (0/1) — عمود مستقل تمامًا عن is_vip
+  async function toggleInactive() {
+    if (!contact) return;
+    const nextValue = contact.is_inactive === 1 ? 0 : 1;
+    try {
+      await contactsApi.setInactive(contactId, nextValue);
+      loadContact();
+      showToast(nextValue === 1 ? 'تم تحديد العميل كغير نشط' : 'تم تحديد العميل كنشط', 'success');
+    } catch (err) {
+      console.error('[API] toggleInactive error:', err);
+      showToast(err.response?.data?.error || 'فشل تحديث حالة النشاط', 'error');
+    }
+  }
+
   if (loading) {
     return (
       <div id="page-customer-details" className="page">
@@ -101,11 +151,49 @@ export default function CustomerDetailsPage() {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <h2 style={{ margin: 0 }}>{contact.name || 'بدون اسم'}</h2>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {contact.name || 'بدون اسم'}
+                {contact.is_vip === 1 && (
+                  <span className="label-chip" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', fontSize: 11.5 }}>
+                    <Crown size={12} style={{ verticalAlign: -2 }} /> VIP
+                  </span>
+                )}
+                {contact.is_inactive === 1 && (
+                  <span className="label-chip" style={{ background: 'rgba(148,163,184,0.18)', color: 'var(--text-secondary)', fontSize: 11.5 }}>
+                    <UserX size={12} style={{ verticalAlign: -2 }} /> غير نشط
+                  </span>
+                )}
+              </h2>
               {contact.location && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{contact.location}</div>}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
+            {canManage && (
+              <button
+                className="page-btn"
+                style={{
+                  background: contact.is_vip === 1 ? 'rgba(245,166,35,0.15)' : 'var(--bg)',
+                  color: contact.is_vip === 1 ? '#f5a623' : 'var(--text)',
+                  border: '1px solid var(--border)',
+                }}
+                onClick={toggleVip}
+              >
+                <Crown size={15} /> VIP
+              </button>
+            )}
+            {canManage && (
+              <button
+                className="page-btn"
+                style={{
+                  background: contact.is_inactive === 1 ? 'rgba(148,163,184,0.18)' : 'var(--bg)',
+                  color: contact.is_inactive === 1 ? 'var(--text-secondary)' : 'var(--text)',
+                  border: '1px solid var(--border)',
+                }}
+                onClick={toggleInactive}
+              >
+                <UserX size={15} /> غير نشط
+              </button>
+            )}
             {canManage && (
               <button className="page-btn" style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }} onClick={() => setEditOpen(true)}>
                 <Pencil size={15} /> Edit
@@ -125,7 +213,14 @@ export default function CustomerDetailsPage() {
           </div>
           <div className="setting-row">
             <div><div className="setting-label"><CalendarClock size={13} style={{ verticalAlign: -2 }} /> تاريخ التعاقد</div></div>
-            <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{formatSchedDate(contact.contract_date)}</span>
+            <div style={{ textAlign: 'left' }}>
+              <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{formatSchedDate(contact.contract_date)}</span>
+              {contact.created_by && (
+                <div style={{ opacity: 0.65, fontSize: 12, marginTop: 2 }}>
+                  {contact.created_by_name || `Agent ID: ${contact.created_by}`}
+                </div>
+              )}
+            </div>
           </div>
           {currentContract && (
             <div className="setting-row">
@@ -157,10 +252,33 @@ export default function CustomerDetailsPage() {
           <h3>أرقام التليفون</h3>
           <div className="info-list" style={{ marginBottom: 10 }}>
             {(contact.phones || []).map((p) => (
-              <div key={p.phone_number} className="info-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Phone size={14} />
-                <span>{p.phone_number}</span>
-                {p.label && <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>({p.label})</span>}
+              <div key={p.phone_number} className="info-item">
+                <div className="info-item-text">
+                  <Phone size={14} />
+                  <span>{p.phone_number}</span>
+                  {p.label && <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>({p.label})</span>}
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {canManage && (
+                    <button
+                      className="resolve-cancel-btn"
+                      style={{ padding: '4px 9px', fontSize: 11.5 }}
+                      title="حط/عدّل اسم ثانوي للرقم"
+                      onClick={() => editPhoneLabel(p.phone_number)}
+                    >
+                      <Tag size={12} /> اسم ثانوي
+                    </button>
+                  )}
+                  {canManage && (contact.phones || []).length > 1 && (
+                    <button
+                      className="resolve-cancel-btn"
+                      style={{ padding: '4px 9px', fontSize: 11.5 }}
+                      onClick={() => setUnlinkTarget(p.phone_number)}
+                    >
+                      <Unlink size={12} /> فصل
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -178,7 +296,7 @@ export default function CustomerDetailsPage() {
 
         {tab === 'visits' && (
           <div>
-            <button className="add-btn" style={{ marginBottom: 12 }} onClick={() => setAddVisitOpen(true)}>
+            <button className="page-btn" style={{ marginBottom: 12 }} onClick={() => setAddVisitOpen(true)}>
               <CalendarPlus size={16} /> إضافة زيارة
             </button>
             <div className="sched-tasks-grid">
@@ -195,7 +313,7 @@ export default function CustomerDetailsPage() {
 
         {tab === 'contracts' && (
           <div>
-            <button className="add-btn" style={{ marginBottom: 12 }} onClick={() => setAddContractOpen(true)}>
+            <button className="page-btn" style={{ marginBottom: 12 }} onClick={() => setAddContractOpen(true)}>
               <FilePlus2 size={16} /> إضافة عقد صيانة
             </button>
             <div className="sched-tasks-grid">
@@ -254,6 +372,19 @@ export default function CustomerDetailsPage() {
           onSaved={() => {
             setEditOpen(false);
             showToast('تم تحديث بيانات العميل بنجاح', 'success');
+            loadContact();
+          }}
+        />
+      )}
+      {unlinkTarget && (
+        <UnlinkPhoneModal
+          contactId={contactId}
+          phone={unlinkTarget}
+          defaultName={contact.name}
+          onClose={() => setUnlinkTarget(null)}
+          onUnlinked={() => {
+            setUnlinkTarget(null);
+            showToast('تم فصل الرقم لعميل جديد منفصل', 'success');
             loadContact();
           }}
         />

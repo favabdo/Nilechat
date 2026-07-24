@@ -139,7 +139,7 @@ export default function DevicesSection({ contactId }) {
           <Plus size={16} /> Add Device
         </button>
       ) : (
-        <div id="add-device-form" className="show">
+        <div id="add-device-form" className="add-form show">
           <input className="device-edit-input" placeholder="Device name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
           <input className="device-edit-input" placeholder="AnyDesk number" value={newAnydesk} onChange={(e) => setNewAnydesk(e.target.value)} />
           <input className="device-edit-input" placeholder="Password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />

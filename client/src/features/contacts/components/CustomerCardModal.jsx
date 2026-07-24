@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserPlus, Plus, X, Check } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
+import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { contactsApi } from '../services/contacts.service';
 
 const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
@@ -214,7 +215,11 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
               <input type="date" className="iw-input" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} />
             </div>
           </div>
-          <div className="iw-form-hint" style={{ marginTop: -8, marginBottom: 12 }}>هيتسجل كأول عقد صيانة للعميل فورًا.</div>
+
+          <div className="resolve-cats-label" style={{ marginTop: 4 }}>مدة عقد الصيانة (اختياري)</div>
+          <ContractDurationPicker startDate={contractStart} onEndDateChange={setContractEnd} />
+
+          <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 12 }}>هيتسجل كأول عقد صيانة للعميل فورًا. حدد المدة وهيتحسب تاريخ الانتهاء تلقائي.</div>
         </>
       )}
 

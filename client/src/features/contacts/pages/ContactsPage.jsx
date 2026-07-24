@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, AlertTriangle, ShieldCheck, BadgeCheck, Package, MessageCircle } from 'lucide-react';
+import { Plus, Search, Trash2, AlertTriangle, ShieldCheck, BadgeCheck, Package, MessageCircle, LayoutGrid, Crown, UserX } from 'lucide-react';
 import { contactsApi } from '../services/contacts.service';
 import Avatar from '../../../components/ui/Avatar';
 import Pagination from '../../../components/ui/Pagination';
@@ -11,10 +11,11 @@ import CustomerCardModal from '../components/CustomerCardModal';
 const PAGE_SIZE = 20;
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
-// نفس فكرة resolveContactsCategory الأصلية: تاب "عملاء مسجلين" له سيكشنين
-// فرعيين (عقد ساري/منتهي)، والتابين التانيين (بدون عقد / غير مسجلة) مالهمش سيكشنات
+// نفس فكرة resolveContactsCategory الأصلية: تاب "عملاء مسجلين" له 4 سيكشنات
+// فرعية (الكل / عقد ساري / عقد منتهي / بدون عقد)، وتاب "أرقام غير مسجلة"
+// مالوش سيكشنات فرعية
 function resolveCategory(activeTab, registeredSubTab) {
-  if (activeTab === 'registered') return registeredSubTab;
+  if (activeTab === 'registered') return registeredSubTab === 'all' ? 'registered' : registeredSubTab;
   return activeTab;
 }
 
@@ -24,7 +25,7 @@ export default function ContactsPage() {
   const [failed, setFailed] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('registered');
-  const [registeredSubTab, setRegisteredSubTab] = useState('active_contract');
+  const [registeredSubTab, setRegisteredSubTab] = useState('all');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [counts, setCounts] = useState({ activeContract: 0, expiredContract: 0, noContract: 0, unregistered: 0 });
@@ -85,10 +86,12 @@ export default function ContactsPage() {
     : activeTab === 'registered'
       ? registeredSubTab === 'active_contract'
         ? 'لا يوجد عملاء بعقد صيانة ساري'
-        : 'لا يوجد عملاء بعقد صيانة منتهي'
-      : activeTab === 'no_contract'
-        ? 'لا يوجد عملاء بدون عقد صيانة'
-        : 'لا يوجد ارقام غير مسجله لعرضها';
+        : registeredSubTab === 'expired_contract'
+          ? 'لا يوجد عملاء بعقد صيانة منتهي'
+          : registeredSubTab === 'no_contract'
+            ? 'لا يوجد عملاء بدون عقد صيانة'
+            : 'لا يوجد عملاء مسجلين لعرضهم'
+      : 'لا يوجد ارقام غير مسجله لعرضها';
 
   return (
     <div id="page-contacts" className="page">
@@ -105,11 +108,9 @@ export default function ContactsPage() {
         <div className="contacts-tabs" id="contacts-tabs">
           <button className={`contacts-tab${activeTab === 'registered' ? ' active' : ''}`} onClick={() => switchTab('registered')}>
             <BadgeCheck size={14} /> عملاء مسجلين
-            <span className="contacts-tab-count">{(counts.activeContract || 0) + (counts.expiredContract || 0)}</span>
-          </button>
-          <button className={`contacts-tab${activeTab === 'no_contract' ? ' active' : ''}`} onClick={() => switchTab('no_contract')}>
-            <Package size={14} /> عملاء بدون عقد صيانة
-            <span className="contacts-tab-count">{counts.noContract || 0}</span>
+            <span className="contacts-tab-count">
+              {(counts.activeContract || 0) + (counts.expiredContract || 0) + (counts.noContract || 0)}
+            </span>
           </button>
           <button className={`contacts-tab${activeTab === 'unregistered' ? ' active' : ''}`} onClick={() => switchTab('unregistered')}>
             <MessageCircle size={14} /> ارقام غير مسجله
@@ -118,7 +119,16 @@ export default function ContactsPage() {
         </div>
 
         {activeTab === 'registered' && (
-          <div className="contacts-subtabs" id="contacts-subtabs" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div className="contacts-subtabs" id="contacts-subtabs" style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <button
+              className={`contacts-subtab${registeredSubTab === 'all' ? ' active' : ''}`}
+              onClick={() => setRegisteredSubTab('all')}
+            >
+              <LayoutGrid size={13} /> الكل
+              <span className="contacts-tab-count">
+                {(counts.activeContract || 0) + (counts.expiredContract || 0) + (counts.noContract || 0)}
+              </span>
+            </button>
             <button
               className={`contacts-subtab${registeredSubTab === 'active_contract' ? ' active' : ''}`}
               onClick={() => setRegisteredSubTab('active_contract')}
@@ -132,6 +142,13 @@ export default function ContactsPage() {
             >
               <AlertTriangle size={13} /> عقد صيانة منتهي
               <span className="contacts-tab-count">{counts.expiredContract || 0}</span>
+            </button>
+            <button
+              className={`contacts-subtab${registeredSubTab === 'no_contract' ? ' active' : ''}`}
+              onClick={() => setRegisteredSubTab('no_contract')}
+            >
+              <Package size={13} /> عملاء بدون عقد صيانة
+              <span className="contacts-tab-count">{counts.noContract || 0}</span>
             </button>
           </div>
         )}
@@ -190,7 +207,19 @@ export default function ContactsPage() {
                     <Avatar name={c.name} seed={`contact-${c.id}`} size={52} />
                   </div>
                   <div>
-                    <div className="contact-card-name">{c.name || 'بدون اسم'}</div>
+                    <div className="contact-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      {c.name || 'بدون اسم'}
+                      {c.is_vip === 1 && (
+                        <span className="label-chip" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', fontSize: 10.5, padding: '2px 6px' }}>
+                          <Crown size={10} style={{ verticalAlign: -1 }} /> VIP
+                        </span>
+                      )}
+                      {c.is_inactive === 1 && (
+                        <span className="label-chip" style={{ background: 'rgba(148,163,184,0.18)', color: 'var(--text-secondary)', fontSize: 10.5, padding: '2px 6px' }}>
+                          <UserX size={10} style={{ verticalAlign: -1 }} /> غير نشط
+                        </span>
+                      )}
+                    </div>
                     {(c.phones || []).map((p) => (
                       <div key={p.phone_number} className="contact-card-info">
                         {p.phone_number}
@@ -201,7 +230,7 @@ export default function ContactsPage() {
                       <div className="contact-card-info" style={{ marginTop: 4, fontWeight: 700, color: isExpired ? 'var(--danger)' : 'var(--success)' }}>
                         {isExpired ? <AlertTriangle size={12} style={{ verticalAlign: -2 }} /> : <ShieldCheck size={12} style={{ verticalAlign: -2 }} />}
                         {' '}
-                        {isExpired ? 'عقد الصيانة منتهي' : 'عميل صيانة'}
+                        {isExpired ? 'عقد الصيانة منتهي' : 'عقد صيانة ساري'}
                       </div>
                     )}
                   </div>

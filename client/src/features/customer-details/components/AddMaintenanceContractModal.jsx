@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FilePlus2, Check } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
+import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { customerDetailsApi } from '../services/customerDetails.service';
 
 export default function AddMaintenanceContractModal({ contactId, contactName, onClose, onAdded }) {
@@ -49,6 +50,12 @@ export default function AddMaintenanceContractModal({ contactId, contactName, on
           <div className="resolve-cats-label" style={{ marginTop: 0 }}>تاريخ الانتهاء</div>
           <input type="date" className="iw-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
+      </div>
+
+      <div className="resolve-cats-label" style={{ marginTop: 4 }}>مدة عقد الصيانة (اختياري)</div>
+      <ContractDurationPicker startDate={startDate} onEndDateChange={setEndDate} />
+      <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 14 }}>
+        حدد المدة وهيتحسب تاريخ الانتهاء تلقائي (تقدر تعدله يدوي بعد كده لو حابب).
       </div>
 
       <div className="resolve-cats-label">ملاحظات (اختياري)</div>

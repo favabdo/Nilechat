@@ -5,6 +5,12 @@ export const contactsApi = {
   addPhone: (contactId, phone) => apiClient.post(`/api/contacts/${contactId}/phones`, { phone }).then((r) => r.data),
   updatePhoneLabel: (contactId, phone, label) =>
     apiClient.patch(`/api/contacts/${contactId}/phones`, { phone, label }).then((r) => r.data),
+  unlinkPhone: (contactId, phone, name) =>
+    apiClient.post(`/api/contacts/${contactId}/phones/unlink`, { phone, name }).then((r) => r.data),
+  setVip: (contactId, isVip) =>
+    apiClient.patch(`/api/contacts/${contactId}/vip`, { is_vip: isVip ? 1 : 0 }).then((r) => r.data),
+  setInactive: (contactId, isInactive) =>
+    apiClient.patch(`/api/contacts/${contactId}/inactive`, { is_inactive: isInactive ? 1 : 0 }).then((r) => r.data),
   listPaginated: ({ page, pageSize, q, category }) =>
     apiClient
       .get('/api/contacts-paginated', { params: { page, pageSize, q: q || undefined, category } })

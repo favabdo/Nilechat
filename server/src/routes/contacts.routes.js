@@ -18,6 +18,8 @@ router.get('/api/contacts/:id/conversations', asyncHandler(contactController.get
 router.patch('/api/contacts/:id', asyncHandler(contactController.updateContact));
 router.post('/api/contacts/:id/phones', asyncHandler(contactController.addPhone));
 router.patch('/api/contacts/:id/phones', asyncHandler(contactController.updatePhoneLabel));
+router.patch('/api/contacts/:id/vip', requireAdmin, asyncHandler(contactController.updateCustomerVip));
+router.patch('/api/contacts/:id/inactive', requireAdmin, asyncHandler(contactController.updateCustomerInactive));
 router.post('/api/contacts/:id/phones/unlink', asyncHandler(contactController.unlinkPhone));
 router.post('/api/conversations/:id/contact', asyncHandler(contactController.linkConversationContact));
 

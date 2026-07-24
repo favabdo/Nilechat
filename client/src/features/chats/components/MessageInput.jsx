@@ -200,7 +200,7 @@ export default function MessageInput({
       {resolved && (
         <div className="resolved-banner show">
           <Lock size={14} />
-          <span>المحادثة دي متقفلة (Resolved) — لازم تعمل Reopen عشان تقدر تبعت رسالة</span>
+          <span>المحادثة دي متقفلة (Resolved) —    مش هتقدر تبعت رسالة تانيه</span>
         </div>
       )}
       {!resolved && cannedResponses.length > 0 && (

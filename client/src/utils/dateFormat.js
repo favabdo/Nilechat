@@ -70,3 +70,28 @@ export function formatDurationDays(fromDate, toDate) {
   const months = Math.round(days / 30.44);
   return `${days} يوم (~${months} شهر)`;
 }
+
+// بتضيف شهور على تاريخ (بتاخد بالها من عدد أيام الشهر، زي 31 يناير + شهر = 28/29 فبراير)
+export function addMonthsToDateStr(startStr, monthsToAdd) {
+  const [y, m, d] = startStr.split('-').map(Number);
+  const base = new Date(y, m - 1, 1);
+  base.setMonth(base.getMonth() + monthsToAdd);
+  const daysInTargetMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  base.setDate(Math.min(d, daysInTargetMonth));
+  return base;
+}
+
+// بتضيف عدد أيام على تاريخ
+export function addDaysToDateStr(startStr, daysToAdd) {
+  const [y, m, d] = startStr.split('-').map(Number);
+  const base = new Date(y, m - 1, d);
+  base.setDate(base.getDate() + daysToAdd);
+  return base;
+}
+
+export function dateObjToInputValue(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}

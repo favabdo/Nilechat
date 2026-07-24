@@ -1,4 +1,4 @@
-import { UserRound, CircleSlash, Clock, AlertTriangle, ShieldCheck, Square, Trash2 } from 'lucide-react';
+import { UserRound, CircleSlash, Clock, AlertTriangle, ShieldCheck, OctagonPause, Trash2 } from 'lucide-react';
 import { formatSchedDate } from '../../../utils/dateFormat';
 import { customerDetailsApi } from '../services/customerDetails.service';
 import useToastStore from '../../../store/toastStore';
@@ -83,10 +83,10 @@ export default function MaintenanceContractCard({ contract, contactId, onChanged
         <div className="sched-task-actions">
           {contract.status !== 'stopped' && (
             <button className="sched-end-btn" onClick={handleStop}>
-              <Square size={13} /> إيقاف
+              <OctagonPause size={13} /> إيقاف العقد
             </button>
           )}
-          <button className="sched-end-btn" style={{ color: 'var(--danger)' }} onClick={handleDelete}>
+          <button className="sched-end-btn" style={{ background: 'var(--danger)', marginInlineStart: 8 }} onClick={handleDelete}>
             <Trash2 size={13} /> حذف
           </button>
         </div>

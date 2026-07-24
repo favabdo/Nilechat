@@ -813,3 +813,16 @@ input[type="date"].iw-input,input[type="time"].iw-input{min-width:0;max-width:10
     opacity:.55;pointer-events:none;
 }
 
+.mc-duration-toggle{display:flex;gap:6px;margin-bottom:8px}
+.mc-duration-btn{flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg);font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;transition:all .15s}
+.mc-duration-btn.active{border-color:var(--primary);background:rgba(108,92,231,0.12);color:var(--primary)}
+.mc-duration-unit-wrap{display:flex;gap:8px}
+.mc-duration-unit-wrap .iw-input{width:auto;flex:1}
+
+/* .tpl-save-btn/.tpl-cancel-btn الأصل موجودين في templates.css، بس بيتحملوا بس
+   لما صفحة Templates تتفتح. الكلاسين دول مستخدمين كمان في Contacts وChats
+   (Devices/AddPhone) وSettings، فبنكررهم هنا (نفس القيم بالظبط) عشان يفضلوا
+   شغالين في كل الصفحات مش بس بعد ما حد يزور Templates */
+.tpl-save-btn{padding:6px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.tpl-cancel-btn{padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+

@@ -414,6 +414,15 @@ async function ensureContactsHaveCustomerCardColumns() {
       -- اسم مدير العميل، بيتخزن جمب رقم تليفونه (manager_phone) كمعلومة مستقلة برضه
       ALTER TABLE [dbo].[NileChat_Contacts_byA] ADD manager_name NVARCHAR(200) NULL;
     END
+
+    IF NOT EXISTS (
+      SELECT * FROM sys.columns
+      WHERE object_id = OBJECT_ID('dbo.NileChat_Contacts_byA') AND name = 'created_by'
+    )
+    BEGIN
+      -- الإيجنت (من جدول NileChat_Users_byA) اللي أنشأ كارت العميل ده
+      ALTER TABLE [dbo].[NileChat_Contacts_byA] ADD created_by BIGINT NULL;
+    END
   `);
 }
 
@@ -432,6 +441,31 @@ async function ensureContactsHaveStatusColumn() {
     )
     BEGIN
       ALTER TABLE [dbo].[NileChat_Contacts_byA] ADD status TINYINT NOT NULL DEFAULT 1;
+    END
+  `);
+}
+
+// عمودين مستقلين لتصنيف العميل (VIP / غير نشط)، مالهمش أي علاقة بعمود status
+// (اللي بيتحكم في المسح الناعم soft-delete). كل عمود منفصل تمامًا عن التاني:
+// is_vip = 1 يعني عميل VIP و0 يعني لأ، is_inactive = 1 يعني غير نشط و0 يعني
+// نشط. بكده عميل ممكن يبقى VIP وغير نشط في نفس الوقت
+async function ensureContactsHaveVipInactiveColumns() {
+  const pool = await getPool();
+  await pool.request().query(`
+    IF NOT EXISTS (
+      SELECT * FROM sys.columns
+      WHERE object_id = OBJECT_ID('dbo.NileChat_Contacts_byA') AND name = 'is_vip'
+    )
+    BEGIN
+      ALTER TABLE [dbo].[NileChat_Contacts_byA] ADD is_vip TINYINT NOT NULL DEFAULT 0;
+    END
+
+    IF NOT EXISTS (
+      SELECT * FROM sys.columns
+      WHERE object_id = OBJECT_ID('dbo.NileChat_Contacts_byA') AND name = 'is_inactive'
+    )
+    BEGIN
+      ALTER TABLE [dbo].[NileChat_Contacts_byA] ADD is_inactive TINYINT NOT NULL DEFAULT 0;
     END
   `);
 }
@@ -1151,6 +1185,7 @@ async function ensureSchema() {
   await ensureMaintenanceContractsTableExists();
   await ensureContactsHaveCustomerCardColumns();
   await ensureContactsHaveStatusColumn();
+  await ensureContactsHaveVipInactiveColumns();
   await ensureContactPhonesTableExists();
   await ensureContactPhonesHaveLabelColumn();
   await ensureContactModulesTableExists();
@@ -1195,6 +1230,7 @@ module.exports = {
   ensureContactsTableExists,
   ensureContactsHaveCustomerCardColumns,
   ensureContactsHaveStatusColumn,
+  ensureContactsHaveVipInactiveColumns,
   ensureContactPhonesTableExists,
   ensureContactPhonesHaveLabelColumn,
   ensureContactBranchesTableExists,

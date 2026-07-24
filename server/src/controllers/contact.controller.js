@@ -127,6 +127,42 @@ async function updatePhoneLabel(req, res) {
 
   notificationService.logActivity(req, `عدّل ليبل رقم تليفون العميل "${contact.name}"`, contact.id);
 }
+
+// بيغيّر عمود is_vip بس (0 أو 1) — عمود مستقل تمامًا عن is_inactive
+async function updateCustomerVip(req, res) {
+  const { is_vip } = req.body || {};
+  if (is_vip !== 0 && is_vip !== 1) {
+    return res.status(400).json({ error: 'is_vip لازم يكون 0 أو 1' });
+  }
+
+  const contact = await contactRepo.setContactVip(req.params.id, is_vip);
+  if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
+
+  const io = req.app.get('io');
+  if (io) io.emit('contact_updated', contact);
+
+  res.json({ ok: true, contact });
+
+  notificationService.logActivity(req, `${is_vip === 1 ? 'حدد' : 'شال'} العميل "${contact.name}" كـ VIP`, contact.id);
+}
+
+// بيغيّر عمود is_inactive بس (0 أو 1) — عمود مستقل تمامًا عن is_vip
+async function updateCustomerInactive(req, res) {
+  const { is_inactive } = req.body || {};
+  if (is_inactive !== 0 && is_inactive !== 1) {
+    return res.status(400).json({ error: 'is_inactive لازم يكون 0 أو 1' });
+  }
+
+  const contact = await contactRepo.setContactInactive(req.params.id, is_inactive);
+  if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
+
+  const io = req.app.get('io');
+  if (io) io.emit('contact_updated', contact);
+
+  res.json({ ok: true, contact });
+
+  notificationService.logActivity(req, `حدد العميل "${contact.name}" كـ ${is_inactive === 1 ? 'غير نشط' : 'نشط'}`, contact.id);
+}
 // body: { mode: 'link', contactId } أو { mode: 'new', name }
 async function linkConversationContact(req, res) {
   const { mode, contactId, name } = req.body || {};
@@ -316,6 +352,8 @@ module.exports = {
   updateContact,
   addPhone,
   updatePhoneLabel,
+  updateCustomerVip,
+  updateCustomerInactive,
   linkConversationContact,
   unlinkPhone,
   createCustomerCard,
