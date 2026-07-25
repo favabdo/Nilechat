@@ -2,66 +2,69 @@ import { useEffect, useState } from 'react';
 import { Workflow, MessageCircle, Check, Trash2, CalendarX, Star } from 'lucide-react';
 import { agentsSettingsApi, teamsApi } from '../services/settings.service';
 import Modal from '../../../components/ui/Modal';
+import useTranslation from '../../../i18n/useTranslation';
 
 const WELCOME_SCHEDULE_DAY_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-const WELCOME_SCHEDULE_DAY_LABELS = {
-  sun: 'الأحد',
-  mon: 'الاثنين',
-  tue: 'الثلاثاء',
-  wed: 'الأربعاء',
-  thu: 'الخميس',
-  fri: 'الجمعة',
-  sat: 'السبت',
-};
 const DEFAULT_DAY = { enabled: false, start: '09:00', end: '17:00' };
 
-const RULE_META = {
-  auto_assign: {
-    title: 'Auto-assign new WhatsApp conversations',
-    icon: Workflow,
-    enableDesc: 'When a new conversation is created, assign it immediately',
-  },
-  welcome: {
-    title: 'Send welcome message',
-    icon: MessageCircle,
-    enableDesc: 'Send a fixed reply automatically to every new conversation',
-    messageLabel: 'Welcome message sent to the customer',
-    messageHint: 'This exact text is sent automatically as soon as a new conversation is opened.',
-    placeholder: 'شكراً لتواصلكم معنا! أحد ممثلي خدمة العملاء هيرد عليكم في أقرب وقت.',
-  },
-  csat: {
-    title: 'Send CSAT after resolution',
-    icon: Workflow,
-    enableDesc: 'Send a satisfaction survey right after a conversation is resolved',
-    messageLabel: 'CSAT message sent to the customer',
-    messageHint: 'This exact text is sent automatically the moment an agent resolves the conversation.',
-    placeholder: 'شكراً لتواصلكم معنا! برجاء تقييم تجربتكم اليوم من 1 لـ 5.',
-  },
-  keyword_routing: {
-    title: 'Route conversations by keyword',
-    icon: Workflow,
-    enableDesc: 'When a customer message matches any of the keywords, move the conversation to the selected team',
-  },
-  contract_expired: {
-    title: 'عقد الصيانة منتهي',
-    icon: CalendarX,
-    enableDesc:
-      'لما عقد صيانة عميل يعدّي تاريخ نهايته من غير تجديد، ابعتله الرسالة دي أوتوماتيك مرة واحدة بس لكل عقد (تفعيل/إيقاف الرد على كل رسالة تاني متاح تحت كخيار منفصل)',
-    messageLabel: 'الرسالة اللي هتتبعت للعميل',
-    messageHint:
-      'نفس النص ده بيتبعت مرة واحدة بس لكل عقد (الخيار فوق)، وكمان مع كل رسالة يبعتها العميل بعد كده لو فعّلت خيار "الرد على كل رسالة" تحت.',
-    placeholder: 'عزيزي العميل، عقد الصيانة الخاص بيك انتهى. للتجديد وضمان استمرار الخدمة، برجاء التواصل معانا 🙏',
-    repeatToggleLabel: 'الرد بنفس الرسالة على كل رسالة بعد كده',
-    repeatToggleDesc: 'لو مفعّل، هيتبعت نفس النص للعميل مع كل رسالة يبعتها بعد انتهاء العقد (مش مرة واحدة بس) — لحد ما العقد يتجدد أو توقف الخيار ده',
-  },
-  rating: {
-    title: 'تقييم بعد الحل (Post-Resolve Rating)',
-    icon: Star,
-    enableDesc: 'لما محادثة تتقفل (Resolve)، ابعت للعميل تقييم نجوم لحل المشكلة + تقييم نجوم لممثل الدعم + تعليق نصي اختياري',
-  },
-};
+function buildRuleMeta(t) {
+  return {
+    auto_assign: {
+      title: t('settings.ruleAutoAssignTitle'),
+      icon: Workflow,
+      enableDesc: t('settings.amAutoAssignEnableDesc'),
+    },
+    welcome: {
+      title: t('settings.ruleWelcomeTitle'),
+      icon: MessageCircle,
+      enableDesc: t('settings.amWelcomeEnableDesc'),
+      messageLabel: t('settings.amWelcomeMessageLabel'),
+      messageHint: t('settings.amWelcomeMessageHint'),
+      placeholder: t('settings.amWelcomePlaceholder'),
+    },
+    csat: {
+      title: t('settings.ruleCsatTitle'),
+      icon: Workflow,
+      enableDesc: t('settings.amCsatEnableDesc'),
+      messageLabel: t('settings.amCsatMessageLabel'),
+      messageHint: t('settings.amCsatMessageHint'),
+      placeholder: t('settings.amCsatPlaceholder'),
+    },
+    keyword_routing: {
+      title: t('settings.ruleKeywordTitle'),
+      icon: Workflow,
+      enableDesc: t('settings.amKeywordEnableDesc'),
+    },
+    contract_expired: {
+      title: t('settings.ruleContractExpiredTitle'),
+      icon: CalendarX,
+      enableDesc: t('settings.amContractExpiredEnableDesc'),
+      messageLabel: t('settings.amContractExpiredMessageLabel'),
+      messageHint: t('settings.amContractExpiredMessageHint'),
+      placeholder: t('settings.amContractExpiredPlaceholder'),
+      repeatToggleLabel: t('settings.amRepeatToggleLabel'),
+      repeatToggleDesc: t('settings.amRepeatToggleDesc'),
+    },
+    rating: {
+      title: t('settings.ruleRatingTitle'),
+      icon: Star,
+      enableDesc: t('settings.amRatingEnableDesc'),
+    },
+  };
+}
 
 export default function AutomationModal({ type, settings, onClose, onSaved }) {
+  const { t } = useTranslation();
+  const WELCOME_SCHEDULE_DAY_LABELS = {
+    sun: t('settings.weekdaySun'),
+    mon: t('settings.weekdayMon'),
+    tue: t('settings.weekdayTue'),
+    wed: t('settings.weekdayWed'),
+    thu: t('settings.weekdayThu'),
+    fri: t('settings.weekdayFri'),
+    sat: t('settings.weekdaySat'),
+  };
+  const RULE_META = buildRuleMeta(t);
   const meta = RULE_META[type];
   const s = settings || {};
 
@@ -152,34 +155,34 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
     const body = {};
 
     if (type === 'auto_assign') {
-      if (enabled && !agentId) return setError('لازم تختار الإيجنت اللي هيتعينله المحادثات الجديدة الأول');
+      if (enabled && !agentId) return setError(t('settings.agentRequiredError'));
       body.auto_assign_enabled = enabled;
       body.auto_assign_agent_id = agentId ? Number(agentId) : null;
     } else if (type === 'rating') {
       body.rating_enabled = enabled;
     } else if (type === 'keyword_routing') {
       const completeRules = rules.filter((r) => r.team_id && r.keywords.length);
-      if (enabled && !completeRules.length) return setError('لازم تضيف قاعدة واحدة كاملة على الأقل (تيم + كلمة مفتاحية)');
+      if (enabled && !completeRules.length) return setError(t('settings.keywordRuleRequiredError'));
       body.keyword_routing_enabled = enabled;
       body.keyword_routing_rules = completeRules;
     } else if (type === 'contract_expired') {
       const text = message.trim();
-      if ((enabled || repeatEnabled) && !text) return setError('لازم تكتب نص الرسالة الأول');
+      if ((enabled || repeatEnabled) && !text) return setError(t('settings.messageTextRequiredError'));
       body.contract_expired_enabled = enabled;
       body.contract_expired_message = text;
       body.contract_expired_repeat_enabled = repeatEnabled;
     } else {
       const text = message.trim();
-      if (enabled && !text) return setError('لازم تكتب نص الرسالة الأول');
+      if (enabled && !text) return setError(t('settings.messageTextRequiredError'));
       if (type === 'welcome') {
         body.welcome_enabled = enabled;
         body.welcome_message = text;
         body.welcome_schedule_enabled = useSchedule;
         if (useSchedule) {
           const offText = offHoursMessage.trim();
-          if (enabled && !offText) return setError('لازم تكتب رسالة "خارج أوقات العمل" الأول');
+          if (enabled && !offText) return setError(t('settings.offHoursMessageRequiredError'));
           const hasEnabledDay = WELCOME_SCHEDULE_DAY_ORDER.some((k) => days[k].enabled);
-          if (enabled && !hasEnabledDay) return setError('لازم تفعّل يوم واحد على الأقل في جدول أوقات العمل');
+          if (enabled && !hasEnabledDay) return setError(t('settings.scheduleDayRequiredError'));
           body.welcome_offhours_message = offText;
           body.welcome_schedule = { timezone: 'Africa/Cairo', days };
         }
@@ -193,7 +196,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
     try {
       await onSaved(body);
     } catch (err) {
-      setError(err.response?.data?.error || 'فشل الحفظ');
+      setError(err.response?.data?.error || t('settings.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -217,9 +220,9 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
 
       {type === 'auto_assign' && (
         <div style={{ marginTop: 8 }}>
-          <div className="resolve-cats-label">Assign new conversations to</div>
+          <div className="resolve-cats-label">{t('settings.assignNewConvTo')}</div>
           <select className="iw-input" value={agentId} onChange={(e) => setAgentId(e.target.value)}>
-            <option value="">Select an agent…</option>
+            <option value="">{t('settings.selectAgentPlaceholder')}</option>
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.display_name || a.email}
@@ -232,7 +235,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
       {(type === 'welcome' || type === 'csat' || type === 'contract_expired') && (
         <div style={{ marginTop: 8 }}>
           <div className="resolve-cats-label">
-            {useSchedule && type === 'welcome' ? 'رسالة الترحيب في أوقات العمل' : meta.messageLabel}
+            {useSchedule && type === 'welcome' ? t('settings.welcomeMessageBusinessHours') : meta.messageLabel}
           </div>
           <textarea
             className="resolve-notes"
@@ -243,7 +246,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
           />
           <div className="iw-form-hint" style={{ marginBottom: 12 }}>
             {useSchedule && type === 'welcome'
-              ? 'بتتبعت للعميل لو المحادثة الجديدة اتفتحت داخل الجدول المحدد تحت.'
+              ? t('settings.welcomeScheduleSentHint')
               : meta.messageHint}
           </div>
 
@@ -251,7 +254,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
             <>
               <div className="setting-row" style={{ border: 'none', padding: '6px 0' }}>
                 <div className="setting-label" style={{ fontSize: 12.5 }}>
-                  استخدام رسالتين حسب أوقات العمل
+                  {t('settings.useTwoScheduledMessages')}
                 </div>
                 <button className={`toggle${useSchedule ? ' on' : ''}`} onClick={() => setUseSchedule((v) => !v)}></button>
               </div>
@@ -291,7 +294,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                             value={days[key].start}
                             onChange={(e) => updateDay(key, { start: e.target.value })}
                           />
-                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>إلى</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('settings.toLabel')}</span>
                           <input
                             type="time"
                             className="iw-input"
@@ -303,10 +306,10 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                       </div>
                     ))}
                   </div>
-                  <div className="resolve-cats-label">رسالة خارج أوقات العمل</div>
+                  <div className="resolve-cats-label">{t('settings.offHoursMessageLabel')}</div>
                   <textarea
                     className="resolve-notes"
-                    placeholder="رسالة تتبعت لو العميل كتب خارج جدول أوقات العمل"
+                    placeholder={t('settings.offHoursMessagePlaceholder')}
                     value={offHoursMessage}
                     onChange={(e) => setOffHoursMessage(e.target.value)}
                   />
@@ -331,7 +334,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
         <div style={{ marginTop: 8 }}>
           {rules.length === 0 && (
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-              لسه مفيش قواعد مضافة — دوس "Add another team rule" عشان تبدأ
+              {t('settings.noRulesYetAddOne')}
             </div>
           )}
           {rules.map((rule, idx) => (
@@ -343,17 +346,17 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                   value={rule.team_id || ''}
                   onChange={(e) => setRuleTeam(idx, e.target.value)}
                 >
-                  <option value="">Select a team…</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
+                  <option value="">{t('settings.selectTeamPlaceholder')}</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
                     </option>
                   ))}
                 </select>
                 <button
                   className="st-icon-btn"
-                  title="مسح القاعدة دي"
-                  aria-label="مسح القاعدة دي"
+                  title={t('settings.deleteThisRule')}
+                  aria-label={t('settings.deleteThisRule')}
                   onClick={() => removeRule(idx)}
                 >
                   <Trash2 size={14} />
@@ -361,7 +364,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                 {rule.keywords.length === 0 ? (
-                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>لسه مفيش كلمات مضافة لقاعدة التيم دي</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{t('settings.noKeywordsYetForRule')}</div>
                 ) : (
                   rule.keywords.map((kw, kwIdx) => (
                     <span
@@ -393,7 +396,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
               <input
                 className="iw-input"
                 style={{ marginBottom: 0 }}
-                placeholder="اكتب كلمة واضغط Enter عشان تضيفها"
+                placeholder={t('settings.typeKeywordEnterHint')}
                 value={kwDraft[idx] || ''}
                 onChange={(e) => setKwDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
                 onKeyDown={(e) => {
@@ -406,17 +409,17 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
             </div>
           ))}
           <button className="resolve-cancel-btn" style={{ width: '100%' }} onClick={addRule}>
-            + Add another team rule
+            {t('settings.addAnotherTeamRule')}
           </button>
         </div>
       )}
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          إلغاء
+          {t('common.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={save}>
-          <Check size={16} /> {saving ? 'جارِ الحفظ...' : 'Save'}
+          <Check size={16} /> {saving ? t('settings.savingEllipsis') : t('common.save')}
         </button>
       </div>
       {error && (

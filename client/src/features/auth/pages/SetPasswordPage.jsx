@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import AnimatedBackground from '../../../components/shared/AnimatedBackground';
 import { getInviteInfo, acceptInvite } from '../services/auth.service';
+import useTranslation from '../../../i18n/useTranslation';
 import './SetPasswordPage.css';
 
 // نفس الـ 4 حالات اللي كانت في set-password.html: loading / invalid / form / success
 export default function SetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
   const [state, setState] = useState('loading'); // loading | invalid | form | success
-  const [invalidMessage, setInvalidMessage] = useState('اللينك ده مش صالح أو منتهي الصلاحية. اطلب من الأدمن يبعت لك دعوة جديدة.');
+  const [invalidMessage, setInvalidMessage] = useState('');
   const [email, setEmail] = useState('');
 
   const [newPassword, setNewPassword] = useState('');
@@ -21,7 +23,7 @@ export default function SetPasswordPage() {
   useEffect(() => {
     async function init() {
       if (!token) {
-        setInvalidMessage('مفيش رابط دعوة في العنوان. تأكد إنك دوست على اللينك اللي جالك بالإيميل كامل.');
+        setInvalidMessage(t('auth.noInviteToken'));
         setState('invalid');
         return;
       }
@@ -30,11 +32,12 @@ export default function SetPasswordPage() {
         setEmail(data.email);
         setState('form');
       } catch (err) {
-        setInvalidMessage(err.response?.data?.error || 'اللينك ده مش صالح أو منتهي الصلاحية.');
+        setInvalidMessage(err.response?.data?.error || t('auth.invalidLinkDefault'));
         setState('invalid');
       }
     }
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   async function handleSubmit(e) {
@@ -42,11 +45,11 @@ export default function SetPasswordPage() {
     setAcceptError('');
 
     if (newPassword.length < 6) {
-      setAcceptError('كلمة المرور لازم تكون 6 حروف على الأقل');
+      setAcceptError(t('auth.passwordMinLength'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setAcceptError('كلمتا السر مش متطابقتين');
+      setAcceptError(t('auth.passwordsDontMatch'));
       return;
     }
 
@@ -55,7 +58,7 @@ export default function SetPasswordPage() {
       await acceptInvite(token, newPassword);
       setState('success');
     } catch (err) {
-      setAcceptError(err.response?.data?.error || 'حصل خطأ، حاول تاني');
+      setAcceptError(err.response?.data?.error || t('common.somethingWentWrong'));
     } finally {
       setSubmitting(false);
     }
@@ -69,8 +72,8 @@ export default function SetPasswordPage() {
           {state === 'loading' && (
             <div id="loading-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
-              <h1>بنتحقق من لينك الدعوة...</h1>
-              <div className="subtitle">لحظة واحدة من فضلك</div>
+              <h1>{t('auth.checkingInviteLink')}</h1>
+              <div className="subtitle">{t('auth.oneMoment')}</div>
             </div>
           )}
 
@@ -78,12 +81,12 @@ export default function SetPasswordPage() {
             <div id="invalid-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
               <div className="state-icon bad">✕</div>
-              <h1>رابط الدعوة غير صحيح</h1>
+              <h1>{t('auth.invalidLinkTitle')}</h1>
               <div className="subtitle" id="invalid-message">
                 {invalidMessage}
               </div>
               <Link to="/" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '13.5px', textDecoration: 'none' }}>
-                الرجوع لصفحة تسجيل الدخول
+                {t('auth.backToLogin')}
               </Link>
             </div>
           )}
@@ -91,8 +94,8 @@ export default function SetPasswordPage() {
           {state === 'form' && (
             <div id="form-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
-              <h1>تفعيل الحساب</h1>
-              <div className="subtitle">اختار كلمة سر عشان تقدر تسجّل دخولك على لوحة تحكم NileChat</div>
+              <h1>{t('auth.activateAccountTitle')}</h1>
+              <div className="subtitle">{t('auth.activateAccountSubtitle')}</div>
               <div className="email-pill" id="invite-email">
                 {email}
               </div>
@@ -100,13 +103,13 @@ export default function SetPasswordPage() {
               <form id="accept-form" onSubmit={handleSubmit}>
                 <div className="field-wrap">
                   <label className="field-label" htmlFor="new-password">
-                    كلمة السر الجديدة
+                    {t('auth.newPassword')}
                   </label>
                   <input
                     type="password"
                     className="input"
                     id="new-password"
-                    placeholder="6 حروف على الأقل"
+                    placeholder={t('auth.minSixChars')}
                     required
                     minLength={6}
                     value={newPassword}
@@ -115,13 +118,13 @@ export default function SetPasswordPage() {
                 </div>
                 <div className="field-wrap">
                   <label className="field-label" htmlFor="confirm-password">
-                    تأكيد كلمة السر
+                    {t('auth.confirmPassword')}
                   </label>
                   <input
                     type="password"
                     className="input"
                     id="confirm-password"
-                    placeholder="اكتب كلمة السر تاني"
+                    placeholder={t('auth.retypePassword')}
                     required
                     minLength={6}
                     value={confirmPassword}
@@ -131,7 +134,7 @@ export default function SetPasswordPage() {
 
                 <button type="submit" className={`btn${submitting ? ' loading' : ''}`} id="accept-btn" disabled={submitting}>
                   <span className="spinner"></span>
-                  <span className="btn-text">تفعيل الحساب وتسجيل الدخول</span>
+                  <span className="btn-text">{t('auth.activateAndLogin')}</span>
                 </button>
 
                 <div className="msg error" id="accept-error">
@@ -145,10 +148,10 @@ export default function SetPasswordPage() {
             <div id="success-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
               <div className="state-icon ok">✓</div>
-              <h1>تم تفعيل الحساب بنجاح</h1>
-              <div className="subtitle">دلوقتي تقدر تسجّل دخولك بإيميلك وكلمة السر الجديدة</div>
+              <h1>{t('auth.accountActivatedTitle')}</h1>
+              <div className="subtitle">{t('auth.accountActivatedSubtitle')}</div>
               <Link to="/" className="btn" style={{ textDecoration: 'none' }}>
-                تسجيل الدخول
+                {t('auth.loginButton')}
               </Link>
             </div>
           )}

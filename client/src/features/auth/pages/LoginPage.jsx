@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Languages } from 'lucide-react';
 import AnimatedBackground from '../../../components/shared/AnimatedBackground';
 import useAuthStore from '../../../store/authStore';
+import useTranslation from '../../../i18n/useTranslation';
 import { login } from '../services/auth.service';
 import './LoginPage.css';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { token, user, setAuth } = useAuthStore();
+  const { t, lang, toggleLang } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +33,7 @@ export default function LoginPage() {
       setAuth(data.token, data.user);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'مش قادر نوصل للسيرفر، تأكد من الإنترنت وحاول تاني');
+      setError(err.response?.data?.error || t('auth.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -39,16 +42,40 @@ export default function LoginPage() {
   return (
     <>
       <AnimatedBackground />
+      <button
+        type="button"
+        onClick={toggleLang}
+        title={lang === 'ar' ? t('language.toggleToEnglish') : t('language.toggleToArabic')}
+        style={{
+          position: 'fixed',
+          top: 18,
+          insetInlineEnd: 18,
+          zIndex: 5,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '8px 12px',
+          borderRadius: 10,
+          border: '1px solid var(--border)',
+          background: 'var(--card)',
+          color: 'var(--text)',
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: 'pointer',
+        }}
+      >
+        <Languages size={16} /> {t('language.short')}
+      </button>
       <div className="page-center">
         <div className="login-card">
           <img src="/assets/logo.png" alt="NileChat" className="login-logo" />
-          <h1>تسجيل الدخول</h1>
-          <div className="subtitle">أهلاً بيك في لوحة تحكم NileChat، سجّل دخولك بإيميلك وكلمة السر</div>
+          <h1>{t('auth.loginTitle')}</h1>
+          <div className="subtitle">{t('auth.loginSubtitle')}</div>
 
           <form id="login-form" autoComplete="on" onSubmit={handleSubmit}>
             <div className="field-wrap">
               <label className="field-label" htmlFor="login-email">
-                Email
+                {t('auth.email')}
               </label>
               <input
                 type="email"
@@ -63,7 +90,7 @@ export default function LoginPage() {
             </div>
             <div className="field-wrap">
               <label className="field-label" htmlFor="login-password">
-                Password
+                {t('auth.password')}
               </label>
               <input
                 type="password"
@@ -79,7 +106,7 @@ export default function LoginPage() {
 
             <button type="submit" className={`login-btn${loading ? ' loading' : ''}`} id="login-btn" disabled={loading}>
               <span className="spinner"></span>
-              <span className="btn-text">تسجيل الدخول</span>
+              <span className="btn-text">{loading ? t('auth.loggingIn') : t('auth.loginButton')}</span>
             </button>
 
             <div className="login-error" id="login-error">

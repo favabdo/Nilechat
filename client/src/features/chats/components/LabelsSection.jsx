@@ -2,9 +2,11 @@ import { X } from 'lucide-react';
 import useToastStore from '../../../store/toastStore';
 import { conversationsApi, labelsApi } from '../services/chats.service';
 import { hexToRgba } from '../utils/mappers';
+import useTranslation from '../../../i18n/useTranslation';
 import TagPopover from './TagPopover';
 
 export default function LabelsSection({ conversation, allLabels, onLabelsChange, onRefreshAllLabels }) {
+  const { t } = useTranslation();
   const showToast = useToastStore((s) => s.showToast);
   const appliedIds = (conversation.labels || []).map((l) => Number(l.id));
 
@@ -31,7 +33,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
       }
     } catch (err) {
       console.error('[API] selectLabel error:', err);
-      showToast(err.response?.data?.error || 'حصل خطأ', 'error');
+      showToast(err.response?.data?.error || t('chats.genericError'), 'error');
       onLabelsChange(previous);
     }
   }
@@ -42,31 +44,31 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
       onLabelsChange(data.labels);
     } catch (err) {
       console.error('[API] removeLabel error:', err);
-      showToast(err.response?.data?.error || 'حصل خطأ', 'error');
+      showToast(err.response?.data?.error || t('chats.genericError'), 'error');
     }
   }
 
   async function createLabel({ name, color }) {
     try {
       const data = await labelsApi.create({ name, color });
-      showToast('تم إنشاء الليبل', 'success');
+      showToast(t('chats.labelCreated'), 'success');
       onRefreshAllLabels();
       return data;
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل إنشاء الليبل', 'error');
+      showToast(err.response?.data?.error || t('chats.labelCreateFailed'), 'error');
     }
   }
 
   return (
     <div className="cp-section" id="cp-section-label">
       <div className="cp-section-header">
-        <div className="cp-section-title">Label</div>
+        <div className="cp-section-title">{t('chats.labelSectionTitle')}</div>
       </div>
       <div className="cp-section-body">
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
           <div className="conv-label-list">
             {!conversation.labels || conversation.labels.length === 0 ? (
-              <span className="conv-label-empty">No labels yet</span>
+              <span className="conv-label-empty">{t('chats.noLabelsYet')}</span>
             ) : (
               conversation.labels.map((l) => (
                 <span
@@ -76,7 +78,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
                 >
                   <span className="conv-label-dot" style={{ background: l.color || '#6C5CE7' }}></span>
                   {l.name}
-                  <button className="conv-label-remove" title="Remove" aria-label="Remove" onClick={() => removeLabel(l.id)}>
+                  <button className="conv-label-remove" title={t('chats.remove')} aria-label={t('chats.remove')} onClick={() => removeLabel(l.id)}>
                     <X size={9} />
                   </button>
                 </span>
@@ -87,7 +89,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
             items={allLabels}
             appliedIds={appliedIds}
             onSelect={selectLabel}
-            emptyText="No labels yet — create one below"
+            emptyText={t('chats.noLabelsYetCreate')}
             allowCreate
             onCreate={createLabel}
           />

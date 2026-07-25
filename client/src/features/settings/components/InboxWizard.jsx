@@ -17,16 +17,14 @@ import { iconKeyToComponent } from '../../../utils/iconMap';
 import { inboxesApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import { roleLabel } from '../../../utils/roles';
+import useTranslation from '../../../i18n/useTranslation';
 
 const IW_PHONE_REGEX = /^\+[1-9]\d{6,14}$/;
-const STEPS = [
-  { n: 1, label: 'Choose Channel' },
-  { n: 2, label: 'Create Inbox' },
-  { n: 3, label: 'Add Agents' },
-  { n: 4, label: 'Voilà!' },
-];
+const STEP_LABEL_KEYS = ['settings.iwStepChooseChannel', 'settings.iwStepCreateInbox', 'settings.iwStepAddAgents', 'settings.iwStepDone'];
 
 export default function InboxWizard({ onClose, onCreated }) {
+  const { t, lang } = useTranslation();
+  const STEPS = STEP_LABEL_KEYS.map((k, i) => ({ n: i + 1, label: t(k) }));
   const showToast = useToastStore((s) => s.showToast);
   const [step, setStep] = useState(1);
 
@@ -72,7 +70,7 @@ export default function InboxWizard({ onClose, onCreated }) {
 
   function selectChannel(c) {
     if (!c.available) {
-      showToast(`قناة ${c.name} قريبًا — دلوقتي واتساب بس هو الشغال فعليًا`, 'info');
+      showToast(t('settings.channelComingSoonToast', { channel: c.name }), 'info');
       return;
     }
     setSelectedChannel(c.key);
@@ -85,14 +83,14 @@ export default function InboxWizard({ onClose, onCreated }) {
 
   async function authenticate() {
     if (!phoneNumber || !phoneNumberId || !accessToken) {
-      showToast('لازم تملأ الرقم و Phone Number ID و API key التلاتة الأول', 'error');
+      showToast(t('settings.fillAllAuthFields'), 'error');
       return;
     }
     if (!IW_PHONE_REGEX.test(phoneNumber)) {
-      showToast('رقم التليفون لازم يبدأ بعلامة + وميكونش فيه مسافات', 'error');
+      showToast(t('settings.phoneMustStartPlus'), 'error');
       return;
     }
-    setAuthStatus({ state: 'pending', text: 'جارِ التحقق من تطابق البيانات مع ميتا...' });
+    setAuthStatus({ state: 'pending', text: t('settings.verifyingWithMeta') });
     try {
       const data = await inboxesApi.authenticateWhatsapp({ phoneNumber, phoneNumberId, accessToken });
       setAuthenticated({
@@ -104,11 +102,11 @@ export default function InboxWizard({ onClose, onCreated }) {
       });
       setAuthStatus({
         state: 'ok',
-        text: `اتأكدنا إن الرقم متطابق: ${data.verifiedName || data.displayPhoneNumber || 'الحساب شغال'}`,
+        text: t('settings.verifiedMatch', { name: data.verifiedName || data.displayPhoneNumber || t('settings.accountWorking') }),
       });
     } catch (err) {
       setAuthenticated(null);
-      setAuthStatus({ state: 'err', text: err.response?.data?.error || 'فشل التحقق' });
+      setAuthStatus({ state: 'err', text: err.response?.data?.error || t('settings.verificationFailed') });
     }
   }
 
@@ -139,10 +137,10 @@ export default function InboxWizard({ onClose, onCreated }) {
           accessToken: authenticated.accessToken,
         });
         setCreatedInbox(data.inbox);
-        showToast('تم إنشاء الـ Inbox بنجاح ✅', 'success');
+        showToast(t('settings.inboxCreatedSuccess'), 'success');
         setStep(3);
       } catch (err) {
-        showToast(err.response?.data?.error || 'فشل إنشاء الـ Inbox', 'error');
+        showToast(err.response?.data?.error || t('settings.inboxCreateFailed'), 'error');
       } finally {
         setCreating(false);
       }
@@ -153,7 +151,7 @@ export default function InboxWizard({ onClose, onCreated }) {
       try {
         await inboxesApi.setAgents(createdInbox.id, Array.from(selectedAgentIds).map(Number));
       } catch (err) {
-        showToast(err.response?.data?.error || 'فشل إضافة الموظفين', 'error');
+        showToast(err.response?.data?.error || t('settings.addAgentsFailed'), 'error');
       } finally {
         setSavingAgents(false);
         setStep(4);
@@ -176,7 +174,7 @@ export default function InboxWizard({ onClose, onCreated }) {
     <div className="iw-overlay show" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="iw-modal" onClick={(e) => e.stopPropagation()}>
         <div className="iw-head">
-          <div className="iw-head-title">Add Inbox</div>
+          <div className="iw-head-title">{t('settings.addInboxTitle')}</div>
           <button className="iw-close-btn" onClick={onClose}>
             <X size={16} />
           </button>
@@ -195,7 +193,7 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 1 && (
             <div className="iw-panel active">
               {channels.length === 0 ? (
-                <div className="iw-empty">جارِ تحميل القنوات...</div>
+                <div className="iw-empty">{t('settings.loadingChannels')}</div>
               ) : (
                 <>
                   {Object.keys(groupedChannels).map((groupName) => (
@@ -211,7 +209,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                               onClick={() => selectChannel(c)}
                             >
                               <span className={`iw-channel-badge${c.available ? '' : ' soon'}`}>
-                                {c.available ? 'شغالة الآن' : 'قريبًا'}
+                                {c.available ? t('settings.availableNow') : t('settings.comingSoon')}
                               </span>
                               <div className="iw-channel-icon" style={{ background: c.color }}>
                                 <ChIcon size={18} />
@@ -227,8 +225,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                   <div className="iw-protocol-note">
                     <Zap size={16} />
                     <div>
-                      <b>WhatsApp Cloud API</b> بتستخدم بروتوكول Webhook (Push) الرسمي من ميتا مباشرة، وده أسرع طريقة ممكنة
-                      للرسائل اللحظية.
+                      <b>WhatsApp Cloud API</b> {t('settings.whatsappProtocolNote')}
                     </div>
                   </div>
                 </>
@@ -239,25 +236,25 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 2 && (
             <div className="iw-panel active">
               <div className="iw-form-row">
-                <div className="iw-form-label">API Provider</div>
+                <div className="iw-form-label">{t('settings.apiProvider')}</div>
                 <select className="iw-input" defaultValue="whatsapp_cloud">
                   <option value="whatsapp_cloud">WhatsApp Cloud API (Meta)</option>
-                  <option disabled>360Dialog — قريبًا</option>
-                  <option disabled>Baileys (Unofficial) — قريبًا</option>
+                  <option disabled>360Dialog {t('settings.comingSoonSuffix')}</option>
+                  <option disabled>Baileys (Unofficial) {t('settings.comingSoonSuffix')}</option>
                 </select>
               </div>
               <div className="iw-form-row">
-                <div className="iw-form-label">Inbox Name</div>
+                <div className="iw-form-label">{t('settings.inboxNameField')}</div>
                 <input
                   type="text"
                   className="iw-input"
-                  placeholder="مثال: واتساب الدعم الفني"
+                  placeholder={t('settings.inboxNamePlaceholder')}
                   value={inboxName}
                   onChange={(e) => setInboxName(e.target.value)}
                 />
               </div>
               <div className="iw-form-row">
-                <div className="iw-form-label">Phone number</div>
+                <div className="iw-form-label">{t('settings.phoneNumberField')}</div>
                 <input
                   type="text"
                   className="iw-input"
@@ -269,17 +266,17 @@ export default function InboxWizard({ onClose, onCreated }) {
                   }}
                 />
                 <div className="iw-form-hint" style={{ color: phoneValid ? 'var(--text-secondary)' : 'var(--danger)' }}>
-                  لازم يبدأ بعلامة <b>+</b> وميكونش فيه أي مسافات (مثال: +201001234567).
+                  {t('settings.phoneNumberHint')}
                 </div>
               </div>
               <div className="iw-form-row">
                 <div className="iw-form-label">
-                  <Hash size={13} /> Phone number ID
+                  <Hash size={13} /> {t('settings.phoneNumberIdField')}
                 </div>
                 <input
                   type="text"
                   className="iw-input"
-                  placeholder="من Meta App → WhatsApp → API Setup"
+                  placeholder={t('settings.phoneNumberIdPlaceholder')}
                   value={phoneNumberId}
                   onChange={(e) => {
                     setPhoneNumberId(e.target.value);
@@ -289,7 +286,7 @@ export default function InboxWizard({ onClose, onCreated }) {
               </div>
               <div className="iw-form-row">
                 <div className="iw-form-label">
-                  <Key size={13} /> API key
+                  <Key size={13} /> {t('settings.apiKeyField')}
                 </div>
                 <input
                   type="password"
@@ -302,12 +299,12 @@ export default function InboxWizard({ onClose, onCreated }) {
                   }}
                 />
                 <div className="iw-form-hint">
-                  هنتأكد من ميتا إن الرقم و الـ Phone Number ID والـ API key التلاتة دول بتوع بعض فعلاً قبل ما ننشئ الـ Inbox.
+                  {t('settings.apiKeyHint')}
                 </div>
               </div>
               <div className="iw-verify-row">
                 <button className="iw-btn iw-btn-primary" style={{ flexShrink: 0 }} onClick={authenticate}>
-                  <ShieldCheck size={14} /> Authenticate
+                  <ShieldCheck size={14} /> {t('settings.authenticateBtn')}
                 </button>
                 {authStatus && (
                   <div className={`iw-verify-status ${authStatus.state}`}>
@@ -323,13 +320,13 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 3 && (
             <div className="iw-panel active">
               <div className="iw-form-label" style={{ marginBottom: 12 }}>
-                اختار الموظفين اللي هيشتغلوا على الـ Inbox ده
+                {t('settings.chooseAgentsForInbox')}
               </div>
               <div className="iw-agent-list">
                 {agentsLoading ? (
-                  <div className="iw-empty">جارِ تحميل الموظفين...</div>
+                  <div className="iw-empty">{t('settings.loadingAgents')}</div>
                 ) : agents.length === 0 ? (
-                  <div className="iw-empty">مفيش موظفين متاحين — ضيف موظف من صفحة Agents الأول</div>
+                  <div className="iw-empty">{t('settings.noAgentsAvailable')}</div>
                 ) : (
                   agents.map((a) => {
                     const isSelected = selectedAgentIds.has(String(a.id));
@@ -341,7 +338,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                       >
                         <div className="iw-agent-check">{isSelected && <Check size={12} />}</div>
                         <div className="iw-agent-name">{a.display_name || a.email}</div>
-                        <div className="iw-agent-role">{roleLabel(a.role)}</div>
+                        <div className="iw-agent-role">{roleLabel(a.role, lang)}</div>
                       </div>
                     );
                   })
@@ -356,10 +353,9 @@ export default function InboxWizard({ onClose, onCreated }) {
                 <div className="iw-success-icon">
                   <PartyPopper size={34} />
                 </div>
-                <div className="iw-success-title">Voilà! You are all set to go!</div>
+                <div className="iw-success-title">{t('settings.allSetTitle')}</div>
                 <div className="iw-success-desc">
-                  الـ Inbox جاهز فعليًا ومتربط بحساب واتساب الحقيقي بتاعك — أي رسالة توصل على الرقم ده هتظهر لايف في المحادثات
-                  فورًا.
+                  {t('settings.inboxReadyDesc')}
                 </div>
                 {createdInbox && (
                   <div className="iw-success-card">
@@ -368,10 +364,10 @@ export default function InboxWizard({ onClose, onCreated }) {
                       <b>{createdInbox.name}</b>
                     </div>
                     <div>
-                      الرقم:{' '}
+                      {t('settings.theNumberLabel')}{' '}
                       {createdInbox.phone_number || createdInbox.display_phone_number || createdInbox.phone_number_id || '—'}
                     </div>
-                    <div>الموظفين المضافين: {selectedAgentIds.size}</div>
+                    <div>{t('settings.agentsAddedLabel')} {selectedAgentIds.size}</div>
                   </div>
                 )}
               </div>
@@ -385,7 +381,7 @@ export default function InboxWizard({ onClose, onCreated }) {
             style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
             onClick={() => setStep((s) => Math.max(1, s - 1))}
           >
-            <ArrowRight size={14} /> رجوع
+            <ArrowRight size={14} /> {t('settings.backBtn')}
           </button>
           <button
             className="iw-btn iw-btn-primary"
@@ -393,14 +389,14 @@ export default function InboxWizard({ onClose, onCreated }) {
             onClick={goNext}
           >
             {step === 2 && creating
-              ? 'جارِ الإنشاء...'
+              ? t('settings.creatingEllipsis')
               : step === 3 && savingAgents
-                ? 'جارِ الحفظ...'
+                ? t('settings.savingEllipsis')
                 : step === 3
-                  ? 'إضافة الموظفين والمتابعة'
+                  ? t('settings.addAgentsAndContinue')
                   : step === 4
-                    ? 'تمام، يلا بينا'
-                    : 'التالي'}
+                    ? t('settings.doneLetsGo')
+                    : t('settings.nextBtn')}
           </button>
         </div>
       </div>

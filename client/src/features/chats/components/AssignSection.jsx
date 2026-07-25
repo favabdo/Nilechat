@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { UserCheck, ChevronDown, Search } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import useToastStore from '../../../store/toastStore';
+import useTranslation from '../../../i18n/useTranslation';
 import { conversationsApi } from '../services/chats.service';
 
 export default function AssignSection({ conversation, agents, currentAgentName, onAssigned }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const showToast = useToastStore((s) => s.showToast);
@@ -20,10 +22,10 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
         rawStatus: data.conversation?.status || 'assigned',
         status: (data.conversation?.status || 'assigned') === 'closed' ? 'resolved' : 'open',
       });
-      showToast('Assigned to me', 'success');
+      showToast(t('chats.assignedToMeToast'), 'success');
     } catch (err) {
       console.error('[API] assignToMe error:', err);
-      showToast('فشل استلام المحادثة', 'error');
+      showToast(t('chats.assignToMeFailed'), 'error');
     }
   }
 
@@ -36,19 +38,19 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
         rawStatus: data.conversation?.status || 'assigned',
         status: (data.conversation?.status || 'assigned') === 'closed' ? 'resolved' : 'open',
       });
-      showToast(`تم تعيين المحادثة لـ ${agent.name}`, 'success');
+      showToast(t('chats.assignAgentSuccess', { agent: agent.name }), 'success');
     } catch (err) {
       console.error('[API] assignAgent error:', err);
-      showToast(err.response?.data?.error || 'فشل تعيين الموظف', 'error');
+      showToast(err.response?.data?.error || t('chats.assignAgentFailed'), 'error');
     }
   }
 
   return (
     <div className="cp-section">
-      <div className="cp-section-title">Assign to Agent</div>
+      <div className="cp-section-title">{t('chats.assignToAgentTitle')}</div>
       <button className={`assign-me-btn${assignedToMe ? ' assigned' : ''}`} onClick={assignToMe}>
         <UserCheck size={16} />
-        <span>{assignedToMe ? 'Assigned to Me' : 'Assign to Me'}</span>
+        <span>{assignedToMe ? t('chats.assignedToMe') : t('chats.assignToMe')}</span>
       </button>
       <div className="agent-select-wrap">
         <button
@@ -58,7 +60,7 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
             setQuery('');
           }}
         >
-          <span>{conversation.assignedTo || 'Unassigned'}</span>
+          <span>{conversation.assignedTo || t('chats.unassigned')}</span>
           <ChevronDown size={16} color="var(--text-secondary)" />
         </button>
         <div className={`agent-dropdown${open ? ' open' : ''}`}>
@@ -67,7 +69,7 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
             <input
               type="text"
               className="agent-dropdown-search"
-              placeholder="اكتب اسم الإيجنت..."
+              placeholder={t('chats.agentSearchPlaceholder')}
               autoComplete="off"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -75,7 +77,7 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
           </div>
           <div className="agent-dropdown-list">
             {filteredAgents.length === 0 ? (
-              <div className="agent-dropdown-empty">لا يوجد إيجنتس مطابقين</div>
+              <div className="agent-dropdown-empty">{t('chats.noMatchingAgents')}</div>
             ) : (
               filteredAgents.map((a) => (
                 <div

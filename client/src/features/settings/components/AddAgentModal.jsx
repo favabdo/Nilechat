@@ -3,8 +3,10 @@ import { UserPlus, Send } from 'lucide-react';
 import { agentsSettingsApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import Modal from '../../../components/ui/Modal';
+import useTranslation from '../../../i18n/useTranslation';
 
 export default function AddAgentModal({ onClose, onAdded }) {
+  const { t } = useTranslation();
   const showToast = useToastStore((s) => s.showToast);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -13,7 +15,7 @@ export default function AddAgentModal({ onClose, onAdded }) {
 
   async function submit() {
     const trimmedEmail = email.trim();
-    if (!trimmedEmail) return showToast('اكتب إيميل الإيجنت', 'error');
+    if (!trimmedEmail) return showToast(t('settings.agentEmailRequired'), 'error');
 
     setSaving(true);
     try {
@@ -26,14 +28,14 @@ export default function AddAgentModal({ onClose, onAdded }) {
         }
       }
       if (data.email_sent) {
-        showToast('تم إرسال دعوة على إيميل الإيجنت بنجاح', 'success');
+        showToast(t('settings.inviteEmailSentSuccess'), 'success');
       } else {
-        showToast('تم إضافة الإيجنت، لكن الإيميل مبعتش (تحقق من إعدادات Resend) — انسخ اللينك جنب الإيجنت في الجدول', 'error');
+        showToast(t('settings.inviteEmailFailedButAdded'), 'error');
       }
       onAdded(data);
     } catch (err) {
       console.error('[API] submitAddAgent error:', err);
-      showToast(err.response?.data?.error || 'فشل إضافة الإيجنت', 'error');
+      showToast(err.response?.data?.error || t('settings.addAgentFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -45,21 +47,21 @@ export default function AddAgentModal({ onClose, onAdded }) {
         <div className="resolve-modal-icon" style={{ background: 'rgba(108,92,231,0.12)', color: 'var(--primary)' }}>
           <UserPlus size={22} />
         </div>
-        <div className="resolve-modal-title">Add Agent</div>
+        <div className="resolve-modal-title">{t('settings.addAgentTitle')}</div>
       </div>
-      <div className="resolve-modal-sub">هنبعت له إيميل فيه لينك يسجل بيه ويحدد كلمة السر بنفسه</div>
+      <div className="resolve-modal-sub">{t('settings.addAgentSub')}</div>
 
-      <div className="resolve-cats-label">الاسم (اختياري)</div>
+      <div className="resolve-cats-label">{t('settings.nameOptional')}</div>
       <input
         type="text"
         className="iw-input"
-        placeholder="اسم العرض"
+        placeholder={t('settings.displayNamePlaceholder')}
         style={{ marginBottom: 14 }}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
 
-      <div className="resolve-cats-label">Email</div>
+      <div className="resolve-cats-label">{t('settings.email')}</div>
       <input
         type="email"
         className="iw-input"
@@ -69,19 +71,19 @@ export default function AddAgentModal({ onClose, onAdded }) {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <div className="resolve-cats-label">Role</div>
+      <div className="resolve-cats-label">{t('settings.role')}</div>
       <select className="iw-input" style={{ marginBottom: 6 }} value={role} onChange={(e) => setRole(e.target.value)}>
-        <option value="2">Agent</option>
-        <option value="1">Admin</option>
-        <option value="0">Owner (Super Admin)</option>
+        <option value="2">{t('settings.roleAgent')}</option>
+        <option value="1">{t('settings.roleAdmin')}</option>
+        <option value="0">{t('settings.roleOwner')}</option>
       </select>
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          إلغاء
+          {t('common.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={submit}>
-          <Send size={16} /> {saving ? 'جارِ الإرسال...' : 'إرسال الدعوة'}
+          <Send size={16} /> {saving ? t('settings.sendingEllipsis') : t('settings.sendInvite')}
         </button>
       </div>
     </Modal>

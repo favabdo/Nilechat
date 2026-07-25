@@ -2,15 +2,20 @@ import { useEffect, useState } from 'react';
 import { companyApi } from '../services/settings.service';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
+import useTranslation from '../../../i18n/useTranslation';
 
-function autoResolveLabel(days) {
-  if (!days) return 'Disabled';
-  return `${days} day${Number(days) === 1 ? '' : 's'}`;
+function autoResolveLabel(days, t, lang) {
+  if (!days) return t('settings.disabled');
+  return lang === 'ar' ? `${days} يوم` : `${days} day${Number(days) === 1 ? '' : 's'}`;
+}
+function dayOptionLabel(d, lang) {
+  return lang === 'ar' ? `${d} يوم` : `${d} day${d === 1 ? '' : 's'}`;
 }
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
 export default function GeneralSection() {
+  const { t, lang } = useTranslation();
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
   const [settings, setSettings] = useState(null);
@@ -42,7 +47,7 @@ export default function GeneralSection() {
   async function save() {
     const trimmed = name.trim();
     if (!trimmed || trimmed.length < 2) {
-      showToast('اسم الحساب لازم يكون حرفين على الأقل', 'error');
+      showToast(t('settings.accountNameMinLength'), 'error');
       return;
     }
     try {
@@ -52,10 +57,10 @@ export default function GeneralSection() {
       });
       setSettings(data);
       setEditing(false);
-      showToast('تم تحديث إعدادات الحساب بنجاح', 'success');
+      showToast(t('settings.accountSettingsUpdated'), 'success');
     } catch (err) {
       console.error('[API] saveAccountSettings error:', err);
-      showToast(err.response?.data?.error || 'فشل الحفظ', 'error');
+      showToast(err.response?.data?.error || t('settings.saveFailed'), 'error');
     }
   }
 
@@ -65,10 +70,10 @@ export default function GeneralSection() {
         <div className="page-content">
           <div className="settings-top-row">
             <div>
-              <h2>Account Settings</h2>
+              <h2>{t('settings.accountSettings')}</h2>
             </div>
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>جارِ التحميل...</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.loading')}</div>
         </div>
       </div>
     );
@@ -79,21 +84,21 @@ export default function GeneralSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>Account Settings</h2>
-            <div className="settings-top-desc">General settings for your organization</div>
+            <h2>{t('settings.accountSettings')}</h2>
+            <div className="settings-top-desc">{t('settings.accountSettingsDesc')}</div>
           </div>
           {canEdit && (
             <button className="page-btn" onClick={startOrSave}>
-              {editing ? 'Save Changes' : 'Update Settings'}
+              {editing ? t('settings.saveChangesBtn') : t('settings.updateSettingsBtn')}
             </button>
           )}
         </div>
         <div className="settings-section">
-          <h3>General</h3>
+          <h3>{t('settings.generalTitle')}</h3>
           <div className="setting-row">
             <div>
-              <div className="setting-label">Account Name</div>
-              <div className="setting-desc">The name of your account</div>
+              <div className="setting-label">{t('settings.accountNameLabel')}</div>
+              <div className="setting-desc">{t('settings.accountNameDesc')}</div>
             </div>
             {!editing ? (
               <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{settings.name}</span>
@@ -111,15 +116,15 @@ export default function GeneralSection() {
           </div>
           <div className="setting-row">
             <div>
-              <div className="setting-label">Site Language</div>
-              <div className="setting-desc">Used for the dashboard and conversations</div>
+              <div className="setting-label">{t('settings.siteLanguageLabel')}</div>
+              <div className="setting-desc">{t('settings.siteLanguageDesc')}</div>
             </div>
-            <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>English (en)</span>
+            <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{lang === 'ar' ? 'العربية (ar)' : 'English (en)'}</span>
           </div>
           <div className="setting-row">
             <div>
-              <div className="setting-label">Email Conversation Continuity</div>
-              <div className="setting-desc">Conversation continuity with emails is enabled for your account.</div>
+              <div className="setting-label">{t('settings.emailContinuityLabel')}</div>
+              <div className="setting-desc">{t('settings.emailContinuityDesc')}</div>
             </div>
             <span
               style={{
@@ -131,16 +136,16 @@ export default function GeneralSection() {
                 borderRadius: 8,
               }}
             >
-              Enabled
+              {t('settings.enabled')}
             </span>
           </div>
           <div className="setting-row">
             <div>
-              <div className="setting-label">Auto Resolve After Inactivity</div>
-              <div className="setting-desc">Number of days after a ticket should auto resolve if there is no activity</div>
+              <div className="setting-label">{t('settings.autoResolveLabel')}</div>
+              <div className="setting-desc">{t('settings.autoResolveDesc')}</div>
             </div>
             {!editing ? (
-              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{autoResolveLabel(settings.auto_resolve_days)}</span>
+              <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{autoResolveLabel(settings.auto_resolve_days, t, lang)}</span>
             ) : (
               <select
                 className="iw-input"
@@ -148,10 +153,10 @@ export default function GeneralSection() {
                 value={autoResolveDays}
                 onChange={(e) => setAutoResolveDays(e.target.value)}
               >
-                <option value="">Disabled</option>
+                <option value="">{t('settings.disabled')}</option>
                 {[1, 2, 3, 5, 7, 14, 30].map((d) => (
                   <option key={d} value={d}>
-                    {d} day{d === 1 ? '' : 's'}
+                    {dayOptionLabel(d, lang)}
                   </option>
                 ))}
               </select>
@@ -159,8 +164,8 @@ export default function GeneralSection() {
           </div>
           <div className="setting-row">
             <div>
-              <div className="setting-label">Account ID</div>
-              <div className="setting-desc">This ID is required if you are building an API based integration</div>
+              <div className="setting-label">{t('settings.accountIdLabel')}</div>
+              <div className="setting-desc">{t('settings.accountIdDesc')}</div>
             </div>
             <span
               style={{

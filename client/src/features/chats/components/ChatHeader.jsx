@@ -1,5 +1,6 @@
 import { ArrowLeft, Search, CheckCircle, RotateCcw, User, X, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
+import useTranslation from '../../../i18n/useTranslation';
 
 export default function ChatHeader({
   conversation,
@@ -16,17 +17,18 @@ export default function ChatHeader({
   onResolveClick,
   onCustomerPanelToggle,
 }) {
+  const { t } = useTranslation();
   const c = conversation;
   const statusText =
     typingNames.length > 0
       ? typingNames.length === 1
-        ? `${typingNames[0]} is typing...`
-        : `${typingNames.join(', ')} are typing...`
+        ? `${typingNames[0]} ${t('chats.typingOne')}`
+        : `${typingNames.join(', ')} ${t('chats.typingMany')}`
       : c.status === 'open'
-        ? 'Online'
+        ? t('chats.online')
         : c.status === 'pending'
-          ? 'Pending'
-          : 'Resolved';
+          ? t('chats.pending')
+          : t('chats.resolvedStatus');
   const statusColor =
     typingNames.length > 0
       ? 'var(--primary)'
@@ -51,7 +53,7 @@ export default function ChatHeader({
     const diffDays = Math.round((today - endDate) / (1000 * 60 * 60 * 24));
     if (diffDays > 0) {
       const endDateStr = endDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      maintenanceBannerText = `عقد الصيانة الخاص بالعميل ده منتهي من ${diffDays} يوم (بتاريخ ${endDateStr}) — يرجى مراجعة الإدارة قبل الاستمرار في التعامل معاه`;
+      maintenanceBannerText = t('chats.maintenanceExpiredBanner', { days: diffDays, date: endDateStr });
     }
   }
 
@@ -59,7 +61,7 @@ export default function ChatHeader({
     <>
       <div className="chat-header">
         <div className="chat-header-left">
-          <button className="mobile-back-btn" title="رجوع لكل المحادثات" aria-label="رجوع لكل المحادثات" onClick={onBack}>
+          <button className="mobile-back-btn" title={t('chats.backToAllChats')} aria-label={t('chats.backToAllChats')} onClick={onBack}>
             <ArrowLeft size={18} />
           </button>
           <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
@@ -73,18 +75,18 @@ export default function ChatHeader({
           </div>
         </div>
         <div className="chat-header-actions">
-          <button className="ch-action-btn" title="Search in chat" aria-label="Search in chat" onClick={onToggleSearch}>
+          <button className="ch-action-btn" title={t('chats.searchInChat')} aria-label={t('chats.searchInChat')} onClick={onToggleSearch}>
             <Search size={18} />
           </button>
           <button
             className={`resolve-btn${c.status === 'resolved' ? ' resolved-state' : ''}`}
-            title={c.status === 'resolved' ? 'Reopen Conversation' : 'Resolve Conversation'}
+            title={c.status === 'resolved' ? t('chats.reopenConversation') : t('chats.resolveConversation')}
             onClick={onResolveClick}
           >
             {c.status === 'resolved' ? <RotateCcw size={15} /> : <CheckCircle size={15} />}
-            <span>{c.status === 'resolved' ? 'Reopen' : 'Resolve'}</span>
+            <span>{c.status === 'resolved' ? t('chats.reopen') : t('chats.resolve')}</span>
           </button>
-          <button className="ch-action-btn" title="Customer Info" aria-label="Customer Info" onClick={onCustomerPanelToggle}>
+          <button className="ch-action-btn" title={t('chats.customerInfo')} aria-label={t('chats.customerInfo')} onClick={onCustomerPanelToggle}>
             <User size={18} />
           </button>
         </div>
@@ -110,7 +112,7 @@ export default function ChatHeader({
         <input
           id="chat-search-input"
           type="text"
-          placeholder="ابحث في الرسايل..."
+          placeholder={t('chats.searchInMessages')}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => {
@@ -124,13 +126,13 @@ export default function ChatHeader({
           }}
         />
         <span className="chat-search-counter">{matchCount ? `${matchIndex + 1}/${matchCount}` : searchQuery ? '0/0' : ''}</span>
-        <button className="ch-action-btn" title="السابق" aria-label="السابق" onClick={onPrevMatch}>
+        <button className="ch-action-btn" title={t('chats.previous')} aria-label={t('chats.previous')} onClick={onPrevMatch}>
           <ChevronUp size={16} />
         </button>
-        <button className="ch-action-btn" title="التالي" aria-label="التالي" onClick={onNextMatch}>
+        <button className="ch-action-btn" title={t('chats.next')} aria-label={t('chats.next')} onClick={onNextMatch}>
           <ChevronDown size={16} />
         </button>
-        <button className="ch-action-btn" title="إغلاق" aria-label="إغلاق" onClick={onToggleSearch}>
+        <button className="ch-action-btn" title={t('chats.close')} aria-label={t('chats.close')} onClick={onToggleSearch}>
           <X size={16} />
         </button>
       </div>

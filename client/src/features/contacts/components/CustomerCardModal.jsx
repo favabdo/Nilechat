@@ -4,10 +4,12 @@ import Modal from '../../../components/ui/Modal';
 import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { contactsApi } from '../services/contacts.service';
 import { CONTACT_MODULES_LIST } from '../constants';
+import useTranslation from '../../../i18n/useTranslation';
 
 const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
 
 export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
+  const { t } = useTranslation();
   const isEdit = mode === 'edit';
   const [name, setName] = useState(contact?.name || '');
   const [branches, setBranches] = useState(
@@ -50,17 +52,17 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
   async function submit() {
     setError('');
     const trimmedName = name.trim();
-    if (!trimmedName) return setError('لازم تكتب اسم الشركة');
-    if (!isEdit && !phone.trim()) return setError('لازم تكتب رقم تليفون العميل');
+    if (!trimmedName) return setError(t('contacts.modalCompanyNameRequired'));
+    if (!isEdit && !phone.trim()) return setError(t('contacts.modalPhoneRequired'));
     if (!isEdit && !CUSTOMER_PHONE_REGEX.test(phone.trim())) {
       setPhoneInvalid(true);
-      return setError('مثال: 201035292196');
+      return setError(t('contacts.modalPhoneExample'));
     }
     if (!isEdit && (contractStart || contractEnd) && !(contractStart && contractEnd)) {
-      return setError('لو هتحدد عقد صيانة، لازم تحدد تاريخ البدء والانتهاء مع بعض');
+      return setError(t('contacts.modalContractDatesRequired'));
     }
     if (!isEdit && contractStart && contractEnd && new Date(contractEnd) < new Date(contractStart)) {
-      return setError('تاريخ انتهاء العقد لازم يكون بعد تاريخ البدء');
+      return setError(t('contacts.modalContractEndAfterStart'));
     }
 
     const cleanBranches = branches.map((b) => ({ name: b.name.trim(), location: b.location.trim() })).filter((b) => b.name || b.location);
@@ -106,7 +108,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
       onSaved(data);
     } catch (err) {
       console.error('[API] submitCustomerCard error:', err);
-      setError(err.response?.data?.error || 'حصل خطأ، حاول تاني');
+      setError(err.response?.data?.error || t('contacts.modalGenericError'));
     } finally {
       setSaving(false);
     }
@@ -118,14 +120,14 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
         <div className="resolve-modal-icon" style={{ background: 'rgba(108,92,231,0.12)', color: 'var(--primary)' }}>
           <UserPlus size={22} />
         </div>
-        <div className="resolve-modal-title">{isEdit ? 'Edit Customer' : 'Add Customer'}</div>
+        <div className="resolve-modal-title">{isEdit ? t('contacts.modalEditCustomer') : t('contacts.modalAddCustomer')}</div>
       </div>
-      <div className="resolve-modal-sub">بيانات العميل الأساسية{!isEdit && ' — وعقد الصيانة كمان لو حابب تسجله من هنا على طول'}</div>
+      <div className="resolve-modal-sub">{t('contacts.modalSubtitleBase')}{!isEdit && t('contacts.modalSubtitleContractHint')}</div>
 
-      <div className="resolve-cats-label">اسم الشركة</div>
+      <div className="resolve-cats-label">{t('contacts.modalCompanyName')}</div>
       <input type="text" className="iw-input" style={{ marginBottom: 12 }} value={name} onChange={(e) => setName(e.target.value)} />
 
-      <div className="resolve-cats-label">الفروع</div>
+      <div className="resolve-cats-label">{t('contacts.modalBranches')}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
         {branches.map((b, idx) => (
           <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -133,7 +135,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
               type="text"
               className="iw-input"
               style={{ flex: 1 }}
-              placeholder="اسم الفرع (مثال: فرع المعادي)"
+              placeholder={t('contacts.modalBranchNamePlaceholder')}
               value={b.name}
               onChange={(e) => updateBranch(idx, 'name', e.target.value)}
             />
@@ -141,27 +143,27 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
               type="text"
               className="iw-input"
               style={{ flex: 1.4 }}
-              placeholder="عنوان الفرع"
+              placeholder={t('contacts.modalBranchAddressPlaceholder')}
               value={b.location}
               onChange={(e) => updateBranch(idx, 'location', e.target.value)}
             />
-            <button type="button" className="st-icon-btn" title="حذف الفرع" onClick={() => removeBranchRow(idx)}>
+            <button type="button" className="st-icon-btn" title={t('contacts.modalDeleteBranch')} onClick={() => removeBranchRow(idx)}>
               <X size={14} />
             </button>
           </div>
         ))}
       </div>
       <button type="button" className="resolve-cancel-btn" style={{ padding: '6px 12px', fontSize: 12.5, marginBottom: 12 }} onClick={addBranchRow}>
-        <Plus size={14} /> إضافة فرع
+        <Plus size={14} /> {t('contacts.modalAddBranch')}
       </button>
 
       {!isEdit && (
         <>
-          <div className="resolve-cats-label">رقم التليفون</div>
+          <div className="resolve-cats-label">{t('contacts.modalPhoneLabel')}</div>
           <input
             type="text"
             className="iw-input"
-            placeholder="مثال: 201001234567"
+            placeholder={t('contacts.modalPhonePlaceholder')}
             maxLength={12}
             value={phone}
             onChange={(e) => {
@@ -170,66 +172,66 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
             }}
           />
           <div className="iw-form-hint" style={{ marginBottom: 12, color: phoneInvalid ? 'var(--danger)' : undefined }}>
-            مثال: <b dir="ltr">201001234567</b>
+            {t('contacts.modalPhoneHintExample')} <b dir="ltr">201001234567</b>
           </div>
         </>
       )}
 
       <div className="st-modal-readonly-row">
         <div className="st-modal-readonly" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-          <div className="resolve-cats-label">تاريخ التعاقد</div>
+          <div className="resolve-cats-label">{t('contacts.modalContractDateLabel')}</div>
           <input type="date" className="iw-input" value={signedContractDate} onChange={(e) => setSignedContractDate(e.target.value)} />
         </div>
         <div className="st-modal-readonly" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-          <div className="resolve-cats-label">اسم ورقم صاحب المؤسسة</div>
+          <div className="resolve-cats-label">{t('contacts.modalManagerLabel')}</div>
           <input
             type="text"
             className="iw-input"
-            placeholder="اسم صاحب المؤسسة"
+            placeholder={t('contacts.modalManagerNamePlaceholder')}
             style={{ marginBottom: 8 }}
             value={managerName}
             onChange={(e) => setManagerName(e.target.value)}
           />
-          <input type="text" className="iw-input" placeholder="رقم تليفون صاحب المؤسسة" value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} />
+          <input type="text" className="iw-input" placeholder={t('contacts.modalManagerPhonePlaceholder')} value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} />
         </div>
       </div>
       <div className="iw-form-hint" style={{ marginTop: -8, marginBottom: 12 }}>
-        معلومات مستقلة بس عشان نعرف امتى اتعاقدنا مع العميل ده لأول مرة — مالهاش أي علاقة بعقد الصيانة
+        {t('contacts.modalContractDateHint')}
       </div>
 
       {!isEdit && (
         <>
           <div className="st-modal-readonly-row">
             <div className="st-modal-readonly" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-              <div className="resolve-cats-label">تاريخ بدء عقد الصيانة (اختياري)</div>
+              <div className="resolve-cats-label">{t('contacts.modalContractStartLabel')}</div>
               <input type="date" className="iw-input" value={contractStart} onChange={(e) => setContractStart(e.target.value)} />
             </div>
             <div className="st-modal-readonly" style={{ background: 'transparent', border: 'none', padding: 0 }}>
-              <div className="resolve-cats-label">تاريخ انتهاء عقد الصيانة (اختياري)</div>
+              <div className="resolve-cats-label">{t('contacts.modalContractEndLabel')}</div>
               <input type="date" className="iw-input" value={contractEnd} onChange={(e) => setContractEnd(e.target.value)} />
             </div>
           </div>
 
-          <div className="resolve-cats-label" style={{ marginTop: 4 }}>مدة عقد الصيانة (اختياري)</div>
+          <div className="resolve-cats-label" style={{ marginTop: 4 }}>{t('contacts.modalContractDurationLabel')}</div>
           <ContractDurationPicker startDate={contractStart} onEndDateChange={setContractEnd} />
 
-          <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 12 }}>هيتسجل كأول عقد صيانة للعميل فورًا. حدد المدة وهيتحسب تاريخ الانتهاء تلقائي.</div>
+          <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 12 }}>{t('contacts.modalContractDurationHint')}</div>
         </>
       )}
 
-      <div className="resolve-cats-label">حالة العميل</div>
+      <div className="resolve-cats-label">{t('contacts.customerStatus')}</div>
       <div style={{ display: 'flex', gap: 18, marginBottom: 14 }}>
         <label className="contact-modules-item">
           <input type="checkbox" checked={isVip} onChange={(e) => setIsVip(e.target.checked)} />
-          <Crown size={13} style={{ verticalAlign: -2, color: '#f5a623' }} /> عميل VIP
+          <Crown size={13} style={{ verticalAlign: -2, color: '#f5a623' }} /> {t('contacts.vip')}
         </label>
         <label className="contact-modules-item">
           <input type="checkbox" checked={isInactive} onChange={(e) => setIsInactive(e.target.checked)} />
-          <UserX size={13} style={{ verticalAlign: -2 }} /> عميل غير نشط
+          <UserX size={13} style={{ verticalAlign: -2 }} /> {t('contacts.inactive')}
         </label>
       </div>
 
-      <div className="resolve-cats-label">الموديولات اللي العميل مشترك فيها</div>
+      <div className="resolve-cats-label">{t('contacts.modulesSubscribed')}</div>
       <div className="contact-modules-grid">
         {CONTACT_MODULES_LIST.map((m) => (
           <label className="contact-modules-item" key={m}>
@@ -241,16 +243,16 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
       <input
         type="text"
         className="iw-input"
-        placeholder="موديول تاني مش في القايمة؟ اكتبه هنا (افصل بفاصلة لو أكتر من واحد)"
+        placeholder={t('contacts.modalCustomModulesPlaceholder')}
         style={{ marginTop: 8, marginBottom: 12 }}
         value={customModules}
         onChange={(e) => setCustomModules(e.target.value)}
       />
 
       <div className="resolve-modal-actions">
-        <button className="resolve-cancel-btn" onClick={onClose}>إلغاء</button>
+        <button className="resolve-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={submit}>
-          <Check size={16} /> {saving ? 'جارِ الحفظ...' : isEdit ? 'Save Changes' : 'Add Customer'}
+          <Check size={16} /> {saving ? t('common.saving') : isEdit ? t('contacts.modalSaveChanges') : t('contacts.modalAddCustomer')}
         </button>
       </div>
       {error && <div className="login-error" style={{ color: 'var(--danger)', fontSize: 12.5, marginTop: 8, textAlign: 'center' }}>{error}</div>}

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Smile, Paperclip, Mic, Square, Send, Lock, Sparkles, Loader2 } from 'lucide-react';
 import useToastStore from '../../../store/toastStore';
+import useTranslation from '../../../i18n/useTranslation';
 import { conversationsApi } from '../services/chats.service';
 
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
@@ -33,6 +34,7 @@ export default function MessageInput({
   onTypingChange,
   cannedResponses,
 }) {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -82,7 +84,7 @@ export default function MessageInput({
     e.target.value = '';
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-      showToast('الملف ده أكبر من 30MB — اختار ملف أصغر', 'error');
+      showToast(t('chats.fileTooLarge'), 'error');
       return;
     }
     onSendFile(file);
@@ -97,7 +99,7 @@ export default function MessageInput({
     const file = imageItem.getAsFile();
     if (!file) return;
     if (file.size > MAX_FILE_SIZE) {
-      showToast('الصورة دي أكبر من 30MB — اختار صورة أصغر', 'error');
+      showToast(t('chats.imageTooLarge'), 'error');
       return;
     }
     onSendFile(file);
@@ -114,7 +116,7 @@ export default function MessageInput({
       if (textareaRef.current) autoResize(textareaRef.current);
     } catch (err) {
       console.error('[API] generateAIReply error:', err);
-      showToast(err.response?.data?.error || 'تعذر توليد رد مقترح دلوقتي', 'error');
+      showToast(err.response?.data?.error || t('chats.aiReplyFailed'), 'error');
     } finally {
       setGenerating(false);
     }
@@ -127,18 +129,18 @@ export default function MessageInput({
 
   async function startVoiceRecording() {
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-      showToast('المتصفح ده مش بيدعم تسجيل الصوت', 'error');
+      showToast(t('chats.voiceNotSupported'), 'error');
       return;
     }
     if (!conversationId) {
-      showToast('افتح محادثة الأول عشان تبعت ريكورد', 'error');
+      showToast(t('chats.openChatFirst'), 'error');
       return;
     }
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-      showToast('مقدرناش نوصل للمايك — تأكد إنك سمحت للمتصفح بالوصول', 'error');
+      showToast(t('chats.micAccessFailed'), 'error');
       return;
     }
 
@@ -155,7 +157,7 @@ export default function MessageInput({
     recorder.onstop = () => {
       clearInterval(timerRef.current);
       timerRef.current = null;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setRecording(false);
       setRecordSeconds(0);
@@ -200,12 +202,12 @@ export default function MessageInput({
       {resolved && (
         <div className="resolved-banner show">
           <Lock size={14} />
-          <span>المحادثة دي متقفلة (Resolved) —    مش هتقدر تبعت رسالة تانيه</span>
+          <span>{t('chats.resolvedBannerText')}</span>
         </div>
       )}
       {!resolved && cannedResponses.length > 0 && (
         <div className="saved-replies-bar">
-          <span className="sr-label">Quick Replies:</span>
+          <span className="sr-label">{t('chats.quickReplies')}</span>
           {cannedResponses.map((r) => (
             <button key={r.id} className="sr-chip" onClick={() => insertReply(r)}>
               {r.label}
@@ -217,31 +219,31 @@ export default function MessageInput({
         <div className="note-toggle-bar">
           <button
             className={`note-toggle-btn${noteMode ? ' active' : ''}`}
-            title="Private note (agents only, not sent to customer)"
-            aria-label="Private note (agents only, not sent to customer)"
+            title={t('chats.privateNoteTitle')}
+            aria-label={t('chats.privateNoteTitle')}
             onClick={onToggleNoteMode}
           >
-            <Lock size={13} /> Private Note
+            <Lock size={13} /> {t('chats.privateNote')}
           </button>
           <button
             className={`note-toggle-btn${generating ? ' loading' : ''}`}
-            title="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
-            aria-label="اقترح رد بالذكاء الاصطناعي بناءً على المحادثة"
+            title={t('chats.aiSuggestTitle')}
+            aria-label={t('chats.aiSuggestTitle')}
             onClick={generateReply}
           >
-            {generating ? <Loader2 size={13} className="ai-spin" /> : <Sparkles size={13} />} Generate Reply
+            {generating ? <Loader2 size={13} className="ai-spin" /> : <Sparkles size={13} />} {t('chats.generateReply')}
           </button>
         </div>
       )}
       <div className={`chat-input-area${noteMode ? ' note-mode' : ''}${resolved ? ' resolved-locked' : ''}`} id="chat-input-area">
         <div className="input-actions">
-          <button className="input-action-btn" title="Emoji" aria-label="Emoji" disabled={resolved}>
+          <button className="input-action-btn" title={t('chats.emoji')} aria-label={t('chats.emoji')} disabled={resolved}>
             <Smile size={20} />
           </button>
           <button
             className="input-action-btn"
-            title="Attach"
-            aria-label="Attach"
+            title={t('chats.attach')}
+            aria-label={t('chats.attach')}
             style={{ visibility: recording ? 'hidden' : 'visible' }}
             onClick={() => fileInputRef.current?.click()}
             disabled={resolved}
@@ -256,7 +258,7 @@ export default function MessageInput({
             id="msg-input"
             ref={textareaRef}
             rows={1}
-            placeholder={resolved ? 'المحادثة متقفلة — اعمل Reopen عشان تبعت' : noteMode ? 'Private Note' : 'Type a message...'}
+            placeholder={resolved ? t('chats.conversationLockedPlaceholder') : noteMode ? t('chats.privateNote') : t('chats.typeMessagePlaceholder')}
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
@@ -268,14 +270,14 @@ export default function MessageInput({
         <div className={`voice-recording-bar${recording ? ' active' : ''}`}>
           <span className="voice-recording-dot"></span>
           <span className="voice-recording-time">{timeLabel}</span>
-          <span className="voice-recording-hint">Recording voice note…</span>
-          <button className="voice-cancel-btn" onClick={cancelVoiceRecording}>Cancel</button>
+          <span className="voice-recording-hint">{t('chats.recordingVoiceNote')}</span>
+          <button className="voice-cancel-btn" onClick={cancelVoiceRecording}>{t('chats.cancel')}</button>
         </div>
 
         <button
           className={`input-action-btn${recording ? ' recording' : ''}`}
-          title={recording ? 'Stop & send' : 'Voice note'}
-          aria-label={recording ? 'Stop & send' : 'Voice note'}
+          title={recording ? t('chats.stopAndSend') : t('chats.voiceNote')}
+          aria-label={recording ? t('chats.stopAndSend') : t('chats.voiceNote')}
           onClick={toggleVoice}
           disabled={resolved}
         >
@@ -283,8 +285,8 @@ export default function MessageInput({
         </button>
         <button
           className="send-btn"
-          title="Send"
-          aria-label="Send"
+          title={t('chats.send')}
+          aria-label={t('chats.send')}
           style={{ display: recording ? 'none' : 'flex' }}
           onClick={submit}
           disabled={resolved}

@@ -4,10 +4,12 @@ import useChatsStore from '../../chats/store/chatsStore';
 import { labelsSettingsApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import { hexToRgba } from '../../chats/utils/mappers';
+import useTranslation from '../../../i18n/useTranslation';
 
 const COLOR_PRESETS = ['#ef4444', '#f59e0b', '#10b981', '#6C5CE7', '#00D2FF', '#ec4899', '#64748b'];
 
 export default function LabelsSettingsSection() {
+  const { t } = useTranslation();
   const { allLabels, staticDataLoaded, loadStaticData, refreshLabels } = useChatsStore();
   const showToast = useToastStore((s) => s.showToast);
 
@@ -41,20 +43,20 @@ export default function LabelsSettingsSection() {
 
   async function save() {
     const trimmedName = name.trim();
-    if (!trimmedName) return showToast('اكتب اسم الليبل أولاً', 'error');
+    if (!trimmedName) return showToast(t('settings.labelNameRequired'), 'error');
     setSaving(true);
     try {
       if (editingId !== null) {
         await labelsSettingsApi.update(editingId, { name: trimmedName, color, description: desc.trim() });
-        showToast('تم تعديل الليبل', 'success');
+        showToast(t('settings.labelUpdated'), 'success');
       } else {
         await labelsSettingsApi.create({ name: trimmedName, color, description: desc.trim() });
-        showToast('تم إضافة الليبل', 'success');
+        showToast(t('chats.labelCreated'), 'success');
       }
       setFormOpen(false);
       refreshLabels();
     } catch (err) {
-      showToast(err.response?.data?.error || 'حصل خطأ', 'error');
+      showToast(err.response?.data?.error || t('chats.genericError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -63,11 +65,11 @@ export default function LabelsSettingsSection() {
   async function confirmDelete() {
     try {
       await labelsSettingsApi.remove(confirmDeleteId);
-      showToast('تم حذف الليبل', 'info');
+      showToast(t('settings.labelDeleted'), 'info');
       setConfirmDeleteId(null);
       refreshLabels();
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل حذف الليبل', 'error');
+      showToast(err.response?.data?.error || t('settings.labelDeleteFailed'), 'error');
     }
   }
 
@@ -78,11 +80,11 @@ export default function LabelsSettingsSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>Labels</h2>
-            <div className="settings-top-desc">Categorize conversations and contacts</div>
+            <h2>{t('settings.labels')}</h2>
+            <div className="settings-top-desc">{t('settings.labelsDesc')}</div>
           </div>
           <button className="page-btn" onClick={openAdd}>
-            <Plus size={16} /> Add Label
+            <Plus size={16} /> {t('settings.addLabel')}
           </button>
         </div>
 
@@ -106,21 +108,21 @@ export default function LabelsSettingsSection() {
                 letterSpacing: 0.5,
               }}
             >
-              {editingId !== null ? 'تعديل الليبل' : 'ليبل جديد'}
+              {editingId !== null ? t('settings.editLabelTitle') : t('settings.newLabelTitle')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
               <div>
-                <label className="tpl-field-label">اسم الليبل</label>
+                <label className="tpl-field-label">{t('settings.labelNameField')}</label>
                 <input
                   className="tpl-input"
                   style={{ marginBottom: 0 }}
-                  placeholder="مثال: Urgent"
+                  placeholder={t('settings.labelNamePlaceholder2')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div>
-                <label className="tpl-field-label">اللون</label>
+                <label className="tpl-field-label">{t('settings.colorField')}</label>
                 <div className="label-color-swatches" style={{ paddingTop: 6 }}>
                   {COLOR_PRESETS.map((c) => (
                     <div
@@ -137,21 +139,21 @@ export default function LabelsSettingsSection() {
               </div>
             </div>
             <div>
-              <label className="tpl-field-label">وصف مختصر</label>
+              <label className="tpl-field-label">{t('settings.shortDescField')}</label>
               <input
                 className="tpl-input"
                 style={{ marginBottom: 0 }}
-                placeholder="مثال: يحتاج رد فوري"
+                placeholder={t('settings.shortDescPlaceholder')}
                 value={desc}
                 onChange={(e) => setDesc(e.target.value)}
               />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button className="page-btn" style={{ padding: '8px 16px', fontSize: 12 }} disabled={saving} onClick={save}>
-                <Check size={14} /> {editingId !== null ? 'حفظ التعديلات' : 'حفظ'}
+                <Check size={14} /> {editingId !== null ? t('settings.saveChangesShort') : t('common.save')}
               </button>
               <button className="tpl-cancel-btn" onClick={() => setFormOpen(false)}>
-                إلغاء
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -160,9 +162,9 @@ export default function LabelsSettingsSection() {
         <table className="settings-table">
           <thead>
             <tr>
-              <th>Label</th>
-              <th>Description</th>
-              <th>Conversations</th>
+              <th>{t('settings.labelCol')}</th>
+              <th>{t('settings.descriptionCol')}</th>
+              <th>{t('settings.conversationsCol')}</th>
               <th style={{ width: 90 }}></th>
             </tr>
           </thead>
@@ -170,7 +172,7 @@ export default function LabelsSettingsSection() {
             {allLabels.length === 0 ? (
               <tr>
                 <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
-                  لسه مفيش ليبلز — دوس "Add Label" عشان تضيف واحد
+                  {t('settings.noLabelsAddOne')}
                 </td>
               </tr>
             ) : (
@@ -185,10 +187,10 @@ export default function LabelsSettingsSection() {
                   <td style={{ color: 'var(--text-secondary)' }}>{l.description || ''}</td>
                   <td>{l.conversation_count || 0}</td>
                   <td>
-                    <button className="st-icon-btn" title="تعديل" aria-label="تعديل" onClick={() => openEdit(l)}>
+                    <button className="st-icon-btn" title={t('common.edit')} aria-label={t('common.edit')} onClick={() => openEdit(l)}>
                       <Pencil size={14} />
                     </button>
-                    <button className="st-icon-btn danger" title="حذف" aria-label="حذف" onClick={() => setConfirmDeleteId(l.id)}>
+                    <button className="st-icon-btn danger" title={t('common.delete')} aria-label={t('common.delete')} onClick={() => setConfirmDeleteId(l.id)}>
                       <Trash2 size={14} />
                     </button>
                   </td>
@@ -221,16 +223,16 @@ export default function LabelsSettingsSection() {
               boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
             }}
           >
-            <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}>حذف الليبل</div>
+            <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}>{t('settings.deleteLabelTitle')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
-              متأكد إنك عايز تحذف ليبل "{deletingLabel?.name}"؟
+              {t('settings.deleteLabelConfirm', { name: deletingLabel?.name })}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="tpl-cancel-btn" onClick={() => setConfirmDeleteId(null)}>
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button className="resolve-confirm-btn" style={{ background: 'var(--danger)' }} onClick={confirmDelete}>
-                حذف
+                {t('common.delete')}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { hexToRgba } from '../utils/mappers';
+import useTranslation from '../../../i18n/useTranslation';
 
 // نفس فكرة positionLabelPopover/positionTeamPopover بالظبط: بيحسب المكان بالنسبة
 // للـ viewport (مش للعنصر الأب) عشان يظهر صح حتى لو الحاوية عندها overflow:auto
@@ -33,6 +34,7 @@ function positionPopover(popEl, anchorEl) {
 }
 
 export default function TagPopover({ items, appliedIds, onSelect, emptyText, allowCreate, onCreate }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
@@ -66,8 +68,8 @@ export default function TagPopover({ items, appliedIds, onSelect, emptyText, all
       <button
         ref={anchorRef}
         className="conv-label-add-btn"
-        title="Add"
-        aria-label="Add"
+        title={t('chats.add')}
+        aria-label={t('chats.add')}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((v) => !v);
@@ -102,10 +104,10 @@ export default function TagPopover({ items, appliedIds, onSelect, emptyText, all
         {allowCreate && (
           <div className="label-popover-footer">
             <button className="label-popover-new-btn" onClick={() => setShowNewForm((v) => !v)}>
-              <Plus size={13} /> New Label
+              <Plus size={13} /> {t('chats.newLabel')}
             </button>
             <div className={`label-popover-new-form${showNewForm ? ' show' : ''}`}>
-              <input type="text" placeholder="Label name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+              <input type="text" placeholder={t('chats.labelNamePlaceholder')} value={newName} onChange={(e) => setNewName(e.target.value)} />
               <div className="label-color-swatches">
                 {COLOR_PRESETS.map((color) => (
                   <div
@@ -129,10 +131,10 @@ export default function TagPopover({ items, appliedIds, onSelect, emptyText, all
                     setShowNewForm(false);
                   }}
                 >
-                  Add
+                  {t('chats.add')}
                 </button>
                 <button className="add-cancel" onClick={() => setShowNewForm(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

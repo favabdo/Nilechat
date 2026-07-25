@@ -8,10 +8,12 @@ import useToastStore from '../../../store/toastStore';
 import useChatsStore from '../../chats/store/chatsStore';
 import TeamModal from '../components/TeamModal';
 import TeamMembersModal from '../components/TeamMembersModal';
+import useTranslation from '../../../i18n/useTranslation';
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
 export default function TeamsSection() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
   const canManage = isOwnerOrAdmin(user);
@@ -26,14 +28,14 @@ export default function TeamsSection() {
   }, []);
 
   async function handleDelete(team) {
-    if (!window.confirm(`متأكد إنك عايز تمسح تيم "${team.name}"؟`)) return;
+    if (!window.confirm(t('settings.deleteTeamConfirm', { name: team.name }))) return;
     try {
       await teamsApi.remove(team.id);
-      showToast('اتمسح التيم بنجاح', 'success');
+      showToast(t('settings.teamDeletedSuccess'), 'success');
       refreshTeams();
     } catch (err) {
       console.error('[API] deleteTeam error:', err);
-      showToast(err.response?.data?.error || 'فشل مسح التيم', 'error');
+      showToast(err.response?.data?.error || t('settings.deleteTeamFailed'), 'error');
     }
   }
 
@@ -42,31 +44,31 @@ export default function TeamsSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>Teams</h2>
-            <div className="settings-top-desc">Group agents into teams for conversation routing</div>
+            <h2>{t('settings.teams')}</h2>
+            <div className="settings-top-desc">{t('settings.teamsDesc')}</div>
           </div>
           {canManage && (
             <button className="page-btn" onClick={() => setEditModal({ team: null })}>
-              <Plus size={16} /> Add Team
+              <Plus size={16} /> {t('settings.addTeamBtn')}
             </button>
           )}
         </div>
 
         <div className="settings-card-grid">
-          {!staticDataLoaded && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>جارِ تحميل التيمز...</div>}
+          {!staticDataLoaded && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('settings.loadingTeams')}</div>}
           {staticDataLoaded &&
-            teams.map((t) => {
-              const TeamIcon = iconKeyToComponent(t.icon);
+            teams.map((team) => {
+              const TeamIcon = iconKeyToComponent(team.icon);
               return (
-                <div className="settings-card" key={t.id}>
-                  <div className="settings-card-icon" style={{ background: hexToRgba(t.color, 0.1), color: t.color }}>
+                <div className="settings-card" key={team.id}>
+                  <div className="settings-card-icon" style={{ background: hexToRgba(team.color, 0.1), color: team.color }}>
                     <TeamIcon size={20} />
                   </div>
-                  <div className="settings-card-title">{t.name}</div>
-                  <div className="settings-card-desc">{t.description || ''}</div>
+                  <div className="settings-card-title">{team.name}</div>
+                  <div className="settings-card-desc">{team.description || ''}</div>
                   <div className="settings-card-meta">
                     <span>
-                      {t.members_count} agent{t.members_count === 1 ? '' : 's'}
+                      {team.members_count} {t('settings.agentsCol')}
                     </span>
                   </div>
                   {canManage && (
@@ -92,25 +94,25 @@ export default function TeamsSection() {
                           fontFamily: 'inherit',
                           padding: 0,
                         }}
-                        onClick={() => setMembersModal(t)}
+                        onClick={() => setMembersModal(team)}
                       >
-                        Manage Agents
+                        {t('settings.manageAgentsBtn')}
                       </button>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           className="st-icon-btn"
-                          title="Edit team"
-                          aria-label="Edit team"
-                          onClick={() => setEditModal({ team: t })}
+                          title={t('settings.editTeamTitle')}
+                          aria-label={t('settings.editTeamTitle')}
+                          onClick={() => setEditModal({ team })}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
                           className="st-icon-btn"
                           style={{ color: 'var(--danger)' }}
-                          title="Delete team"
-                          aria-label="Delete team"
-                          onClick={() => handleDelete(t)}
+                          title={t('settings.deleteTeamTitle')}
+                          aria-label={t('settings.deleteTeamTitle')}
+                          onClick={() => handleDelete(team)}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -135,7 +137,7 @@ export default function TeamsSection() {
               onClick={() => setEditModal({ team: null })}
             >
               <PlusCircle size={26} style={{ marginBottom: 8 }} />
-              <span style={{ fontSize: 13, fontWeight: 600 }}>New Team</span>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>{t('settings.newTeam')}</span>
             </div>
           )}
         </div>
@@ -147,7 +149,7 @@ export default function TeamsSection() {
           onClose={() => setEditModal(null)}
           onSaved={() => {
             setEditModal(null);
-            showToast(editModal.team ? 'اتحدّث التيم بنجاح' : 'اتضاف التيم بنجاح', 'success');
+            showToast(editModal.team ? t('settings.teamUpdatedSuccess') : t('settings.teamAddedSuccess'), 'success');
             refreshTeams();
           }}
         />
@@ -158,7 +160,7 @@ export default function TeamsSection() {
           onClose={() => setMembersModal(null)}
           onSaved={() => {
             setMembersModal(null);
-            showToast('اتحدّثت أعضاء التيم بنجاح', 'success');
+            showToast(t('settings.teamMembersUpdatedSuccess'), 'success');
             refreshTeams();
           }}
         />

@@ -3,63 +3,68 @@ import { Workflow, MessageCircle, Pencil, CalendarX, Star } from 'lucide-react';
 import { companyApi } from '../services/settings.service';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
+import useTranslation from '../../../i18n/useTranslation';
 import AutomationModal from '../components/AutomationModal';
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
-function autoAssignDesc(s) {
+function autoAssignDesc(s, t) {
   return s.auto_assign_enabled && s.auto_assign_agent_name
-    ? `When conversation is created → Assign to ${s.auto_assign_agent_name}`
-    : 'When conversation is created → Assign to selected agent (disabled)';
+    ? t('settings.ruleAutoAssignOnCreate', { agent: s.auto_assign_agent_name })
+    : t('settings.ruleAutoAssignDisabled');
 }
-function welcomeDesc(s) {
+function welcomeDesc(s, t) {
   if (s.welcome_enabled && s.welcome_schedule_enabled && s.welcome_message) {
-    return 'When conversation is created → Send message based on business hours schedule (2 messages)';
+    return t('settings.ruleWelcomeSchedule');
   }
   if (s.welcome_enabled && s.welcome_message) {
-    return `When conversation is created → Send: "${s.welcome_message.slice(0, 60)}${s.welcome_message.length > 60 ? '…' : ''}"`;
+    const message = `${s.welcome_message.slice(0, 60)}${s.welcome_message.length > 60 ? '…' : ''}`;
+    return t('settings.ruleWelcomeSend', { message });
   }
-  return 'When conversation is created → Send a fixed auto-reply (disabled)';
+  return t('settings.ruleWelcomeDisabled');
 }
-function csatDesc(s) {
-  return s.csat_enabled && s.csat_message
-    ? `When conversation is resolved → Send: "${s.csat_message.slice(0, 60)}${s.csat_message.length > 60 ? '…' : ''}"`
-    : 'When conversation is resolved → Send satisfaction survey (disabled)';
+function csatDesc(s, t) {
+  if (!(s.csat_enabled && s.csat_message)) return t('settings.ruleCsatDisabled');
+  const message = `${s.csat_message.slice(0, 60)}${s.csat_message.length > 60 ? '…' : ''}`;
+  return t('settings.ruleCsatSend', { message });
 }
-function keywordRoutingDesc(s) {
+function keywordRoutingDesc(s, t) {
   const rules = (s.keyword_routing_rules || []).filter((r) => r.team_id && r.keywords && r.keywords.length);
-  if (!(s.keyword_routing_enabled && rules.length))
-    return 'When message contains chosen keywords → Assign to selected team (disabled)';
+  if (!(s.keyword_routing_enabled && rules.length)) return t('settings.ruleKeywordDisabled');
   if (rules.length === 1) {
     const kws = rules[0].keywords;
     const preview = kws
       .slice(0, 3)
       .map((k) => `"${k}"`)
-      .join(' or ');
-    return `When message contains ${preview}${kws.length > 3 ? '…' : ''} → Assign to ${rules[0].team_name || 'selected team'}`;
+      .join(` ${t('common.or')} `);
+    return t('settings.ruleKeywordSingle', {
+      preview: `${preview}${kws.length > 3 ? '…' : ''}`,
+      team: rules[0].team_name || t('settings.ruleKeywordSelectedTeam'),
+    });
   }
-  return `${rules.length} keyword rules active → Routes to: ${rules.map((r) => r.team_name || 'team').join(', ')}`;
+  return t('settings.ruleKeywordMultiple', {
+    count: rules.length,
+    teams: rules.map((r) => r.team_name || t('settings.ruleKeywordTeamFallback')).join(', '),
+  });
 }
-function contractExpiredDesc(s) {
-  const repeatSuffix = s.contract_expired_repeat_enabled ? ' + رد على كل رسالة بعد كده' : '';
+function contractExpiredDesc(s, t) {
+  const repeatSuffix = s.contract_expired_repeat_enabled ? t('settings.ruleContractExpiredRepeatSuffix') : '';
   if (s.contract_expired_enabled && s.contract_expired_message) {
-    return `لما عقد الصيانة ينتهي → رسالة واحدة${repeatSuffix}`;
+    return t('settings.ruleContractExpiredOnce', { suffix: repeatSuffix });
   }
   if (s.contract_expired_repeat_enabled && s.contract_expired_message) {
-    return `لما عقد الصيانة ينتهي → رد على كل رسالة`;
+    return t('settings.ruleContractExpiredRepeat');
   }
-  return 'لما عقد صيانة عميل يعدّي تاريخ نهايته من غير تجديد → يتبعتله رسالة أتمتة مرة واحدة (معطّل)';
+  return t('settings.ruleContractExpiredDisabled');
 }
-function ratingDesc(s) {
-  return s.rating_enabled
-    ? 'لما محادثة تتقفل (Resolve) → يتبعت تقييم نجوم لحل المشكلة + تقييم نجوم لممثل الدعم + تعليق نصي اختياري'
-    : 'لما محادثة تتقفل (Resolve) → تقييم نجوم لحل المشكلة وللدعم (معطّل)';
+function ratingDesc(s, t) {
+  return s.rating_enabled ? t('settings.ruleRatingEnabled') : t('settings.ruleRatingDisabled');
 }
 
 const RULES = [
   {
     key: 'auto_assign',
-    title: 'Auto-assign new WhatsApp conversations',
+    titleKey: 'settings.ruleAutoAssignTitle',
     icon: Workflow,
     color: 'var(--primary)',
     bg: 'rgba(108,92,231,0.1)',
@@ -68,7 +73,7 @@ const RULES = [
   },
   {
     key: 'welcome',
-    title: 'Send welcome message',
+    titleKey: 'settings.ruleWelcomeTitle',
     icon: MessageCircle,
     color: 'var(--secondary)',
     bg: 'rgba(0,210,255,0.1)',
@@ -77,7 +82,7 @@ const RULES = [
   },
   {
     key: 'keyword_routing',
-    title: 'Route conversations by keyword',
+    titleKey: 'settings.ruleKeywordTitle',
     icon: Workflow,
     color: 'var(--warning)',
     bg: 'rgba(245,158,11,0.1)',
@@ -86,7 +91,7 @@ const RULES = [
   },
   {
     key: 'csat',
-    title: 'Send CSAT after resolution',
+    titleKey: 'settings.ruleCsatTitle',
     icon: Workflow,
     color: 'var(--success)',
     bg: 'rgba(16,185,129,0.1)',
@@ -95,7 +100,7 @@ const RULES = [
   },
   {
     key: 'contract_expired',
-    title: 'عقد الصيانة منتهي',
+    titleKey: 'settings.ruleContractExpiredTitle',
     icon: CalendarX,
     color: 'var(--danger)',
     bg: 'rgba(239,68,68,0.1)',
@@ -104,7 +109,7 @@ const RULES = [
   },
   {
     key: 'rating',
-    title: 'تقييم بعد الحل (Post-Resolve Rating)',
+    titleKey: 'settings.ruleRatingTitle',
     icon: Star,
     color: 'var(--warning)',
     bg: 'rgba(245,158,11,0.1)',
@@ -114,6 +119,7 @@ const RULES = [
 ];
 
 export default function AutomationSection() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
   const canEdit = isOwnerOrAdmin(user);
@@ -136,7 +142,7 @@ export default function AutomationSection() {
       return data;
     } catch (err) {
       console.error('[API] patchAutomationSettings error:', err);
-      showToast(err.response?.data?.error || 'فشل حفظ إعدادات الأتمتة', 'error');
+      showToast(err.response?.data?.error || t('settings.saveAutomationFailed'), 'error');
       throw err;
     }
   }
@@ -161,11 +167,11 @@ export default function AutomationSection() {
         <div className="page-content">
           <div className="settings-top-row">
             <div>
-              <h2>Automation</h2>
-              <div className="settings-top-desc">Rules that act automatically on conversations</div>
+              <h2>{t('settings.automation')}</h2>
+              <div className="settings-top-desc">{t('settings.automationDesc')}</div>
             </div>
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>جارِ التحميل...</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.loading')}</div>
         </div>
       </div>
     );
@@ -176,8 +182,8 @@ export default function AutomationSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>Automation</h2>
-            <div className="settings-top-desc">Rules that act automatically on conversations</div>
+            <h2>{t('settings.automation')}</h2>
+            <div className="settings-top-desc">{t('settings.automationDesc')}</div>
           </div>
         </div>
 
@@ -190,8 +196,8 @@ export default function AutomationSection() {
                   <Icon size={18} />
                 </div>
                 <div>
-                  <div className="rule-row-title">{rule.title}</div>
-                  <div className="rule-row-desc">{rule.desc(settings)}</div>
+                  <div className="rule-row-title">{t(rule.titleKey)}</div>
+                  <div className="rule-row-desc">{rule.desc(settings, t)}</div>
                 </div>
               </div>
               <div className="rule-row-right">
@@ -219,7 +225,7 @@ export default function AutomationSection() {
           onSaved={async (body) => {
             await patch(body);
             setModalType(null);
-            showToast('اتحفظت إعدادات الأتمتة بنجاح', 'success');
+            showToast(t('settings.automationSavedSuccess'), 'success');
           }}
         />
       )}

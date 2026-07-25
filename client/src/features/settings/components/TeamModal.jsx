@@ -5,11 +5,13 @@ import { teamsApi, agentsSettingsApi } from '../services/settings.service';
 import { hexToRgba } from '../../chats/utils/mappers';
 import { roleLabel } from '../../../utils/roles';
 import Modal from '../../../components/ui/Modal';
+import useTranslation from '../../../i18n/useTranslation';
 
 const TEAM_ICON_OPTIONS = ['users-round', 'headset', 'credit-card', 'sparkles', 'shield', 'globe', 'wrench', 'star'];
 const TEAM_COLOR_OPTIONS = ['#6C5CE7', '#f59e0b', '#10b981', '#00D2FF', '#ef4444', '#64748b'];
 
 export default function TeamModal({ team, onClose, onSaved }) {
+  const { t, lang } = useTranslation();
   const [name, setName] = useState(team?.name || '');
   const [desc, setDesc] = useState(team?.description || '');
   const [icon, setIcon] = useState(team?.icon || 'users-round');
@@ -51,7 +53,7 @@ export default function TeamModal({ team, onClose, onSaved }) {
   async function save() {
     setError('');
     const trimmed = name.trim();
-    if (!trimmed) return setError('لازم تكتب اسم التيم');
+    if (!trimmed) return setError(t('settings.teamNameRequired'));
 
     setSaving(true);
     try {
@@ -67,7 +69,7 @@ export default function TeamModal({ team, onClose, onSaved }) {
       onSaved();
     } catch (err) {
       console.error('[API] saveTeam error:', err);
-      setError(err.response?.data?.error || 'فشل حفظ التيم');
+      setError(err.response?.data?.error || t('settings.saveTeamFailed'));
     } finally {
       setSaving(false);
     }
@@ -81,31 +83,31 @@ export default function TeamModal({ team, onClose, onSaved }) {
         <div className="resolve-modal-icon" style={{ background: hexToRgba(color, 0.12), color }}>
           <PreviewIcon size={22} />
         </div>
-        <div className="resolve-modal-title">{team ? 'Edit Team' : 'Add Team'}</div>
+        <div className="resolve-modal-title">{team ? t('settings.editTeam') : t('settings.addTeam')}</div>
       </div>
 
-      <div className="resolve-cats-label">Team Name</div>
+      <div className="resolve-cats-label">{t('settings.teamName')}</div>
       <input
         type="text"
         className="iw-input"
-        placeholder="e.g. Tech Support"
+        placeholder={t('settings.teamNamePlaceholder')}
         maxLength={150}
         style={{ marginBottom: 14 }}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
 
-      <div className="resolve-cats-label">Description</div>
+      <div className="resolve-cats-label">{t('settings.description')}</div>
       <textarea
         className="resolve-notes"
-        placeholder="What does this team handle?"
+        placeholder={t('settings.teamDescPlaceholder')}
         maxLength={300}
         style={{ marginBottom: 14 }}
         value={desc}
         onChange={(e) => setDesc(e.target.value)}
       />
 
-      <div className="resolve-cats-label">Icon</div>
+      <div className="resolve-cats-label">{t('settings.icon')}</div>
       <div className="team-icon-grid" style={{ marginBottom: 14 }}>
         {TEAM_ICON_OPTIONS.map((k) => {
           const IconComp = iconKeyToComponent(k);
@@ -117,7 +119,7 @@ export default function TeamModal({ team, onClose, onSaved }) {
         })}
       </div>
 
-      <div className="resolve-cats-label">Color</div>
+      <div className="resolve-cats-label">{t('settings.color')}</div>
       <div className="team-color-grid" style={{ marginBottom: 14 }}>
         {TEAM_COLOR_OPTIONS.map((c) => (
           <div
@@ -129,12 +131,12 @@ export default function TeamModal({ team, onClose, onSaved }) {
         ))}
       </div>
 
-      <div className="resolve-cats-label">Agents</div>
+      <div className="resolve-cats-label">{t('settings.agentsCol')}</div>
       <div className="iw-agent-list" style={{ marginBottom: 14 }}>
         {agentsLoading ? (
-          <div className="iw-empty">جارِ تحميل الموظفين...</div>
+          <div className="iw-empty">{t('settings.loadingAgents')}</div>
         ) : agents.length === 0 ? (
-          <div className="iw-empty">مفيش إيجنتس متسجلين لسه — ضيف إيجنت من صفحة Agents الأول</div>
+          <div className="iw-empty">{t('settings.noAgentsAddFirst')}</div>
         ) : (
           agents.map((a) => {
             const isSelected = selectedIds.has(String(a.id));
@@ -142,7 +144,7 @@ export default function TeamModal({ team, onClose, onSaved }) {
               <div key={a.id} className={`iw-agent-row${isSelected ? ' selected' : ''}`} onClick={() => toggleAgent(a.id)}>
                 <div className="iw-agent-check">{isSelected && <Check size={12} />}</div>
                 <div className="iw-agent-name">{a.display_name || a.email}</div>
-                <div className="iw-agent-role">{roleLabel(a.role)}</div>
+                <div className="iw-agent-role">{roleLabel(a.role, lang)}</div>
               </div>
             );
           })
@@ -151,10 +153,10 @@ export default function TeamModal({ team, onClose, onSaved }) {
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          إلغاء
+          {t('common.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={save}>
-          <Check size={16} /> Save Team
+          <Check size={16} /> {t('settings.saveTeam')}
         </button>
       </div>
       {error && (

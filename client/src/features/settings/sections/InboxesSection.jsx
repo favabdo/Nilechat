@@ -3,8 +3,10 @@ import { Plus, MessageCircle, Trash2, Inbox as InboxIcon } from 'lucide-react';
 import { inboxesApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import InboxWizard from '../components/InboxWizard';
+import useTranslation from '../../../i18n/useTranslation';
 
 export default function InboxesSection() {
+  const { t } = useTranslation();
   const showToast = useToastStore((s) => s.showToast);
   const [inboxes, setInboxes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,19 +35,19 @@ export default function InboxesSection() {
       await inboxesApi.updateStatus(inbox.id, newStatus);
     } catch (err) {
       console.error('[API] iwToggleInboxStatus error:', err);
-      showToast(err.response?.data?.error || 'فشل التحديث', 'error');
+      showToast(err.response?.data?.error || t('settings.updateFailed'), 'error');
       setInboxes((prev) => prev.map((i) => (i.id === inbox.id ? { ...i, status: inbox.status } : i)));
     }
   }
 
   async function deleteInbox(id) {
-    if (!window.confirm('متأكد إنك عايز تمسح الـ Inbox ده؟')) return;
+    if (!window.confirm(t('settings.deleteInboxConfirm'))) return;
     try {
       await inboxesApi.remove(id);
       load();
     } catch (err) {
       console.error('[API] iwDeleteInbox error:', err);
-      showToast(err.response?.data?.error || 'فشل الحذف', 'error');
+      showToast(err.response?.data?.error || t('settings.deleteFailed'), 'error');
     }
   }
 
@@ -54,20 +56,20 @@ export default function InboxesSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>Inboxes</h2>
-            <div className="settings-top-desc">Channels your customers use to reach you</div>
+            <h2>{t('settings.inboxes')}</h2>
+            <div className="settings-top-desc">{t('settings.inboxesDesc')}</div>
           </div>
           <button className="page-btn" onClick={() => setWizardOpen(true)}>
-            <Plus size={16} /> Add Inbox
+            <Plus size={16} /> {t('settings.addInbox')}
           </button>
         </div>
         <table className="settings-table">
           <thead>
             <tr>
-              <th>Inbox</th>
-              <th>Channel</th>
-              <th>Agents</th>
-              <th>Status</th>
+              <th>{t('settings.inboxCol')}</th>
+              <th>{t('settings.channelCol')}</th>
+              <th>{t('settings.agentsCol')}</th>
+              <th>{t('settings.statusCol')}</th>
               <th style={{ width: 50 }}></th>
             </tr>
           </thead>
@@ -75,14 +77,14 @@ export default function InboxesSection() {
             {loading && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  جارِ تحميل الـ Inboxes...
+                  {t('settings.loadingInboxes')}
                 </td>
               </tr>
             )}
             {!loading && failed && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  تعذر تحميل الـ Inboxes، تأكد إن السيرفر شغال
+                  {t('settings.loadInboxesFailed')}
                 </td>
               </tr>
             )}
@@ -90,7 +92,7 @@ export default function InboxesSection() {
               <tr>
                 <td colSpan={5} className="iw-empty">
                   <InboxIcon size={28} style={{ opacity: 0.4, display: 'block', margin: '0 auto 8px' }} />
-                  لسه مفيش Inboxes — دوس "Add Inbox" وضيف رقم واتساب حقيقي عشان تبدأ تستقبل رسايل لايف
+                  {t('settings.noInboxesYet')}
                 </td>
               </tr>
             )}

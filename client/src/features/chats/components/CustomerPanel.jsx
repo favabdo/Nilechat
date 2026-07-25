@@ -13,8 +13,10 @@ import PrevConversationCard from './PrevConversationCard';
 import useToastStore from '../../../store/toastStore';
 import useAuthStore from '../../../store/authStore';
 import { contactsApi } from '../../contacts/services/contacts.service';
+import useTranslation from '../../../i18n/useTranslation';
 
 export default function CustomerPanel({ conversation, currentAgentName, onClose }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('card');
   const { conversations, agents, allLabels, teams, patchConversation, refreshLabels, selectChat } = useChatsStore();
   const { modalOpen, modalMode, openModal, closeModal } = useScheduledTasksStore();
@@ -33,25 +35,25 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
   // نفس فكرة editPhoneLabel الأصلية بالظبط: prompt بسيط لكتابة/تعديل اسم ثانوي للرقم
   async function editPhoneLabel(idx) {
-    if (!c.contactId) return showToast('اربط الرقم بكونتاكت الأول', 'error');
+    if (!c.contactId) return showToast(t('chats.linkContactFirstToLabel'), 'error');
     const p = c.phones[idx];
     if (!p) return;
-    const newLabel = window.prompt('اكتب اسم ثانوي للرقم ده (مثلاً: الشغل، الرقم الشخصي) — سيبه فاضي عشان تمسح الاسم الثانوي', p.label || '');
+    const newLabel = window.prompt(t('chats.editPhoneLabelPrompt'), p.label || '');
     if (newLabel === null) return;
     try {
       const data = await contactsApi.updatePhoneLabel(c.contactId, p.number, newLabel.trim());
       patchConversation(c.id, { phones: data.contact.phones.map((ph) => ({ number: ph.phone_number, label: ph.label || null })) });
-      showToast('تم حفظ الاسم الثانوي بنجاح', 'success');
+      showToast(t('chats.secondaryLabelSaved'), 'success');
     } catch (err) {
       console.error('[API] editPhoneLabel error:', err);
-      showToast(err.response?.data?.error || 'فشل حفظ الاسم الثانوي', 'error');
+      showToast(err.response?.data?.error || t('chats.secondaryLabelFailed'), 'error');
     }
   }
 
   return (
     <div id="customer-panel">
       <div className="cp-header">
-        <h3>Customer Details</h3>
+        <h3>{t('chats.customerDetailsTitle')}</h3>
         <button className="cp-close-btn" onClick={onClose}>
           <X size={16} />
         </button>
@@ -62,7 +64,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
         </div>
         <div className="cp-name-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <div className="cp-name">{c.name}</div>
-          <button className="st-icon-btn" title="Edit name" aria-label="Edit name" style={{ width: 22, height: 22 }}>
+          <button className="st-icon-btn" title={t('chats.editName')} aria-label={t('chats.editName')} style={{ width: 22, height: 22 }}>
             <Pencil size={12} />
           </button>
         </div>
@@ -71,10 +73,10 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
       <div className="cp-tabs">
         <button className={`cp-tab${tab === 'card' ? ' active' : ''}`} onClick={() => setTab('card')}>
-          Card
+          {t('chats.cardTab')}
         </button>
         <button className={`cp-tab${tab === 'info' ? ' active' : ''}`} onClick={() => setTab('info')}>
-          Info
+          {t('chats.infoTab')}
         </button>
       </div>
 
@@ -89,17 +91,17 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
           <div className="cp-section" id="cp-section-sched">
             <div className="cp-section-header">
-              <div className="cp-section-title">Scheduled Tasks</div>
+              <div className="cp-section-title">{t('chats.scheduledTasksTitle')}</div>
             </div>
             <div className="cp-section-body">
               <button
                 className="add-btn"
                 id="sched-add-btn"
                 disabled={!c.contactId}
-                title={c.contactId ? '' : 'اربط المحادثة بعميل الأول'}
+                title={c.contactId ? '' : t('chats.linkContactFirst')}
                 onClick={() => c.contactId && openModal('card')}
               >
-                <CalendarPlus size={16} /> Adding scheduled tasks
+                <CalendarPlus size={16} /> {t('chats.addingScheduledTask')}
               </button>
             </div>
           </div>
@@ -115,12 +117,12 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
           <div className="cp-section" id="cp-section-prevconv">
             <div className="cp-section-header">
-              <div className="cp-section-title">Previous Conversations</div>
+              <div className="cp-section-title">{t('chats.previousConversationsTitle')}</div>
             </div>
             <div className="cp-section-body">
               <div className="prev-conv-list">
                 {!c.prevConvs || c.prevConvs.length === 0 ? (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', padding: 12 }}>No previous conversations</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', padding: 12 }}>{t('chats.noPreviousConversations')}</div>
                 ) : (
                   c.prevConvs.map((p) => (
                     <PrevConversationCard
@@ -128,7 +130,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                       p={p}
                       onClick={() => {
                         const target = conversations.find((x) => x.id === p.id);
-                        if (!target) return showToast('تعذر إيجاد المحادثة دي في القائمة الحالية', 'error');
+                        if (!target) return showToast(t('chats.conversationNotFound'), 'error');
                         selectChat(target.id);
                       }}
                     />
@@ -143,7 +145,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
       {tab === 'info' && (
         <div className="cp-tab-content active">
           <div className="cp-section">
-            <div className="cp-section-title">Phone Numbers</div>
+            <div className="cp-section-title">{t('chats.phoneNumbersTitle')}</div>
             <div className="info-list" id="phone-list">
               {(c.phones || []).map((p, i) => (
                 <div key={p.number} className="info-item">
@@ -157,7 +159,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                     )}
                   </div>
                   {isOwnerOrAdmin && (
-                    <button className="info-item-del" title="حط/عدّل اسم ثانوي" aria-label="حط/عدّل اسم ثانوي" onClick={() => editPhoneLabel(i)}>
+                    <button className="info-item-del" title={t('chats.editSecondaryLabel')} aria-label={t('chats.editSecondaryLabel')} onClick={() => editPhoneLabel(i)}>
                       <Tag size={14} />
                     </button>
                   )}
@@ -167,7 +169,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
             <AddPhoneForm contactId={c.contactId} onAdded={(phones) => patchConversation(c.id, { phones })} />
           </div>
           <div className="cp-section">
-            <div className="cp-section-title">Devices</div>
+            <div className="cp-section-title">{t('chats.devicesTitle')}</div>
             <DevicesSection contactId={c.contactId} />
           </div>
         </div>
