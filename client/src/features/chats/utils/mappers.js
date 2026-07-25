@@ -36,6 +36,8 @@ export function mapApiConversation(row) {
     // الكونتاكت (contact_location) كـ fallback واحد بس يتعرض مكان الفروع
     branches: parseLabelsJson(row.branches_json),
     location: row.contact_location || null,
+    // العميل ده VIP؟ — بتتعرض علامة تاجية جمب اسمه في كارت المحادثة بره الشات
+    isVip: row.contact_is_vip === 1,
     _messagesLoaded: false,
     _contactLoaded: false,
     _lastMessageAtRaw: row.last_message_at || null,

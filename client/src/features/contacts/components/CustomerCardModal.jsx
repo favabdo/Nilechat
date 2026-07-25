@@ -1,33 +1,11 @@
 import { useState } from 'react';
-import { UserPlus, Plus, X, Check } from 'lucide-react';
+import { UserPlus, Plus, X, Check, Crown, UserX } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
 import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { contactsApi } from '../services/contacts.service';
+import { CONTACT_MODULES_LIST } from '../constants';
 
 const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
-
-const CONTACT_MODULES_LIST = [
-  'حسابات عامه',
-  'اداره المخازن (مخزن)',
-  'اداره المخازن (نقطة بيع)',
-  'اداره المخازن(مطعم)',
-  'اداره المخازن(ماركت)',
-  'نقطة بيع فقط',
-  'شئون موظفيين',
-  'التوكيلات التجاريه',
-  'الاداره التجاريه',
-  'قطع الغيار',
-  'السيارات',
-  'شركات النقل',
-  'المخازن(المخازن وحسابات)',
-  'المخازن(التصنيع)',
-  'المجوهرات',
-  'فلاتر المياه',
-  'المقاولات',
-  'الحجوزات',
-  'فاتوره الكترونيه ( مصريه )',
-  'فاتوره الكترونيه ( سعوديه )',
-];
 
 export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
   const isEdit = mode === 'edit';
@@ -44,6 +22,10 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
   const [contractEnd, setContractEnd] = useState('');
   const [selectedModules, setSelectedModules] = useState(new Set((contact?.modules || []).map((m) => m.name || m)));
   const [customModules, setCustomModules] = useState('');
+  const initialIsVip = contact?.is_vip === 1;
+  const initialIsInactive = contact?.is_inactive === 1;
+  const [isVip, setIsVip] = useState(initialIsVip);
+  const [isInactive, setIsInactive] = useState(initialIsInactive);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -109,6 +91,18 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
     setSaving(true);
     try {
       const data = isEdit ? await contactsApi.updateCustomerCard(contact.id, body) : await contactsApi.createCustomerCard(body);
+      const savedContactId = isEdit ? contact.id : data?.contact?.id;
+      // is_vip و is_inactive أعمدة مستقلة عن باقي بيانات الكارت، ليهم endpoints
+      // خاصة بيهم (setVip/setInactive) — بننادي عليهم بس لو القيمة اتغيرت فعلاً
+      // (في وضع التعديل) أو لو اتحطت من الأول (في وضع الإضافة)
+      if (savedContactId) {
+        if (isEdit ? isVip !== initialIsVip : isVip) {
+          await contactsApi.setVip(savedContactId, isVip);
+        }
+        if (isEdit ? isInactive !== initialIsInactive : isInactive) {
+          await contactsApi.setInactive(savedContactId, isInactive);
+        }
+      }
       onSaved(data);
     } catch (err) {
       console.error('[API] submitCustomerCard error:', err);
@@ -222,6 +216,18 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
           <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 12 }}>هيتسجل كأول عقد صيانة للعميل فورًا. حدد المدة وهيتحسب تاريخ الانتهاء تلقائي.</div>
         </>
       )}
+
+      <div className="resolve-cats-label">حالة العميل</div>
+      <div style={{ display: 'flex', gap: 18, marginBottom: 14 }}>
+        <label className="contact-modules-item">
+          <input type="checkbox" checked={isVip} onChange={(e) => setIsVip(e.target.checked)} />
+          <Crown size={13} style={{ verticalAlign: -2, color: '#f5a623' }} /> عميل VIP
+        </label>
+        <label className="contact-modules-item">
+          <input type="checkbox" checked={isInactive} onChange={(e) => setIsInactive(e.target.checked)} />
+          <UserX size={13} style={{ verticalAlign: -2 }} /> عميل غير نشط
+        </label>
+      </div>
 
       <div className="resolve-cats-label">الموديولات اللي العميل مشترك فيها</div>
       <div className="contact-modules-grid">

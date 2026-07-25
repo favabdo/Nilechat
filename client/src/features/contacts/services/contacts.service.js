@@ -11,9 +11,9 @@ export const contactsApi = {
     apiClient.patch(`/api/contacts/${contactId}/vip`, { is_vip: isVip ? 1 : 0 }).then((r) => r.data),
   setInactive: (contactId, isInactive) =>
     apiClient.patch(`/api/contacts/${contactId}/inactive`, { is_inactive: isInactive ? 1 : 0 }).then((r) => r.data),
-  listPaginated: ({ page, pageSize, q, category }) =>
+  listPaginated: ({ page, pageSize, q, category, module }) =>
     apiClient
-      .get('/api/contacts-paginated', { params: { page, pageSize, q: q || undefined, category } })
+      .get('/api/contacts-paginated', { params: { page, pageSize, q: q || undefined, category, module: module || undefined } })
       .then((r) => r.data),
   createCustomerCard: (payload) => apiClient.post('/api/contacts/customer-card', payload).then((r) => r.data),
   updateCustomerCard: (contactId, payload) =>

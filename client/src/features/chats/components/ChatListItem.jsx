@@ -1,4 +1,4 @@
-import { UserRound } from 'lucide-react';
+import { UserRound, Crown } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import { hexToRgba } from '../utils/mappers';
 
@@ -11,7 +11,27 @@ export default function ChatListItem({ c, active, onClick }) {
       </div>
       <div className="chat-item-info">
         <div className="chat-item-name">
-          <span>{c.name}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            {c.name}
+            {c.isVip && (
+              <span
+                title="عميل VIP"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  background: 'rgba(245,166,35,0.15)',
+                  color: '#f5a623',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: 20,
+                }}
+              >
+                <Crown size={10} /> VIP
+              </span>
+            )}
+          </span>
           <span>{c.time}</span>
         </div>
         <div className="chat-item-msg">

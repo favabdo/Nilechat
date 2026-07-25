@@ -37,6 +37,8 @@ async function listContactsPaginated(req, res) {
     // غير مسجلة") — القيمة القديمة registered=yes/no لسه مدعومة لحد ما أي حد
     // بيستخدم الـ API مباشرة يتحدّث
     category: req.query.category || (req.query.registered === 'yes' ? 'registered' : req.query.registered === 'no' ? 'unregistered' : 'all'),
+    // فلتر اختياري بموديول معين (تاب "الكل" في "عملاء مسجلين" بصفحة Contacts)
+    module: req.query.module || undefined,
   });
   res.json(result);
 }

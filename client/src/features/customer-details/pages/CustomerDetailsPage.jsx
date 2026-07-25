@@ -90,35 +90,6 @@ export default function CustomerDetailsPage() {
     }
   }
 
-  // بيبدّل عمود is_vip (0/1) — عمود مستقل تمامًا عن is_inactive، يعني ممكن
-  // العميل يبقى VIP وغير نشط في نفس الوقت
-  async function toggleVip() {
-    if (!contact) return;
-    const nextValue = contact.is_vip === 1 ? 0 : 1;
-    try {
-      await contactsApi.setVip(contactId, nextValue);
-      loadContact();
-      showToast(nextValue === 1 ? 'تم تحديد العميل كـ VIP' : 'تم إلغاء تصنيف VIP', 'success');
-    } catch (err) {
-      console.error('[API] toggleVip error:', err);
-      showToast(err.response?.data?.error || 'فشل تحديث تصنيف VIP', 'error');
-    }
-  }
-
-  // بيبدّل عمود is_inactive (0/1) — عمود مستقل تمامًا عن is_vip
-  async function toggleInactive() {
-    if (!contact) return;
-    const nextValue = contact.is_inactive === 1 ? 0 : 1;
-    try {
-      await contactsApi.setInactive(contactId, nextValue);
-      loadContact();
-      showToast(nextValue === 1 ? 'تم تحديد العميل كغير نشط' : 'تم تحديد العميل كنشط', 'success');
-    } catch (err) {
-      console.error('[API] toggleInactive error:', err);
-      showToast(err.response?.data?.error || 'فشل تحديث حالة النشاط', 'error');
-    }
-  }
-
   if (loading) {
     return (
       <div id="page-customer-details" className="page">
@@ -168,32 +139,6 @@ export default function CustomerDetailsPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {canManage && (
-              <button
-                className="page-btn"
-                style={{
-                  background: contact.is_vip === 1 ? 'rgba(245,166,35,0.15)' : 'var(--bg)',
-                  color: contact.is_vip === 1 ? '#f5a623' : 'var(--text)',
-                  border: '1px solid var(--border)',
-                }}
-                onClick={toggleVip}
-              >
-                <Crown size={15} /> VIP
-              </button>
-            )}
-            {canManage && (
-              <button
-                className="page-btn"
-                style={{
-                  background: contact.is_inactive === 1 ? 'rgba(148,163,184,0.18)' : 'var(--bg)',
-                  color: contact.is_inactive === 1 ? 'var(--text-secondary)' : 'var(--text)',
-                  border: '1px solid var(--border)',
-                }}
-                onClick={toggleInactive}
-              >
-                <UserX size={15} /> غير نشط
-              </button>
-            )}
             {canManage && (
               <button className="page-btn" style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }} onClick={() => setEditOpen(true)}>
                 <Pencil size={15} /> Edit

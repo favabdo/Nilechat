@@ -17,16 +17,16 @@ WHATSAPP_PHONE_NUMBER_ID=
 WHATSAPP_ACCESS_TOKEN=
 WHATSAPP_VERIFY_TOKEN=
 
-DB_NAME=ChatwootReports
-DB_PASSWORD=passwordniletechno
+DB_NAME=your_database_name
+DB_PASSWORD=your_db_password
 DB_PORT=1433
-DB_SERVER=162.55.67.11
+DB_SERVER=your_db_server_host_or_ip
 DB_TDS_VERSION=4.2
-DB_USER=elharaman
+DB_USER=your_db_username
 
 DB_TABLE_NAME=NileChat_byA
 
-DASHBOARD_ORIGIN=https://support.niletechno.com
+DASHBOARD_ORIGIN=https://your-dashboard-domain.example.com
 PORT=3000
 ```
 

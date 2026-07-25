@@ -105,6 +105,7 @@ async function listConversations(hideRatingMessages = false) {
       ct.name AS contact_display_name,
       COALESCE(ct.name, c.contact_name, c.contact_number) AS contact_resolved_name,
       ct.location AS contact_location,
+      ct.is_vip AS contact_is_vip,
       mc.start_date AS contact_contract_date,
       mc.end_date AS contact_maintenance_end_date,
       (
@@ -228,6 +229,7 @@ async function getConversationById(id) {
         ct.name AS contact_display_name,
         COALESCE(ct.name, c.contact_name, c.contact_number) AS contact_resolved_name,
         ct.location AS contact_location,
+        ct.is_vip AS contact_is_vip,
         mc.start_date AS contact_contract_date,
         mc.end_date AS contact_maintenance_end_date
       FROM [dbo].[NileChat_Conversations_byA] c

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, AlertTriangle, ShieldCheck, BadgeCheck, Package, MessageCircle, LayoutGrid, Crown, UserX } from 'lucide-react';
+import { Plus, Search, Trash2, AlertTriangle, ShieldCheck, BadgeCheck, Package, MessageCircle, LayoutGrid, Crown, UserX, Layers } from 'lucide-react';
 import { contactsApi } from '../services/contacts.service';
 import Avatar from '../../../components/ui/Avatar';
 import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
 import CustomerCardModal from '../components/CustomerCardModal';
+import { CONTACT_MODULES_LIST } from '../constants';
 
 const PAGE_SIZE = 20;
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
@@ -26,6 +27,8 @@ export default function ContactsPage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('registered');
   const [registeredSubTab, setRegisteredSubTab] = useState('all');
+  // فلتر بالموديول — بيتعرض بس تحت تاب "الكل" (عملاء مسجلين)
+  const [moduleFilter, setModuleFilter] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [counts, setCounts] = useState({ activeContract: 0, expiredContract: 0, noContract: 0, unregistered: 0 });
@@ -41,7 +44,13 @@ export default function ContactsPage() {
     setLoading(true);
     setFailed(false);
     contactsApi
-      .listPaginated({ page: targetPage, pageSize: PAGE_SIZE, q: search, category: resolveCategory(activeTab, registeredSubTab) })
+      .listPaginated({
+        page: targetPage,
+        pageSize: PAGE_SIZE,
+        q: search,
+        category: resolveCategory(activeTab, registeredSubTab),
+        module: activeTab === 'registered' && registeredSubTab === 'all' ? moduleFilter : undefined,
+      })
       .then((data) => {
         setContacts(data.contacts || []);
         setPage(data.page || 1);
@@ -60,10 +69,11 @@ export default function ContactsPage() {
     debounceRef.current = setTimeout(() => load(1), 350);
     return () => clearTimeout(debounceRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, activeTab, registeredSubTab]);
+  }, [search, activeTab, registeredSubTab, moduleFilter]);
 
   function switchTab(tab) {
     if (tab === activeTab) return;
+    setModuleFilter('');
     setActiveTab(tab);
   }
 
@@ -131,25 +141,53 @@ export default function ContactsPage() {
             </button>
             <button
               className={`contacts-subtab${registeredSubTab === 'active_contract' ? ' active' : ''}`}
-              onClick={() => setRegisteredSubTab('active_contract')}
+              onClick={() => {
+                setModuleFilter('');
+                setRegisteredSubTab('active_contract');
+              }}
             >
               <ShieldCheck size={13} /> عقد صيانة ساري
               <span className="contacts-tab-count">{counts.activeContract || 0}</span>
             </button>
             <button
               className={`contacts-subtab${registeredSubTab === 'expired_contract' ? ' active' : ''}`}
-              onClick={() => setRegisteredSubTab('expired_contract')}
+              onClick={() => {
+                setModuleFilter('');
+                setRegisteredSubTab('expired_contract');
+              }}
             >
               <AlertTriangle size={13} /> عقد صيانة منتهي
               <span className="contacts-tab-count">{counts.expiredContract || 0}</span>
             </button>
             <button
               className={`contacts-subtab${registeredSubTab === 'no_contract' ? ' active' : ''}`}
-              onClick={() => setRegisteredSubTab('no_contract')}
+              onClick={() => {
+                setModuleFilter('');
+                setRegisteredSubTab('no_contract');
+              }}
             >
               <Package size={13} /> عملاء بدون عقد صيانة
               <span className="contacts-tab-count">{counts.noContract || 0}</span>
             </button>
+          </div>
+        )}
+
+        {activeTab === 'registered' && registeredSubTab === 'all' && (
+          <div style={{ maxWidth: 320, marginBottom: 16 }}>
+            <div className="cl-search-wrap">
+              <Layers size={16} className="cl-search-icon" />
+              <select
+                className="cl-search"
+                style={{ cursor: 'pointer' }}
+                value={moduleFilter}
+                onChange={(e) => setModuleFilter(e.target.value)}
+              >
+                <option value="">فلترة بالموديول: الكل</option>
+                {CONTACT_MODULES_LIST.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 

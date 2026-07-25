@@ -10,7 +10,7 @@ module.exports = {
 
   // دومين المشروع الثابت (بيتستخدم في بناء لينكات الإيميلات زي رابط تحديد كلمة السر ورابط اللوجو)
   // لازم يكون نفس دومين الإرسال في Resend عشان الإيميلات متتحطش في السبام
-  // مثال: https://app.abdullahelsawy.online (من غير / في الآخر)
+  // مثال: https://app.your-domain.example.com (من غير / في الآخر)
   APP_URL: process.env.APP_URL || '',
 
   JWT_SECRET: process.env.JWT_SECRET || 'change-this-secret-in-production',

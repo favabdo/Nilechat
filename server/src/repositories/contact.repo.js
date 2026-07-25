@@ -420,18 +420,28 @@ function resolveContactsCategoryClause(category) {
   }
 }
 
-async function listContactsPage({ page = 1, pageSize = MAX_CONTACTS_PAGE_SIZE, search = '', category = 'all' } = {}) {
+async function listContactsPage({ page = 1, pageSize = MAX_CONTACTS_PAGE_SIZE, search = '', category = 'all', module = undefined } = {}) {
   const pool = await getPool();
   const safePage = Math.max(1, parseInt(page, 10) || 1);
   const safePageSize = Math.min(MAX_CONTACTS_PAGE_SIZE, Math.max(1, parseInt(pageSize, 10) || MAX_CONTACTS_PAGE_SIZE));
   const offset = (safePage - 1) * safePageSize;
   const q = (search || '').trim();
+  const moduleFilter = (module || '').trim() || null;
 
   const categoryClause = resolveContactsCategoryClause(category);
+  // فلتر اختياري بموديول معين — لو موجود، بنستبعد أي عميل مش مشترك في الموديول
+  // ده أصلاً (جدول NileChat_ContactModules_byA)
+  const moduleClause = moduleFilter
+    ? `AND EXISTS (
+         SELECT 1 FROM [dbo].[NileChat_ContactModules_byA] cm
+         WHERE cm.contact_id = c.id AND cm.module_name = @moduleFilter
+       )`
+    : '';
 
   const contactsResult = await pool
     .request()
     .input('q', sql.NVarChar(200), q ? `%${q}%` : null)
+    .input('moduleFilter', sql.NVarChar(300), moduleFilter)
     .input('offset', sql.Int, offset)
     .input('pageSize', sql.Int, safePageSize)
     .query(`
@@ -453,6 +463,7 @@ async function listContactsPage({ page = 1, pageSize = MAX_CONTACTS_PAGE_SIZE, s
             )
       )
       ${categoryClause}
+      ${moduleClause}
       ORDER BY c.name ASC
       OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY
     `);
