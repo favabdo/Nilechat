@@ -110,26 +110,18 @@ export default function CustomerDetailsPage() {
 
   const currentContract = contracts.find((c) => c.status !== 'stopped');
   const remainingLabel = currentContract ? formatDurationDays(new Date().toISOString(), currentContract.end_date) : null;
-  // اسم/أسماء الفروع لو مسجلة، وإلا بنرجع لعمود location القديم بتاع العميل
-  // كأنه هو الفرع، عشان صف "الفروع" في الصفحة دي يفضل معروض له قيمة لكل
-  // العملاء بدل ما يفضل فاضي للعملاء اللي معندهمش فروع متعددة مسجلة
-  const branchNames = (contact.branches || []).map((b) => b.name || b.location).filter(Boolean);
-  const branchValues = branchNames.length > 0 ? branchNames : (contact.location ? [contact.location] : []);
-  // تحت اسم العميل: كل أماكن الفروع مجمّعة (مش بس أول فرع)
-  const branchesDisplay = branchValues.length > 0 ? branchValues.join(i18n.t('listSeparator', { ns: 'common' })) : '-';
-  // في صف "الفروع": كل فرع بمسماه (الفرع الرئيسي هو أول فرع اتسجل، والباقي فروع فرعية)
-  const branchesLabeledDisplay =
-    branchValues.length > 0
-      ? branchValues
-          .map((val, idx) => {
-            if (idx === 0) return `${t('customerInfo.mainBranch')}: ${val}`;
-            const subLabel = branchValues.length > 2 ? t('customerInfo.subBranchNumbered', { num: idx }) : t('customerInfo.subBranch');
-            return `${subLabel}: ${val}`;
-          })
-          .join(i18n.t('listSeparator', { ns: 'common' }))
-      : '-';
+  // لو مفيش فروع متعددة مسجلة، بنرجع لعمود location القديم بتاع العميل
+  // كأنه هو عنوان فرع واحد، عشان العرض يفضل شغال حتى للعملاء القدام اللي
+  // معندهمش صفوف في جدول الفروع
+  const branchList = (contact.branches && contact.branches.length > 0)
+    ? contact.branches
+    : (contact.location ? [{ name: null, location: contact.location }] : []);
+  // تحت اسم العميل: عناوين كل الفروع بس (من غير أسماء الفروع)
+  const branchAddresses = branchList.map((b) => b.location).filter(Boolean);
+  const branchAddressesDisplay = branchAddresses.join(i18n.t('listSeparator', { ns: 'common' }));
 
   return (
+
     <div id="page-customer-details" className="page">
       <div className="page-content">
         <div className="page-header">
@@ -151,7 +143,7 @@ export default function CustomerDetailsPage() {
                   </span>
                 )}
               </h2>
-              {branchValues.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{branchesDisplay}</div>}
+              {branchAddresses.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{branchAddressesDisplay}</div>}
             </div>
           </div>
           <div className="customer-header-actions" style={{ display: 'flex', gap: 8 }}>
@@ -191,9 +183,19 @@ export default function CustomerDetailsPage() {
               </span>
             </div>
           )}
-          <div className="setting-row">
+          <div className="setting-row" style={{ alignItems: branchList.length > 1 ? 'flex-start' : 'center' }}>
             <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.branches')}</div></div>
-            <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{branchesLabeledDisplay}</span>
+            {branchList.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+                {branchList.map((b, idx) => (
+                  <span key={idx} style={{ fontSize: 13.5, color: 'var(--text-secondary)', textAlign: 'left' }}>
+                    {b.name || '-'} — {b.location || '-'}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>-</span>
+            )}
           </div>
           {contact.modules && contact.modules.length > 0 && (
             <div style={{ padding: '12px 0 4px' }}>
