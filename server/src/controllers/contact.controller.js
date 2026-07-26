@@ -77,7 +77,7 @@ async function updateContact(req, res) {
 
   res.json({ ok: true, contact });
 
-  notificationService.logActivity(req, `غيّر اسم العميل إلى ${contact.name}`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `غيّر اسم العميل إلى "${contact.name}"`, contact.id);
 }
 
 // بيضيف رقم تليفون جديد لعميل موجود بالفعل (زرار "إضافة رقم" في صفحة تفاصيل
@@ -103,7 +103,7 @@ async function addPhone(req, res) {
 
   res.status(201).json({ ok: true, contact: result.contact });
 
-  notificationService.logActivity(req, `أضاف رقم تليفون جديد للعميل "${result.contact.name}"`, result.contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `أضاف رقم تليفون جديد للعميل "${result.contact.name}"`, result.contact.id);
 }
 
 // بنحط/بنعدّل ليبل على رقم معين بتاع الكونتاكت ده (مفيد لو عنده أكتر من رقم واحد،
@@ -127,7 +127,7 @@ async function updatePhoneLabel(req, res) {
 
   res.json({ ok: true, contact });
 
-  notificationService.logActivity(req, `عدّل ليبل رقم تليفون العميل "${contact.name}"`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `عدّل ليبل رقم تليفون العميل "${contact.name}"`, contact.id);
 }
 
 // بيغيّر عمود is_vip بس (0 أو 1) — عمود مستقل تمامًا عن is_inactive
@@ -145,7 +145,7 @@ async function updateCustomerVip(req, res) {
 
   res.json({ ok: true, contact });
 
-  notificationService.logActivity(req, `${is_vip === 1 ? 'حدد' : 'شال'} العميل "${contact.name}" كـ VIP`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `${is_vip === 1 ? 'حدد' : 'شال'} العميل "${contact.name}" كـ VIP`, contact.id);
 }
 
 // بيغيّر عمود is_inactive بس (0 أو 1) — عمود مستقل تمامًا عن is_vip
@@ -163,7 +163,7 @@ async function updateCustomerInactive(req, res) {
 
   res.json({ ok: true, contact });
 
-  notificationService.logActivity(req, `حدد العميل "${contact.name}" كـ ${is_inactive === 1 ? 'غير نشط' : 'نشط'}`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `حدد العميل "${contact.name}" كـ ${is_inactive === 1 ? 'غير نشط' : 'نشط'}`, contact.id);
 }
 // body: { mode: 'link', contactId } أو { mode: 'new', name }
 async function linkConversationContact(req, res) {
@@ -246,7 +246,7 @@ async function createCustomerCard(req, res) {
 
   res.status(201).json({ ok: true, contact });
 
-  notificationService.logActivity(req, `أضاف عميل جديد باسم "${contact.name}"`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_CREATED, `أضاف عميل جديد باسم "${contact.name}"`, contact.id);
 }
 
 // تعديل بيانات كارت عميل الصيانة (زرار Edit في صفحة التفاصيل) — أدمن بس.
@@ -279,7 +279,7 @@ async function updateCustomerCard(req, res) {
 
   res.json({ ok: true, contact });
 
-  notificationService.logActivity(req, `عدّل معلومات العميل "${contact.name}"`, contact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `عدّل معلومات العميل "${contact.name}"`, contact.id);
 }
 
 // بيفصل رقم تليفون من كونتاكت عنده أكتر من رقم، وبينشئ كونتاكت جديد منفصل بيه —
@@ -299,7 +299,7 @@ async function unlinkPhone(req, res) {
 
   res.status(201).json({ ok: true, contact: newContact, oldContact: updatedOldContact });
 
-  notificationService.logActivity(req, `فصل رقم تليفون عن العميل "${updatedOldContact?.name || ''}" وعمل بيه عميل منفصل باسم "${newContact.name}"`, newContact.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `فصل رقم تليفون عن العميل "${updatedOldContact?.name || ''}" وعمل بيه عميل منفصل باسم "${newContact.name}"`, newContact.id);
 }
 
 // "مسح" عميل (Soft Delete): بيحول status بتاعه لـ 0 بس، فبيختفي من صفحة
@@ -343,7 +343,7 @@ async function deleteContact(req, res) {
 
   res.json({ ok: true });
 
-  notificationService.logActivity(req, `مسح العميل ${deleted.name} (اتخفى من القايمة، بياناته لسه محفوظة)`, deleted.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CONTACT_UPDATED, `مسح العميل ${deleted.name} (اتخفى من القايمة، بياناته لسه محفوظة)`, deleted.id);
 }
 
 module.exports = {

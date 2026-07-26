@@ -305,7 +305,7 @@ async function createUserAccount(req, res) {
     invite_link: inviteUrl,
   });
 
-  notificationService.logActivity(req, `دعا إيجنت جديد بالإيميل ${email}`, user.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SETTINGS_UPDATED, `دعا إيجنت جديد بالإيميل ${email}`, user.id);
 }
 
 // بيتأكد إن لينك الدعوة صحيح ولسه صالح قبل ما يعرض فورم تحديد كلمة السر
@@ -359,7 +359,7 @@ async function updateUserAccount(req, res) {
   }
 
   res.json({ ok: true, user });
-  notificationService.logActivity(req, `عدّل بيانات حساب الإيجنت ${user.email}`, user.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SETTINGS_UPDATED, `عدّل بيانات حساب الإيجنت ${user.email}`, user.id);
 }
 
 // مسح إيجنت نهائيًا — لازم الأدمن اللي بيمسح يأكد بكلمة سره الشخصية (مش كلمة سر الإيجنت المحذوف)
@@ -398,7 +398,7 @@ async function deleteUserAccount(req, res) {
   if (io) io.emit('agent_status_changed', { userId: deleted.id, status: 'deleted', reason: 'deleted' });
 
   res.json({ ok: true });
-  notificationService.logActivity(req, `مسح حساب الإيجنت ${deleted.email}`, deleted.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SETTINGS_UPDATED, `مسح حساب الإيجنت ${deleted.email}`, deleted.id);
 }
 
 module.exports = {

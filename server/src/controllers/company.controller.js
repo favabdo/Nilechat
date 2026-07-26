@@ -88,7 +88,7 @@ async function updateSettings(req, res) {
     code: updated.code,
     auto_resolve_days: updated.auto_resolve_days,
   });
-  notificationService.logActivity(req, 'غيّر إعدادات الحساب (Account Settings)');
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SETTINGS_UPDATED, 'غيّر إعدادات الحساب (Account Settings)');
 }
 
 module.exports = { getSettings, updateSettings, getAutomationSettings, updateAutomationSettings };
@@ -337,5 +337,5 @@ async function updateAutomationSettings(req, res) {
 
   const updated = await companyRepo.updateAutomationSettings(company.id, fields);
   res.json({ ok: true, ...updated });
-  notificationService.logActivity(req, 'غيّر إعدادات الأتمتة (Automation)');
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SETTINGS_UPDATED, 'غيّر إعدادات الأتمتة (Automation)');
 }

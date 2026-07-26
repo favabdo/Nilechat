@@ -47,7 +47,7 @@ async function addTask(req, res) {
 
   res.status(201).json({ ok: true, task });
 
-  notificationService.logActivity(req, `أضاف تاسك جديد للعميل ${contact.name || ''}`, task.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.SCHEDULED_TASK_CREATED, `أضاف تاسك جديد للعميل "${contact.name || ''}"`, task.id);
 }
 
 async function endTask(req, res) {

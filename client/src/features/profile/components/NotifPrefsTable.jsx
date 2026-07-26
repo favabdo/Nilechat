@@ -6,6 +6,10 @@ const NOTIF_PREF_KEYS = [
   'conversation_mention',
   'assigned_conversation_message',
   'participating_conversation_message',
+  'contact_created',
+  'contact_updated',
+  'scheduled_task_created',
+  'settings_updated',
 ];
 
 export default function NotifPrefsTable({ prefs, onToggle }) {

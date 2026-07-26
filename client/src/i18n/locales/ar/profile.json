@@ -77,7 +77,11 @@
       "conversation_assigned": "إسناد محادثة إليك",
       "conversation_mention": "الإشارة إليك في محادثة",
       "assigned_conversation_message": "رسالة جديدة في محادثة مُسندة إليك",
-      "participating_conversation_message": "رسالة جديدة في محادثة تشارك فيها"
+      "participating_conversation_message": "رسالة جديدة في محادثة تشارك فيها",
+      "contact_created": "إنشاء عميل جديد",
+      "contact_updated": "تعديل على عميل",
+      "scheduled_task_created": "إنشاء تاسك مجدول جديد",
+      "settings_updated": "تعديل في الإعدادات"
     }
   },
   "accessToken": {

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, BellOff, MessageCirclePlus, UserCheck, AtSign, Inbox, MessagesSquare, LogIn, Activity, CheckCheck } from 'lucide-react';
+import { Bell, BellOff, MessageCirclePlus, UserCheck, AtSign, Inbox, MessagesSquare, LogIn, Activity, CheckCheck, UserPlus, UserCog, CalendarPlus, Settings } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
 import useNotificationsStore from '../store/notificationsStore';
 import useToastStore from '../../../store/toastStore';
@@ -12,6 +12,10 @@ const NOTIFICATION_TYPE_ICONS = {
   participating_conversation_message: MessagesSquare,
   login: LogIn,
   activity: Activity,
+  contact_created: UserPlus,
+  contact_updated: UserCog,
+  scheduled_task_created: CalendarPlus,
+  settings_updated: Settings,
 };
 
 function timeAgo(dateStr, t) {

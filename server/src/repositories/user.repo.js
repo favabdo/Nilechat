@@ -74,6 +74,10 @@ const DEFAULT_NOTIFICATION_PREFS = {
   conversation_mention: { email: false, push: true },
   assigned_conversation_message: { email: false, push: true },
   participating_conversation_message: { email: false, push: true },
+  contact_created: { email: false, push: true },
+  contact_updated: { email: false, push: true },
+  scheduled_task_created: { email: false, push: true },
+  settings_updated: { email: false, push: true },
 };
 
 function parseNotificationPrefs(raw) {

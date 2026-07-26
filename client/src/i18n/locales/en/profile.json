@@ -77,7 +77,11 @@
       "conversation_assigned": "A conversation is assigned to you",
       "conversation_mention": "You are mentioned in a conversation",
       "assigned_conversation_message": "A new message is created in an assigned conversation",
-      "participating_conversation_message": "A new message is created in a participating conversation"
+      "participating_conversation_message": "A new message is created in a participating conversation",
+      "contact_created": "A new contact/customer is created",
+      "contact_updated": "A contact/customer is updated",
+      "scheduled_task_created": "A new scheduled task is created",
+      "settings_updated": "Settings are changed"
     }
   },
   "accessToken": {

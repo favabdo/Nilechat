@@ -15,6 +15,18 @@ const NOTIFICATION_TYPES = {
   PARTICIPATING_CONVERSATION_MESSAGE: 'participating_conversation_message',
   LOGIN: 'login',
   ACTIVITY: 'activity',
+  CONTACT_CREATED: 'contact_created',
+  CONTACT_UPDATED: 'contact_updated',
+  SCHEDULED_TASK_CREATED: 'scheduled_task_created',
+  SETTINGS_UPDATED: 'settings_updated',
+};
+
+// عنوان ثابت لكل نوع من الأنواع الجديدة دي (يتعرض في الإشعار نفسه)
+const ACTIVITY_TYPE_TITLES = {
+  [NOTIFICATION_TYPES.CONTACT_CREATED]: 'عميل جديد',
+  [NOTIFICATION_TYPES.CONTACT_UPDATED]: 'تعديل على عميل',
+  [NOTIFICATION_TYPES.SCHEDULED_TASK_CREATED]: 'تاسك جديد',
+  [NOTIFICATION_TYPES.SETTINGS_UPDATED]: 'تعديل في الإعدادات',
 };
 
 // io بتاع socket.io — بيتظبط مرة واحدة من app.js وقت الإقلاع عشان الخدمة دي تقدر
@@ -127,6 +139,35 @@ async function logActivity(req, action, referenceId = null) {
   }
 }
 
+// زي logActivity تمامًا (بيتبعت لكل الإيجنتس النشطين، وبيتضمّن اسم الإيجنت اللي
+// عمل الحدث)، لكن — خلاف logActivity/broadcastActivity — بيحترم تفضيلات كل
+// يوزر (push/email) بتاعة النوع ده بالظبط بدل ما يفرض الإشعار على الكل. ده
+// اللي بيتستخدم للأنواع الجديدة (عميل جديد/تعديل عميل/تاسك جديد/تعديل
+// إعدادات) عشان لو حد قفل نوع معين من الإشعارات فعلاً ميوصلوش، لا Push ولا
+// إيميل ولا حتى صف في صفحة الإشعارات
+async function notifyTypedActivity(req, type, action, referenceId = null) {
+  try {
+    const actingUser = await userRepo.findUserById(req.user.userId);
+    const actorName = actingUser ? userRepo.resolveDisplayName(actingUser) : req.user.email;
+    const users = await userRepo.listUsers();
+    const activeUserIds = (users || []).filter((u) => u.status === 'active').map((u) => u.id);
+    if (activeUserIds.length === 0) return;
+
+    const title = ACTIVITY_TYPE_TITLES[type] || 'نشاط جديد';
+    const message = `${actorName || 'أحد الإيجنتس'} ${action}`;
+
+    await notifyEvent(type, {
+      title,
+      message,
+      referenceId,
+      targetUserIds: activeUserIds,
+      excludeUserId: req.user.userId,
+    });
+  } catch (err) {
+    logger.error(`❌ فشل تنفيذ notifyTypedActivity (${type}):`, err.message);
+  }
+}
+
 module.exports = {
   NOTIFICATION_TYPES,
   setIo,
@@ -134,4 +175,5 @@ module.exports = {
   notifyLogin,
   broadcastActivity,
   logActivity,
+  notifyTypedActivity,
 };
