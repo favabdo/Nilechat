@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Check } from 'lucide-react';
 import { contactsApi } from '../../contacts/services/contacts.service';
+import { CUSTOMER_PHONE_REGEX } from '../../contacts/phoneCountries';
 import useToastStore from '../../../store/toastStore';
-
-const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
 
 export default function AddPhoneForm({ contactId, onAdded }) {
   const { t } = useTranslation('chats');

@@ -50,6 +50,13 @@
     "phoneNumber": "رقم الهاتف",
     "phonePlaceholder": "مثال: 201001234567",
     "phoneExample": "مثال:",
+    "phoneCountryHint": "اكتب الرقم زي ما هو من غير كود الدولة، مثال:",
+    "phoneCountries": {
+      "eg": "مصر (+20)",
+      "sa": "السعودية (+966)",
+      "kw": "الكويت (+965)",
+      "om": "عُمان (+968)"
+    },
     "contractDate": "تاريخ التعاقد",
     "ownerNamePhone": "اسم ورقم صاحب المؤسسة",
     "ownerNamePlaceholder": "اسم صاحب المؤسسة",

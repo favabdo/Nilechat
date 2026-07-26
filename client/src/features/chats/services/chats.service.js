@@ -29,6 +29,10 @@ export const conversationsApi = {
   getTeams: (id) => apiClient.get(`/api/conversations/${id}/teams`).then((r) => r.data),
   addTeam: (id, teamId) => apiClient.post(`/api/conversations/${id}/teams`, { teamId }).then((r) => r.data),
   removeTeam: (id, teamId) => apiClient.delete(`/api/conversations/${id}/teams/${teamId}`).then((r) => r.data),
+
+  // دمج رقم المحادثة الحالية مع كونتاكت موجود بالفعل (العميل بعت من رقم جديد
+  // والإيجنت عرفه إنه نفس عميل قديم)
+  linkContact: (id, contactId) => apiClient.post(`/api/conversations/${id}/contact`, { mode: 'link', contactId }).then((r) => r.data),
 };
 
 export const labelsApi = {

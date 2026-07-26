@@ -50,6 +50,13 @@
     "phoneNumber": "Phone Number",
     "phonePlaceholder": "e.g.: 201001234567",
     "phoneExample": "Example:",
+    "phoneCountryHint": "Type the number as-is, without the country code, e.g.:",
+    "phoneCountries": {
+      "eg": "Egypt (+20)",
+      "sa": "Saudi Arabia (+966)",
+      "kw": "Kuwait (+965)",
+      "om": "Oman (+968)"
+    },
     "contractDate": "Contract Date",
     "ownerNamePhone": "Business Owner's Name & Number",
     "ownerNamePlaceholder": "Business owner's name",

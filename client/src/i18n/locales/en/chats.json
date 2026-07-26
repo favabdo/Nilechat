@@ -160,7 +160,15 @@
     "linkPhoneFirst": "Link the number to a customer first",
     "labelSavedSuccess": "Secondary name saved successfully",
     "labelSaveFailed": "Failed to save the secondary name",
-    "conversationNotFound": "Couldn't find this conversation in the current list"
+    "conversationNotFound": "Couldn't find this conversation in the current list",
+    "mergeButton": "Merge with Existing Contact",
+    "mergeSearchPlaceholder": "Search by name or phone...",
+    "mergeLoading": "Loading...",
+    "mergeNoResults": "No results",
+    "mergeNoName": "No name",
+    "mergeCancel": "Cancel",
+    "mergeSuccess": "Number merged with the contact successfully",
+    "mergeFailed": "Failed to merge"
   },
   "messageInput": {
     "fileTooLarge": "This file is larger than 30MB — choose a smaller file",

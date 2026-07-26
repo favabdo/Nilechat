@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Sidebar from './Sidebar';
 import ToastContainer from '../shared/ToastContainer';
@@ -11,6 +11,7 @@ import useNotificationsStore from '../../features/notifications/store/notificati
 import useAuthStore from '../../store/authStore';
 import NotificationsPanel from '../../features/notifications/components/NotificationsPanel';
 import useToastStore from '../../store/toastStore';
+import { isCrmAgentOnly } from '../../utils/roles';
 import '../../styles/dashboard-full.css';
 
 // نفس فكرة #page-loader في الأصل: بيظهر لحظة الدخول وبيختفي (كلاس hide) بعد ما الصفحة تجهز.
@@ -41,6 +42,17 @@ export default function DashboardLayout() {
   }, []);
 
   const currentUser = useAuthStore((s) => s.user);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // رول "CRM Agent" (role 3) مسموحله بس بصفحة Contacts (وتفاصيل عميل جواها) —
+  // أي محاولة تانية (رابط قديم، زرار، تعديل يدوي للـ URL) بترجّعه لـ Contacts
+  // على طول. الحماية الحقيقية من السيرفر (middleware/auth.js)، وده بس واجهة.
+  useEffect(() => {
+    if (!isCrmAgentOnly(currentUser)) return;
+    const allowed = /^\/dashboard\/contacts(\/.*)?$/.test(location.pathname);
+    if (!allowed) navigate('/dashboard/contacts', { replace: true });
+  }, [currentUser, location.pathname, navigate]);
 
   // السيرفر بيبعتها لأي إشعار جديد اتسجل (شوف notification.service.js -> emitToUser)
   useEffect(() => {

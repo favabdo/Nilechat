@@ -163,6 +163,20 @@ const useChatsStore = create((set, get) => ({
   },
 
   openCount: () => get().conversations.filter((c) => c.status === 'open').length,
+
+  // دمج رقم المحادثة الحالية مع كونتاكت موجود بالفعل — بعد نجاح الربط بنعيد تحميل
+  // بيانات الكونتاكت الجديد (اسم/أرقام/محادثات سابقة) من الصفر
+  async linkConversationContact(convId, contactId) {
+    const data = await conversationsApi.linkContact(convId, contactId);
+    get().patchConversation(convId, {
+      contactId: data.conversation.contact_id || null,
+      _contactLoaded: false,
+      phones: [],
+      prevConvs: [],
+    });
+    await get().loadContactDetails(convId);
+    return data;
+  },
 }));
 
 export default useChatsStore;

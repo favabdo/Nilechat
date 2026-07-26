@@ -10,6 +10,7 @@ import useScheduledTasksStore from '../../scheduled-tasks/store/scheduledTasksSt
 import AddTaskModal from '../../scheduled-tasks/components/AddTaskModal';
 import DevicesSection from './DevicesSection';
 import AddPhoneForm from './AddPhoneForm';
+import MergeContactSection from './MergeContactSection';
 import PrevConversationCard from './PrevConversationCard';
 import useToastStore from '../../../store/toastStore';
 import useAuthStore from '../../../store/authStore';
@@ -168,6 +169,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
               ))}
             </div>
             <AddPhoneForm contactId={c.contactId} onAdded={(phones) => patchConversation(c.id, { phones })} />
+            {isOwnerOrAdmin && <MergeContactSection conversation={c} />}
           </div>
           <div className="cp-section">
             <div className="cp-section-title">{t('customerPanel.devicesTitle')}</div>

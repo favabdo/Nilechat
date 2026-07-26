@@ -50,7 +50,8 @@
   "roles": {
     "superAdmin": "Super Admin",
     "administrator": "Administrator",
-    "agent": "Agent"
+    "agent": "Agent",
+    "crmAgent": "CRM Agent"
   },
   "durationPicker": {
     "numberOfDays": "Number of days",

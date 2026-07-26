@@ -5,8 +5,7 @@ import Modal from '../../../components/ui/Modal';
 import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { contactsApi } from '../services/contacts.service';
 import { CONTACT_MODULES_LIST } from '../constants';
-
-const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
+import { CUSTOMER_PHONE_REGEX, PHONE_COUNTRIES, normalizePhoneForCountry } from '../phoneCountries';
 
 export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
   const { t } = useTranslation('contacts');
@@ -15,6 +14,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
   const [branches, setBranches] = useState(
     contact?.branches?.length ? contact.branches.map((b) => ({ name: b.name || '', location: b.location || '' })) : [{ name: '', location: '' }]
   );
+  const [phoneCountry, setPhoneCountry] = useState('eg');
   const [phone, setPhone] = useState('');
   const [phoneInvalid, setPhoneInvalid] = useState(false);
   const [signedContractDate, setSignedContractDate] = useState(contact?.contract_date ? contact.contract_date.slice(0, 10) : '');
@@ -53,8 +53,9 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
     setError('');
     const trimmedName = name.trim();
     if (!trimmedName) return setError(t('cardModal.errors.nameRequired'));
+    const normalizedPhone = normalizePhoneForCountry(phoneCountry, phone.trim());
     if (!isEdit && !phone.trim()) return setError(t('cardModal.errors.phoneRequired'));
-    if (!isEdit && !CUSTOMER_PHONE_REGEX.test(phone.trim())) {
+    if (!isEdit && !CUSTOMER_PHONE_REGEX.test(normalizedPhone)) {
       setPhoneInvalid(true);
       return setError(t('cardModal.errors.phoneInvalid'));
     }
@@ -81,7 +82,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
       : {
           name: trimmedName,
           branches: cleanBranches,
-          phone: phone.trim(),
+          phone: normalizedPhone,
           signedContractDate: signedContractDate || undefined,
           managerName: managerName.trim() || undefined,
           managerPhone: managerPhone.trim() || undefined,
@@ -160,19 +161,36 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
       {!isEdit && (
         <>
           <div className="resolve-cats-label">{t('cardModal.phoneNumber')}</div>
-          <input
-            type="text"
-            className="iw-input"
-            placeholder={t('cardModal.phonePlaceholder')}
-            maxLength={12}
-            value={phone}
-            onChange={(e) => {
-              setPhone(e.target.value);
-              setPhoneInvalid(false);
-            }}
-          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              className="iw-input"
+              style={{ width: 'auto', flex: '0 0 150px' }}
+              value={phoneCountry}
+              onChange={(e) => {
+                setPhoneCountry(e.target.value);
+                setPhoneInvalid(false);
+              }}
+            >
+              {Object.keys(PHONE_COUNTRIES).map((key) => (
+                <option key={key} value={key}>
+                  {t(`cardModal.phoneCountries.${key}`)}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              className="iw-input"
+              style={{ flex: 1 }}
+              placeholder={t('cardModal.phoneExample') + ' ' + PHONE_COUNTRIES[phoneCountry].placeholderExample}
+              value={phone}
+              onChange={(e) => {
+                setPhone(e.target.value);
+                setPhoneInvalid(false);
+              }}
+            />
+          </div>
           <div className="iw-form-hint" style={{ marginBottom: 12, color: phoneInvalid ? 'var(--danger)' : undefined }}>
-            {t('cardModal.phoneExample')} <b dir="ltr">201001234567</b>
+            {t('cardModal.phoneCountryHint')} <b dir="ltr">{PHONE_COUNTRIES[phoneCountry].placeholderExample}</b>
           </div>
         </>
       )}

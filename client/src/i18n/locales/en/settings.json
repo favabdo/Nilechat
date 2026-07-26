@@ -54,6 +54,7 @@
     "copyInviteLink": "Copy invite link",
     "roleOptions": {
       "agent": "Agent",
+      "crmAgent": "CRM Agent",
       "admin": "Admin",
       "owner": "Owner"
     },
@@ -83,6 +84,7 @@
     "email": "Email",
     "role": "Role",
     "roleAgent": "Agent",
+    "roleCrmAgent": "CRM Agent (Contacts only, Read-Only)",
     "roleAdmin": "Admin",
     "roleOwner": "Owner (Super Admin)",
     "cancel": "Cancel",

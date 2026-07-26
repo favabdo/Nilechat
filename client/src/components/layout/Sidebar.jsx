@@ -6,6 +6,7 @@ import useNotificationsStore from '../../features/notifications/store/notificati
 import Avatar from '../ui/Avatar';
 import LanguageToggle from '../shared/LanguageToggle';
 import ThemeToggle from '../shared/ThemeToggle';
+import { isCrmAgentOnly } from '../../utils/roles';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -23,8 +24,13 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { unreadCount, openPanel } = useNotificationsStore();
+  const crmOnly = isCrmAgentOnly(user);
 
   const badgeCounts = { chats: openChatsCount, sched: dueTasksCount };
+  // رول "CRM Agent" (role 3): مش بيشوف في السايدبار غير Contacts + تسجيل
+  // الخروج، ومش بيشوف زرار الإشعارات. الحماية الحقيقية من السيرفر
+  // (middleware/auth.js -> enforceCrmAgentAccess)، وده بس شكل الواجهة
+  const visibleNavItems = crmOnly ? NAV_ITEMS.filter((item) => item.to === '/dashboard/contacts') : NAV_ITEMS;
 
   function handleLogout() {
     logout();
@@ -35,7 +41,7 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
     <aside id="sidebar">
       <img src="/assets/logo-icon.png" alt="NileChat" className="sidebar-logo" />
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ to, icon: Icon, titleKey, badgeKey }) => {
+        {visibleNavItems.map(({ to, icon: Icon, titleKey, badgeKey }) => {
           const count = badgeKey ? badgeCounts[badgeKey] : 0;
           const title = t(titleKey);
           return (
@@ -62,18 +68,20 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
         <button className="sidebar-btn" title={t('logout')} aria-label={t('logout')} onClick={handleLogout}>
           <LogOut size={20} />
         </button>
-        <button
-          className="sidebar-btn"
-          id="notifications-btn"
-          title={t('notifications')}
-          aria-label={t('notifications')}
-          onClick={openPanel}
-        >
-          <Bell size={20} />
-          <span className="badge" style={{ display: unreadCount > 0 ? 'flex' : 'none' }}>
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        </button>
+        {!crmOnly && (
+          <button
+            className="sidebar-btn"
+            id="notifications-btn"
+            title={t('notifications')}
+            aria-label={t('notifications')}
+            onClick={openPanel}
+          >
+            <Bell size={20} />
+            <span className="badge" style={{ display: unreadCount > 0 ? 'flex' : 'none' }}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          </button>
+        )}
         <div
           className="sidebar-avatar"
           id="my-avatar"

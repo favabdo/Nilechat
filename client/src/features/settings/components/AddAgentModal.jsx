@@ -74,6 +74,7 @@ export default function AddAgentModal({ onClose, onAdded }) {
       <div className="resolve-cats-label">{t('addAgentModal.role')}</div>
       <select className="iw-input" style={{ marginBottom: 6 }} value={role} onChange={(e) => setRole(e.target.value)}>
         <option value="2">{t('addAgentModal.roleAgent')}</option>
+        <option value="3">{t('addAgentModal.roleCrmAgent')}</option>
         <option value="1">{t('addAgentModal.roleAdmin')}</option>
         <option value="0">{t('addAgentModal.roleOwner')}</option>
       </select>

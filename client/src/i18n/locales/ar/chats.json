@@ -160,7 +160,15 @@
     "linkPhoneFirst": "اربط الرقم بعميل أولًا",
     "labelSavedSuccess": "تم حفظ الاسم الثانوي بنجاح",
     "labelSaveFailed": "فشل حفظ الاسم الثانوي",
-    "conversationNotFound": "تعذّر إيجاد هذه المحادثة في القائمة الحالية"
+    "conversationNotFound": "تعذّر إيجاد هذه المحادثة في القائمة الحالية",
+    "mergeButton": "دمج مع كونتاكت موجود",
+    "mergeSearchPlaceholder": "ابحث بالاسم أو رقم التليفون...",
+    "mergeLoading": "جارٍ التحميل...",
+    "mergeNoResults": "مفيش نتايج",
+    "mergeNoName": "بدون اسم",
+    "mergeCancel": "إلغاء",
+    "mergeSuccess": "تم دمج الرقم مع الكونتاكت بنجاح",
+    "mergeFailed": "فشل الدمج"
   },
   "messageInput": {
     "fileTooLarge": "هذا الملف أكبر من 30 ميجابايت — اختر ملفًا أصغر",

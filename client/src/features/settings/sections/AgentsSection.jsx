@@ -201,6 +201,7 @@ export default function AgentsSection() {
                           onChange={(e) => changeRole(a.id, e.target.value)}
                         >
                           <option value={2}>{t('agents.roleOptions.agent')}</option>
+                          <option value={3}>{t('agents.roleOptions.crmAgent')}</option>
                           <option value={1}>{t('agents.roleOptions.admin')}</option>
                           <option value={0}>{t('agents.roleOptions.owner')}</option>
                         </select>

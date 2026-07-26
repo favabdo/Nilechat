@@ -54,6 +54,7 @@
     "copyInviteLink": "نسخ رابط الدعوة",
     "roleOptions": {
       "agent": "موظف",
+      "crmAgent": "موظف CRM",
       "admin": "مسؤول",
       "owner": "مالك"
     },
@@ -83,6 +84,7 @@
     "email": "البريد الإلكتروني",
     "role": "الدور",
     "roleAgent": "موظف",
+    "roleCrmAgent": "موظف CRM (قسم العملاء فقط، قراءة فقط)",
     "roleAdmin": "مسؤول",
     "roleOwner": "مالك (مدير عام)",
     "cancel": "إلغاء",

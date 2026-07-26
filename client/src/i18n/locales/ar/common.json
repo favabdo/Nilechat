@@ -50,7 +50,8 @@
   "roles": {
     "superAdmin": "مدير عام",
     "administrator": "مسؤول",
-    "agent": "موظف"
+    "agent": "موظف",
+    "crmAgent": "موظف CRM"
   },
   "durationPicker": {
     "numberOfDays": "عدد الأيام",
