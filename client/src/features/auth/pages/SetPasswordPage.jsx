@@ -3,7 +3,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AnimatedBackground from '../../../components/shared/AnimatedBackground';
 import LanguageToggle from '../../../components/shared/LanguageToggle';
-import ThemeToggle from '../../../components/shared/ThemeToggle';
 import { getInviteInfo, acceptInvite } from '../services/auth.service';
 import './SetPasswordPage.css';
 
@@ -69,12 +68,11 @@ export default function SetPasswordPage() {
   return (
     <>
       <AnimatedBackground />
+      <div style={{ position: 'fixed', top: 16, insetInlineEnd: 16, zIndex: 100 }}>
+        <LanguageToggle />
+      </div>
       <div className="page-center">
         <div className="card" id="card">
-          <div className="auth-toggle-bar">
-            <LanguageToggle className="auth-toggle-btn" />
-            <ThemeToggle className="auth-toggle-btn" />
-          </div>
           {state === 'loading' && (
             <div id="loading-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />

@@ -65,6 +65,5 @@
   "theme": {
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode"
-  },
-  "footer": "Copyright \u00a9 Nile Techno by Abdullah Elsawy 2026"
+  }
 }
