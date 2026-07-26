@@ -30,7 +30,16 @@ const useChatsStore = create((set, get) => ({
   async loadConversations() {
     try {
       const rows = await conversationsApi.list();
-      set({ conversations: rows.map(mapApiConversation), loaded: true });
+      const mapped = rows.map(mapApiConversation);
+      set((state) => ({
+        conversations: mapped.map((m) => {
+          const prev = state.conversations.find((x) => x.id === m.id);
+          return prev
+            ? { ...m, messages: prev.messages, _messagesLoaded: prev._messagesLoaded, labels: prev.labels, teams: prev.teams, _contactLoaded: prev._contactLoaded, prevConvs: prev.prevConvs }
+            : m;
+        }),
+        loaded: true,
+      }));
     } catch (err) {
       console.error('[API] loadConversations error:', err);
       throw err;
