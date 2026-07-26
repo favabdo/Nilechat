@@ -108,8 +108,9 @@ h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
     .msg-col.msg-col-audio{width:82%;max-width:82%}
     .msg-col-audio .msg-bubble.media-bubble{width:100%;box-sizing:border-box}
     .msg-col-audio .msg-media-audio{width:100%;max-width:100%}
-    .chat-header{padding:10px 12px}
-    .chat-header-actions{gap:2px}
+    .chat-header{padding:10px 12px;flex-wrap:wrap}
+    .chat-header-left{flex:1 1 100%}
+    .chat-header-actions{gap:8px;flex:1 1 100%;justify-content:flex-end}
     .resolve-btn{padding:0 10px;gap:0}
     .resolve-btn #resolve-btn-text{display:none}
     .ch-action-btn{width:34px;height:34px}
@@ -128,6 +129,12 @@ h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
        عشان الرسالة تبان كاملة جوه البوكس (اللي عرضه بيمتلئ المسافة بين
        المشبك والمايك) بدل ما تتقطع أو تلف على أكتر من سطر */
     #msg-input{font-size:13px!important;white-space:nowrap;overflow-x:auto;overflow-y:hidden}
+
+    /* صفحة تفاصيل العميل على الموبايل: زرار التعديل وزرار فتح المحادثة
+       بينزلوا تحت الاسم وسهم العودة بدل ما يفضلوا جمبهم (ده كان بيوسّع
+       الصفحة أفقيًا على الشاشات الصغيرة) */
+    #page-customer-details .page-header{flex-wrap:wrap;row-gap:10px}
+    #page-customer-details .customer-header-actions{flex:1 1 100%;justify-content:flex-start}
 }
 .cl-header{padding:16px 20px 12px}
 .cl-search{width:100%;padding:10px 14px 10px 38px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}

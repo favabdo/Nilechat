@@ -120,7 +120,7 @@ export default function CustomerDetailsPage() {
     <div id="page-customer-details" className="page">
       <div className="page-content">
         <div className="page-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="customer-header-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button className="mobile-back-btn" title={t('back')} aria-label={t('back')} onClick={() => navigate('/dashboard/contacts')}>
               <ArrowLeft size={18} />
             </button>
@@ -141,7 +141,7 @@ export default function CustomerDetailsPage() {
               {contact.location && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{contact.location}</div>}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="customer-header-actions" style={{ display: 'flex', gap: 8 }}>
             {canManage && (
               <button className="page-btn" style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }} onClick={() => setEditOpen(true)}>
                 <Pencil size={15} /> {t('edit')}
