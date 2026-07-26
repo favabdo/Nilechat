@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AnimatedBackground from '../../../components/shared/AnimatedBackground';
 import LanguageToggle from '../../../components/shared/LanguageToggle';
+import ThemeToggle from '../../../components/shared/ThemeToggle';
 import useAuthStore from '../../../store/authStore';
 import { login } from '../services/auth.service';
 import './LoginPage.css';
@@ -40,13 +41,14 @@ export default function LoginPage() {
   }
 
   return (
-    <>
+    <div className="auth-page-bg">
       <AnimatedBackground />
-      <div style={{ position: 'fixed', top: 16, insetInlineEnd: 16, zIndex: 100 }}>
-        <LanguageToggle />
-      </div>
       <div className="page-center">
         <div className="login-card">
+          <div className="auth-toggle-bar">
+            <LanguageToggle className="auth-toggle-btn" />
+            <ThemeToggle className="auth-toggle-btn" />
+          </div>
           <img src="/assets/logo.png" alt="NileChat" className="login-logo" />
           <h1>{t('login.title')}</h1>
           <div className="subtitle">{t('login.subtitle')}</div>
@@ -96,6 +98,6 @@ export default function LoginPage() {
           <div className="app-footer">{t('footer')}</div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
