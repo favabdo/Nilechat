@@ -123,6 +123,11 @@ h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
        field with a computed font-size under 16px, so we force 16px here
        regardless of each field's own (smaller) desktop font-size. */
     input,textarea,select{font-size:16px!important}
+
+    /* رسالة الشات على الموبايل: نص أصغر وسطر واحد بس (من غير نزول سطر جديد)
+       عشان الرسالة تبان كاملة جوه البوكس (اللي عرضه بيمتلئ المسافة بين
+       المشبك والمايك) بدل ما تتقطع أو تلف على أكتر من سطر */
+    #msg-input{font-size:13px!important;white-space:nowrap;overflow-x:auto;overflow-y:hidden}
 }
 .cl-header{padding:16px 20px 12px}
 .cl-search{width:100%;padding:10px 14px 10px 38px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-family:inherit;outline:none;transition:border-color .2s}
@@ -850,11 +855,11 @@ input[type="date"].iw-input,input[type="time"].iw-input{min-width:0;max-width:10
 }
 
 .dashboard-footer-bar{
-    position:fixed;left:50%;bottom:0;transform:translateX(-50%);z-index:40;
-    width:fit-content;max-width:calc(100% - 24px);white-space:nowrap;
-    padding:2px 6px;line-height:1.2;
+    position:absolute;left:0;right:0;bottom:0;z-index:40;
+    width:100%;box-sizing:border-box;
+    padding:2px 0;line-height:1.2;
     text-align:center;font-size:9px;color:var(--text-secondary);
-    background:var(--surface);border-radius:6px 6px 0 0;
+    background:var(--surface);
     opacity:.85;pointer-events:none;
 }
 

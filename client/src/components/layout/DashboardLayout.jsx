@@ -65,12 +65,11 @@ export default function DashboardLayout() {
 
       <div id="app" className="flex" style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex' }}>
         <Sidebar openChatsCount={openChatsCount} dueTasksCount={dueTasksCount} />
-        <div id="pages-container" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div id="pages-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
           <Outlet />
+          <div className="dashboard-footer-bar">{tCommon('footer')}</div>
         </div>
       </div>
-
-      <div className="dashboard-footer-bar">{tCommon('footer')}</div>
 
       {panelOpen && <NotificationsPanel onClose={closePanel} />}
       <ToastContainer />
