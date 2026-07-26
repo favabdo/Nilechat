@@ -11,9 +11,13 @@
     "title": "بيانات العميل",
     "manager": "المدير المسؤول",
     "contractDate": "تاريخ التعاقد",
-    "agentId": "معرّف الموظف: {{id}}",
+    "addedBy": "إضافة بواسطة",
+    "agentId": "#{{id}}",
     "currentMaintenanceContract": "عقد الصيانة الحالي",
     "branches": "الفروع",
+    "mainBranch": "الفرع الرئيسي",
+    "subBranch": "الفرع الفرعي",
+    "subBranchNumbered": "الفرع الفرعي {{num}}",
     "subscribedModules": "الوحدات المشترك فيها"
   },
   "phoneNumbers": {

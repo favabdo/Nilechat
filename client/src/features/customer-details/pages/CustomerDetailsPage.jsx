@@ -114,7 +114,20 @@ export default function CustomerDetailsPage() {
   // كأنه هو الفرع، عشان صف "الفروع" في الصفحة دي يفضل معروض له قيمة لكل
   // العملاء بدل ما يفضل فاضي للعملاء اللي معندهمش فروع متعددة مسجلة
   const branchNames = (contact.branches || []).map((b) => b.name || b.location).filter(Boolean);
-  const branchesDisplay = branchNames.length > 0 ? branchNames.join(i18n.t('listSeparator', { ns: 'common' })) : contact.location || '-';
+  const branchValues = branchNames.length > 0 ? branchNames : (contact.location ? [contact.location] : []);
+  // تحت اسم العميل: كل أماكن الفروع مجمّعة (مش بس أول فرع)
+  const branchesDisplay = branchValues.length > 0 ? branchValues.join(i18n.t('listSeparator', { ns: 'common' })) : '-';
+  // في صف "الفروع": كل فرع بمسماه (الفرع الرئيسي هو أول فرع اتسجل، والباقي فروع فرعية)
+  const branchesLabeledDisplay =
+    branchValues.length > 0
+      ? branchValues
+          .map((val, idx) => {
+            if (idx === 0) return `${t('customerInfo.mainBranch')}: ${val}`;
+            const subLabel = branchValues.length > 2 ? t('customerInfo.subBranchNumbered', { num: idx }) : t('customerInfo.subBranch');
+            return `${subLabel}: ${val}`;
+          })
+          .join(i18n.t('listSeparator', { ns: 'common' }))
+      : '-';
 
   return (
     <div id="page-customer-details" className="page">
@@ -138,7 +151,7 @@ export default function CustomerDetailsPage() {
                   </span>
                 )}
               </h2>
-              {contact.location && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{contact.location}</div>}
+              {branchValues.length > 0 && <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 2 }}>{branchesDisplay}</div>}
             </div>
           </div>
           <div className="customer-header-actions" style={{ display: 'flex', gap: 8 }}>
@@ -165,7 +178,7 @@ export default function CustomerDetailsPage() {
               <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{formatSchedDate(contact.contract_date)}</span>
               {contact.created_by && (
                 <div style={{ opacity: 0.65, fontSize: 12, marginTop: 2 }}>
-                  {contact.created_by_name || t('customerInfo.agentId', { id: contact.created_by })}
+                  {t('customerInfo.addedBy')}: {contact.created_by_name || t('customerInfo.agentId', { id: contact.created_by })}
                 </div>
               )}
             </div>
@@ -180,7 +193,7 @@ export default function CustomerDetailsPage() {
           )}
           <div className="setting-row">
             <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.branches')}</div></div>
-            <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{branchesDisplay}</span>
+            <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{branchesLabeledDisplay}</span>
           </div>
           {contact.modules && contact.modules.length > 0 && (
             <div style={{ padding: '12px 0 4px' }}>

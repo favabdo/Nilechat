@@ -11,9 +11,13 @@
     "title": "Customer Information",
     "manager": "Account Manager",
     "contractDate": "Contract Date",
-    "agentId": "Agent ID: {{id}}",
+    "addedBy": "Added by",
+    "agentId": "#{{id}}",
     "currentMaintenanceContract": "Current Maintenance Contract",
     "branches": "Branches",
+    "mainBranch": "Main branch",
+    "subBranch": "Sub-branch",
+    "subBranchNumbered": "Sub-branch {{num}}",
     "subscribedModules": "Subscribed Modules"
   },
   "phoneNumbers": {
