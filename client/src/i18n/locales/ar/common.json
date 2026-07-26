@@ -61,5 +61,9 @@
     "year": "سنة",
     "daysMonthsLabel": "{{days}} يوم (~{{months}} شهر)"
   },
-  "listSeparator": "، "
+  "listSeparator": "، ",
+  "theme": {
+    "switchToLight": "التبديل للوضع الفاتح",
+    "switchToDark": "التبديل للوضع الغامق"
+  }
 }

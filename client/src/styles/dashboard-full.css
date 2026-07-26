@@ -17,6 +17,22 @@
     --sidebar-text: #94a3b8;
     --sidebar-active: #6C5CE7;
 }
+/* الوضع الغامق (Dark Mode) — بيتفعّل عن طريق حط data-theme="dark" على وسم html
+   (شوف src/theme/index.js)، وبيغيّر بس ألوان الخلفية/السطح/النصوص/الحدود، وسايب
+   ألوان الهوية (primary/secondary/success/warning/danger) والسايدبار زي ما هي
+   لأنها أصلاً غامقة بتصميمها. */
+html[data-theme="dark"] {
+    --bg: #12141c;
+    --surface: #1a1d29;
+    --text: #eceef3;
+    --text-secondary: #97a0b3;
+    --border: #2b2f3d;
+    --border-strong: #3a3f52;
+    --primary-light: #8a7ff0;
+}
+html[data-theme="dark"] body {
+    color-scheme: dark;
+}
 *{margin:0;padding:0;box-sizing:border-box}
 html{height:100%}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;height:100dvh;display:flex;flex-direction:column}

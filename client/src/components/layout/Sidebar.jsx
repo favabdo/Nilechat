@@ -5,6 +5,7 @@ import useAuthStore from '../../store/authStore';
 import useNotificationsStore from '../../features/notifications/store/notificationsStore';
 import Avatar from '../ui/Avatar';
 import LanguageToggle from '../shared/LanguageToggle';
+import ThemeToggle from '../shared/ThemeToggle';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
@@ -56,6 +57,7 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
         })}
       </nav>
       <div className="sidebar-bottom">
+        <ThemeToggle />
         <LanguageToggle />
         <button className="sidebar-btn" title={t('logout')} aria-label={t('logout')} onClick={handleLogout}>
           <LogOut size={20} />

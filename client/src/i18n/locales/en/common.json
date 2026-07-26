@@ -61,5 +61,9 @@
     "year": "Year",
     "daysMonthsLabel": "{{days}} days (~{{months}} months)"
   },
-  "listSeparator": ", "
+  "listSeparator": ", ",
+  "theme": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  }
 }

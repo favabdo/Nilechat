@@ -5,8 +5,8 @@
     "registered": "عملاء مسجلون",
     "unregistered": "أرقام غير مسجلة",
     "all": "الكل",
-    "activeContract": "عقد صيانة سارٍ",
-    "expiredContract": "عقد صيانة منتهٍ",
+    "activeContract": "عقد صيانة ساري",
+    "expiredContract": "عقد صيانة منتهي",
     "noContract": "عملاء بدون عقد صيانة"
   },
   "moduleFilterAll": "تصفية حسب الوحدة: الكل",
@@ -15,8 +15,8 @@
   "loadFailed": "تعذّر تحميل جهات الاتصال",
   "empty": {
     "search": "لا توجد نتائج مطابقة",
-    "activeContract": "لا يوجد عملاء بعقد صيانة سارٍ",
-    "expiredContract": "لا يوجد عملاء بعقد صيانة منتهٍ",
+    "activeContract": "لا يوجد عملاء بعقد صيانة ساري",
+    "expiredContract": "لا يوجد عملاء بعقد صيانة منتهي",
     "noContract": "لا يوجد عملاء بدون عقد صيانة",
     "registered": "لا يوجد عملاء مسجلون لعرضهم",
     "unregistered": "لا توجد أرقام غير مسجلة لعرضها"
@@ -24,8 +24,8 @@
   "deleteContact": "حذف العميل",
   "noName": "بدون اسم",
   "inactive": "غير نشط",
-  "maintenanceExpired": "عقد الصيانة منتهٍ",
-  "maintenanceActive": "عقد صيانة سارٍ",
+  "maintenanceExpired": "عقد الصيانة منتهي",
+  "maintenanceActive": "عقد صيانة ساري",
   "deleteSuccess": "تم حذف العميل بنجاح",
   "deleteFailed": "فشل حذف العميل",
   "addSuccess": "تمت إضافة العميل بنجاح",

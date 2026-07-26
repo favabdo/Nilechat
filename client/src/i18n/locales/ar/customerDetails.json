@@ -51,8 +51,8 @@
   "contractStatus": {
     "stopped": "متوقف",
     "upcoming": "لم يبدأ بعد",
-    "expired": "منتهٍ",
-    "active": "سارٍ"
+    "expired": "منتهي",
+    "active": "ساري"
   },
   "contractCard": {
     "startDate": "تاريخ البدء",

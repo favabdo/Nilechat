@@ -4,6 +4,7 @@ import { UserCheck, ChevronDown, Search } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import useToastStore from '../../../store/toastStore';
 import { conversationsApi } from '../services/chats.service';
+import { roleLabel } from '../../../utils/roles';
 
 export default function AssignSection({ conversation, agents, currentAgentName, onAssigned }) {
   const { t } = useTranslation('chats');
@@ -11,8 +12,9 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
   const [query, setQuery] = useState('');
   const showToast = useToastStore((s) => s.showToast);
 
+  const agentName = (a) => a.display_name || a.email;
   const assignedToMe = conversation.assignedTo === currentAgentName;
-  const filteredAgents = query ? agents.filter((a) => (a.name || '').toLowerCase().includes(query.toLowerCase())) : agents;
+  const filteredAgents = query ? agents.filter((a) => agentName(a).toLowerCase().includes(query.toLowerCase())) : agents;
 
   async function assignToMe() {
     try {
@@ -34,11 +36,11 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
     try {
       const data = await conversationsApi.assign(conversation.id, agent.id);
       onAssigned({
-        assignedTo: data.conversation?.assigned_agent_name || agent.name,
+        assignedTo: data.conversation?.assigned_agent_name || agentName(agent),
         rawStatus: data.conversation?.status || 'assigned',
         status: (data.conversation?.status || 'assigned') === 'closed' ? 'resolved' : 'open',
       });
-      showToast(t('assign.assignedToAgentToast', { name: agent.name }), 'success');
+      showToast(t('assign.assignedToAgentToast', { name: agentName(agent) }), 'success');
     } catch (err) {
       console.error('[API] assignAgent error:', err);
       showToast(err.response?.data?.error || t('assign.assignFailed'), 'error');
@@ -82,15 +84,15 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
               filteredAgents.map((a) => (
                 <div
                   key={a.id}
-                  className={`agent-option${conversation.assignedTo === a.name ? ' selected' : ''}`}
+                  className={`agent-option${conversation.assignedTo === agentName(a) ? ' selected' : ''}`}
                   onClick={() => assignAgent(a)}
                 >
                   <div className="agent-option-avatar">
-                    <Avatar name={a.name} seed={a.avatar || a.id} size={32} />
+                    <Avatar name={agentName(a)} seed={a.id} size={32} />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{a.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{a.role}</div>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{agentName(a)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{roleLabel(a.role)}</div>
                   </div>
                 </div>
               ))
