@@ -70,7 +70,7 @@ export default function DashboardLayout() {
         </div>
       </div>
 
-      <div className="app-footer">{tCommon('footer')}</div>
+      <div className="dashboard-footer-bar">{tCommon('footer')}</div>
 
       {panelOpen && <NotificationsPanel onClose={closePanel} />}
       <ToastContainer />
