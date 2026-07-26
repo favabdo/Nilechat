@@ -21,6 +21,17 @@
 html{height:100%}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;height:100dvh;display:flex;flex-direction:column}
 #root{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+
+/* الشريط الجانبي (#sidebar) لازم يفضل ثابت في نفس مكانه القديم دايمًا (جنب #app
+   بترتيب DOM الطبيعي)، حتى لو المستخدم بدّل اللغة بين عربي/إنجليزي. علشان كده
+   بنثبت اتجاه #app نفسه على rtl بشكل دائم (بغض النظر عن اتجاه الصفحة العام)،
+   وده اللي بيتحكم في ترتيب عناصر الـ flex جوا #app (الشريط الجانبي + المحتوى).
+   محتوى الصفحات جوا #pages-container (الشات، الإعدادات...إلخ) بيفضل بياخد
+   اتجاهه الصحيح حسب اللغة المختارة عن طريق القاعدة التانية تحت. */
+#app{direction:rtl}
+html[dir="ltr"] #pages-container{direction:ltr}
+html[dir="rtl"] #pages-container{direction:rtl}
+
 h1,h2,h3,h4{font-family:'Space Grotesk','DM Sans',sans-serif}
 ::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:transparent}
