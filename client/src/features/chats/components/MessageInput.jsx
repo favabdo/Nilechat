@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Smile, Paperclip, Mic, Square, Send, Lock, Sparkles, Loader2 } from 'lucide-react';
+import { Paperclip, Mic, Square, Send, Lock, Sparkles, Loader2 } from 'lucide-react';
 import useToastStore from '../../../store/toastStore';
 import { conversationsApi } from '../services/chats.service';
 
@@ -237,9 +237,6 @@ export default function MessageInput({
       )}
       <div className={`chat-input-area${noteMode ? ' note-mode' : ''}${resolved ? ' resolved-locked' : ''}`} id="chat-input-area">
         <div className="input-actions">
-          <button className="input-action-btn" title={t('messageInput.emoji')} aria-label={t('messageInput.emoji')} disabled={resolved}>
-            <Smile size={20} />
-          </button>
           <button
             className="input-action-btn"
             title={t('messageInput.attach')}
