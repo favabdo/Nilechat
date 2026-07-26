@@ -10,7 +10,7 @@ import useToastStore from '../../../store/toastStore';
 import CustomerCardModal from '../components/CustomerCardModal';
 import { CONTACT_MODULES_LIST } from '../constants';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
 // نفس فكرة resolveContactsCategory الأصلية: تاب "عملاء مسجلين" له 4 سيكشنات
@@ -106,7 +106,7 @@ export default function ContactsPage() {
       : t('empty.unregistered');
 
   return (
-    <div id="page-contacts" className="page">
+    <div id="page-contacts" className="page page-with-fixed-footer">
       <div className="page-content">
         <div className="page-header">
           <h2>{t('pageTitle')}</h2>
@@ -278,7 +278,9 @@ export default function ContactsPage() {
               );
             })}
         </div>
+      </div>
 
+      <div className="page-fixed-footer">
         <Pagination page={page} totalPages={totalPages} onChange={(p) => load(p)} />
       </div>
 

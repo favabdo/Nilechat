@@ -1,7 +1,7 @@
 export default function Pagination({ page, totalPages, onChange }) {
-  if (totalPages <= 1) return null;
+  const safeTotalPages = Math.max(1, totalPages);
 
-  const pageSet = new Set([1, totalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= totalPages));
+  const pageSet = new Set([1, safeTotalPages, page, page - 1, page + 1].filter((p) => p >= 1 && p <= safeTotalPages));
   const sortedPages = [...pageSet].sort((a, b) => a - b);
 
   const items = [];
@@ -20,7 +20,7 @@ export default function Pagination({ page, totalPages, onChange }) {
     <div id="contacts-pagination" className="contacts-pagination" style={{ display: 'flex' }}>
       <button onClick={() => onChange(page - 1)} disabled={page <= 1}>‹ Previous</button>
       {items}
-      <button onClick={() => onChange(page + 1)} disabled={page >= totalPages}>Next ›</button>
+      <button onClick={() => onChange(page + 1)} disabled={page >= safeTotalPages}>Next ›</button>
     </div>
   );
 }

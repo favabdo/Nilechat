@@ -121,7 +121,7 @@ export default function CustomerDetailsPage() {
       <div className="page-content">
         <div className="page-header">
           <div className="customer-header-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="mobile-back-btn" title={t('back')} aria-label={t('back')} onClick={() => navigate('/dashboard/contacts')}>
+            <button className="mobile-back-btn contacts-back-btn" title={t('back')} aria-label={t('back')} onClick={() => navigate('/dashboard/contacts')}>
               <ArrowLeft size={18} />
             </button>
             <div>
