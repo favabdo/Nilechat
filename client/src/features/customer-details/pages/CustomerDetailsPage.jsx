@@ -206,7 +206,7 @@ export default function CustomerDetailsPage() {
                   <span>{p.phone_number}</span>
                   {p.label && <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>({p.label})</span>}
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div className="info-item-actions">
                   {canManage && (
                     <button
                       className="resolve-cancel-btn"
