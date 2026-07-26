@@ -9,10 +9,12 @@ function readStoredLang() {
   }
 }
 
+// الاتجاه ثابت "rtl" دايمًا بغض النظر عن اللغة — نفس المنطق المستخدم في
+// i18n/index.js -> applyDocumentDirection (شوف الشرح هناك)
 function applyDocumentLang(lang) {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = lang;
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dir = 'rtl';
 }
 
 const initialLang = readStoredLang();

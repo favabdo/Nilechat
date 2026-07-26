@@ -90,10 +90,14 @@ i18n.use(initReactI18next).init({
   returnEmptyString: false,
 });
 
+// ملحوظة مهمة: الاتجاه (dir) بقى ثابت على "rtl" دايمًا (نفس شكل الواجهة الحالي
+// بالعربي)، بغض النظر عن اللغة المختارة. زرار تبديل اللغة بيترجم النصوص بس
+// (عربي <-> إنجليزي) من غير ما يقلب مكان أي عنصر في الواجهة. لو حبيت ترجع
+// السلوك القديم (قلب الاتجاه لـ ltr مع الإنجليزي)، رجّع dir لـ:
+// `RTL_LANGS.includes(lang) ? 'rtl' : 'ltr'`
 export function applyDocumentDirection(lang) {
-  const dir = RTL_LANGS.includes(lang) ? 'rtl' : 'ltr';
   document.documentElement.setAttribute('lang', lang);
-  document.documentElement.setAttribute('dir', dir);
+  document.documentElement.setAttribute('dir', 'rtl');
 }
 
 export function changeLanguage(lang) {
