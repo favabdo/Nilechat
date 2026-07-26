@@ -70,6 +70,23 @@
   justify-content: center;
   border: 2px solid var(--sidebar-bg);
 }
+.language-toggle-btn {
+  position: relative;
+  font-size: 0;
+}
+.language-toggle-code {
+  position: absolute;
+  bottom: -2px;
+  inset-inline-end: -2px;
+  font-size: 8px;
+  font-weight: 800;
+  background: var(--sidebar-active, #6c5ce7);
+  color: #fff;
+  border-radius: 5px;
+  padding: 1px 3px;
+  line-height: 1;
+  border: 2px solid var(--sidebar-bg);
+}
 .sidebar-bottom {
   display: flex;
   flex-direction: column;

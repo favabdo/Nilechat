@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Sidebar from './Sidebar';
 import ToastContainer from '../shared/ToastContainer';
 import { useSocket } from '../../hooks/useSocket';
@@ -14,6 +15,7 @@ import '../../styles/dashboard-full.css';
 
 // نفس فكرة #page-loader في الأصل: بيظهر لحظة الدخول وبيختفي (كلاس hide) بعد ما الصفحة تجهز.
 export default function DashboardLayout() {
+  const { t } = useTranslation('notifications');
   const [loaderHidden, setLoaderHidden] = useState(false);
   const openChatsCount = useChatsStore((s) => s.conversations.filter((c) => c.status === 'open').length);
   const dueTasksCount = useScheduledTasksStore((s) => s.tasks.filter((t) => t.status === 'open').length);
@@ -47,7 +49,7 @@ export default function DashboardLayout() {
       if (!notification) return;
       if (!currentUser || String(userId) !== String(currentUser.id)) return;
       receiveNotification(notification);
-      showToast(notification.title || 'إشعار جديد', 'info');
+      showToast(notification.title || t('newNotificationFallback'), 'info');
     }
     socket.on('new_notification', onNewNotification);
     return () => socket.off('new_notification', onNewNotification);

@@ -1,10 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { Calendar, UserRound, Clock } from 'lucide-react';
 import { formatSchedDate } from '../../../utils/dateFormat';
 
 export default function VisitCard({ v }) {
+  const { t } = useTranslation('customerDetails');
   const timesParts = [];
-  if (v.arrival_time) timesParts.push(`وصول: ${v.arrival_time}`);
-  if (v.departure_time) timesParts.push(`انصراف: ${v.departure_time}`);
+  if (v.arrival_time) timesParts.push(t('visitCard.arrival', { time: v.arrival_time }));
+  if (v.departure_time) timesParts.push(t('visitCard.departure', { time: v.departure_time }));
 
   return (
     <div className="sched-task-card">
@@ -15,7 +17,7 @@ export default function VisitCard({ v }) {
         </span>
         <span>
           <UserRound size={13} />
-          {v.agent_name || 'Unknown'}
+          {v.agent_name || t('visitCard.unknownAgent')}
         </span>
       </div>
       <div className="sched-task-text">{v.work_done}</div>

@@ -1,12 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserPlus, Send } from 'lucide-react';
 import { agentsSettingsApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import Modal from '../../../components/ui/Modal';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function AddAgentModal({ onClose, onAdded }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const showToast = useToastStore((s) => s.showToast);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ export default function AddAgentModal({ onClose, onAdded }) {
 
   async function submit() {
     const trimmedEmail = email.trim();
-    if (!trimmedEmail) return showToast(t('settings.agentEmailRequired'), 'error');
+    if (!trimmedEmail) return showToast(t('addAgentModal.emailRequired'), 'error');
 
     setSaving(true);
     try {
@@ -28,14 +28,14 @@ export default function AddAgentModal({ onClose, onAdded }) {
         }
       }
       if (data.email_sent) {
-        showToast(t('settings.inviteEmailSentSuccess'), 'success');
+        showToast(t('addAgentModal.inviteSent'), 'success');
       } else {
-        showToast(t('settings.inviteEmailFailedButAdded'), 'error');
+        showToast(t('addAgentModal.inviteEmailFailed'), 'error');
       }
       onAdded(data);
     } catch (err) {
       console.error('[API] submitAddAgent error:', err);
-      showToast(err.response?.data?.error || t('settings.addAgentFailed'), 'error');
+      showToast(err.response?.data?.error || t('addAgentModal.addFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -47,21 +47,21 @@ export default function AddAgentModal({ onClose, onAdded }) {
         <div className="resolve-modal-icon" style={{ background: 'rgba(108,92,231,0.12)', color: 'var(--primary)' }}>
           <UserPlus size={22} />
         </div>
-        <div className="resolve-modal-title">{t('settings.addAgentTitle')}</div>
+        <div className="resolve-modal-title">{t('addAgentModal.title')}</div>
       </div>
-      <div className="resolve-modal-sub">{t('settings.addAgentSub')}</div>
+      <div className="resolve-modal-sub">{t('addAgentModal.subtitle')}</div>
 
-      <div className="resolve-cats-label">{t('settings.nameOptional')}</div>
+      <div className="resolve-cats-label">{t('addAgentModal.nameOptional')}</div>
       <input
         type="text"
         className="iw-input"
-        placeholder={t('settings.displayNamePlaceholder')}
+        placeholder={t('addAgentModal.namePlaceholder')}
         style={{ marginBottom: 14 }}
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
 
-      <div className="resolve-cats-label">{t('settings.email')}</div>
+      <div className="resolve-cats-label">{t('addAgentModal.email')}</div>
       <input
         type="email"
         className="iw-input"
@@ -71,19 +71,19 @@ export default function AddAgentModal({ onClose, onAdded }) {
         onChange={(e) => setEmail(e.target.value)}
       />
 
-      <div className="resolve-cats-label">{t('settings.role')}</div>
+      <div className="resolve-cats-label">{t('addAgentModal.role')}</div>
       <select className="iw-input" style={{ marginBottom: 6 }} value={role} onChange={(e) => setRole(e.target.value)}>
-        <option value="2">{t('settings.roleAgent')}</option>
-        <option value="1">{t('settings.roleAdmin')}</option>
-        <option value="0">{t('settings.roleOwner')}</option>
+        <option value="2">{t('addAgentModal.roleAgent')}</option>
+        <option value="1">{t('addAgentModal.roleAdmin')}</option>
+        <option value="0">{t('addAgentModal.roleOwner')}</option>
       </select>
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          {t('common.cancel')}
+          {t('addAgentModal.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={submit}>
-          <Send size={16} /> {saving ? t('settings.sendingEllipsis') : t('settings.sendInvite')}
+          <Send size={16} /> {saving ? t('addAgentModal.sending') : t('addAgentModal.sendInvite')}
         </button>
       </div>
     </Modal>

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AnimatedBackground from '../../../components/shared/AnimatedBackground';
+import LanguageToggle from '../../../components/shared/LanguageToggle';
 import { getInviteInfo, acceptInvite } from '../services/auth.service';
-import useTranslation from '../../../i18n/useTranslation';
 import './SetPasswordPage.css';
 
 // نفس الـ 4 حالات اللي كانت في set-password.html: loading / invalid / form / success
 export default function SetPasswordPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('auth');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -23,7 +24,7 @@ export default function SetPasswordPage() {
   useEffect(() => {
     async function init() {
       if (!token) {
-        setInvalidMessage(t('auth.noInviteToken'));
+        setInvalidMessage(t('setPassword.invalidNoToken'));
         setState('invalid');
         return;
       }
@@ -32,7 +33,7 @@ export default function SetPasswordPage() {
         setEmail(data.email);
         setState('form');
       } catch (err) {
-        setInvalidMessage(err.response?.data?.error || t('auth.invalidLinkDefault'));
+        setInvalidMessage(err.response?.data?.error || t('setPassword.invalidDefault'));
         setState('invalid');
       }
     }
@@ -45,11 +46,11 @@ export default function SetPasswordPage() {
     setAcceptError('');
 
     if (newPassword.length < 6) {
-      setAcceptError(t('auth.passwordMinLength'));
+      setAcceptError(t('setPassword.passwordTooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setAcceptError(t('auth.passwordsDontMatch'));
+      setAcceptError(t('setPassword.passwordsDontMatch'));
       return;
     }
 
@@ -58,7 +59,7 @@ export default function SetPasswordPage() {
       await acceptInvite(token, newPassword);
       setState('success');
     } catch (err) {
-      setAcceptError(err.response?.data?.error || t('common.somethingWentWrong'));
+      setAcceptError(err.response?.data?.error || t('setPassword.genericError'));
     } finally {
       setSubmitting(false);
     }
@@ -67,13 +68,16 @@ export default function SetPasswordPage() {
   return (
     <>
       <AnimatedBackground />
+      <div style={{ position: 'fixed', top: 16, insetInlineEnd: 16, zIndex: 100 }}>
+        <LanguageToggle />
+      </div>
       <div className="page-center">
         <div className="card" id="card">
           {state === 'loading' && (
             <div id="loading-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
-              <h1>{t('auth.checkingInviteLink')}</h1>
-              <div className="subtitle">{t('auth.oneMoment')}</div>
+              <h1>{t('setPassword.checkingTitle')}</h1>
+              <div className="subtitle">{t('setPassword.checkingSubtitle')}</div>
             </div>
           )}
 
@@ -81,12 +85,12 @@ export default function SetPasswordPage() {
             <div id="invalid-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
               <div className="state-icon bad">✕</div>
-              <h1>{t('auth.invalidLinkTitle')}</h1>
+              <h1>{t('setPassword.invalidTitle')}</h1>
               <div className="subtitle" id="invalid-message">
                 {invalidMessage}
               </div>
               <Link to="/" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '13.5px', textDecoration: 'none' }}>
-                {t('auth.backToLogin')}
+                {t('setPassword.backToLogin')}
               </Link>
             </div>
           )}
@@ -94,8 +98,8 @@ export default function SetPasswordPage() {
           {state === 'form' && (
             <div id="form-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
-              <h1>{t('auth.activateAccountTitle')}</h1>
-              <div className="subtitle">{t('auth.activateAccountSubtitle')}</div>
+              <h1>{t('setPassword.activateTitle')}</h1>
+              <div className="subtitle">{t('setPassword.activateSubtitle')}</div>
               <div className="email-pill" id="invite-email">
                 {email}
               </div>
@@ -103,13 +107,13 @@ export default function SetPasswordPage() {
               <form id="accept-form" onSubmit={handleSubmit}>
                 <div className="field-wrap">
                   <label className="field-label" htmlFor="new-password">
-                    {t('auth.newPassword')}
+                    {t('setPassword.newPasswordLabel')}
                   </label>
                   <input
                     type="password"
                     className="input"
                     id="new-password"
-                    placeholder={t('auth.minSixChars')}
+                    placeholder={t('setPassword.newPasswordPlaceholder')}
                     required
                     minLength={6}
                     value={newPassword}
@@ -118,13 +122,13 @@ export default function SetPasswordPage() {
                 </div>
                 <div className="field-wrap">
                   <label className="field-label" htmlFor="confirm-password">
-                    {t('auth.confirmPassword')}
+                    {t('setPassword.confirmPasswordLabel')}
                   </label>
                   <input
                     type="password"
                     className="input"
                     id="confirm-password"
-                    placeholder={t('auth.retypePassword')}
+                    placeholder={t('setPassword.confirmPasswordPlaceholder')}
                     required
                     minLength={6}
                     value={confirmPassword}
@@ -134,7 +138,7 @@ export default function SetPasswordPage() {
 
                 <button type="submit" className={`btn${submitting ? ' loading' : ''}`} id="accept-btn" disabled={submitting}>
                   <span className="spinner"></span>
-                  <span className="btn-text">{t('auth.activateAndLogin')}</span>
+                  <span className="btn-text">{t('setPassword.submitButton')}</span>
                 </button>
 
                 <div className="msg error" id="accept-error">
@@ -148,15 +152,15 @@ export default function SetPasswordPage() {
             <div id="success-state">
               <img src="/assets/logo.png" alt="NileChat" className="logo" />
               <div className="state-icon ok">✓</div>
-              <h1>{t('auth.accountActivatedTitle')}</h1>
-              <div className="subtitle">{t('auth.accountActivatedSubtitle')}</div>
+              <h1>{t('setPassword.successTitle')}</h1>
+              <div className="subtitle">{t('setPassword.successSubtitle')}</div>
               <Link to="/" className="btn" style={{ textDecoration: 'none' }}>
-                {t('auth.loginButton')}
+                {t('setPassword.loginLink')}
               </Link>
             </div>
           )}
 
-          <div className="app-footer">Copyright © Nile Techno Designed by Abdullah Elsawy 2026</div>
+          <div className="app-footer">{t('footer')}</div>
         </div>
       </div>
     </>

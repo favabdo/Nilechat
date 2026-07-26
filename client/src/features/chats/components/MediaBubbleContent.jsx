@@ -1,9 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { FileWarning, Loader2, FileText } from 'lucide-react';
 import { docKindLabel } from '../utils/mappers';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function MediaBubbleContent({ m, onOpenLightbox }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   if (!m.mediaUrl) {
     // الرسالة الواردة بتوصل وتتسجل فورًا من غير ما تستنى تنزيل الملف من واتساب
     // (شوف conversation.service.js) — لحد ما التنزيل يخلص في الخلفية، بنعرض
@@ -13,9 +13,9 @@ export default function MediaBubbleContent({ m, onOpenLightbox }) {
       <>
         <div className="msg-media-unavailable">
           {m.from === 'customer' ? (
-            <><Loader2 size={14} className="msg-media-spinner" /> {t('chats.loadingMedia')}</>
+            <><Loader2 size={14} className="msg-media-spinner" /> {t('mediaBubble.loadingMedia')}</>
           ) : (
-            <><FileWarning size={14} /> {t('chats.mediaUnavailable')}</>
+            <><FileWarning size={14} /> {t('mediaBubble.unavailable')}</>
           )}
         </div>
         {m.text && <div className="msg-media-caption">{m.text}</div>}
@@ -40,7 +40,7 @@ export default function MediaBubbleContent({ m, onOpenLightbox }) {
         <div className="msg-media-doc-icon"><FileText size={18} /></div>
         <div className="msg-media-doc-info">
           <span className="msg-media-doc-name">{m.fileName || kind}</span>
-          <span className="msg-media-doc-hint">{kind} — {t('chats.docTapToOpen')}</span>
+          <span className="msg-media-doc-hint">{kind} — {t('mediaBubble.tapToOpen')}</span>
         </div>
       </a>
     );
@@ -49,7 +49,7 @@ export default function MediaBubbleContent({ m, onOpenLightbox }) {
   return (
     <>
       {body}
-      {m._pending && <div className="msg-upload-progress">{m.failed ? t('chats.sendFailed') : t('chats.sending')}</div>}
+      {m._pending && <div className="msg-upload-progress">{m.failed ? t('mediaBubble.failed') : t('mediaBubble.sending')}</div>}
       {m.text && <div className="msg-media-caption">{m.text}</div>}
       <div className="msg-time" style={{ padding: '0 8px 6px' }}>{m.time}</div>
     </>

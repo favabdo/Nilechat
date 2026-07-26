@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserPlus, Copy, Pencil, Trash2, Check } from 'lucide-react';
 import { agentsSettingsApi } from '../services/settings.service';
 import Avatar from '../../../components/ui/Avatar';
@@ -7,12 +8,11 @@ import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
 import AddAgentModal from '../components/AddAgentModal';
 import DeleteAgentModal from '../components/DeleteAgentModal';
-import useTranslation from '../../../i18n/useTranslation';
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
 export default function AgentsSection() {
-  const { t, lang } = useTranslation();
+  const { t } = useTranslation('settings');
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
   const canManage = isOwnerOrAdmin(user);
@@ -45,13 +45,13 @@ export default function AgentsSection() {
 
   async function copyInviteLink(id) {
     const link = inviteLinks[id];
-    if (!link) return showToast(t('settings.inviteLinkUnavailable'), 'error');
+    if (!link) return showToast(t('agents.inviteLinkUnavailable'), 'error');
     try {
       await navigator.clipboard.writeText(link);
-      showToast(t('settings.inviteLinkCopied'), 'success');
+      showToast(t('agents.inviteLinkCopied'), 'success');
     } catch (err) {
       console.error('[copyInviteLink] clipboard error:', err);
-      showToast(t('settings.copyFailedWithLink', { link }), 'error');
+      showToast(t('agents.copyFailedPrefix') + link, 'error');
     }
   }
 
@@ -59,10 +59,10 @@ export default function AgentsSection() {
     try {
       const data = await agentsSettingsApi.update(id, { role: Number(role) });
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, role: data.user.role } : a)));
-      showToast(t('settings.roleChangedSuccess'), 'success');
+      showToast(t('agents.roleChangedSuccess'), 'success');
     } catch (err) {
       console.error('[API] changeAgentRole error:', err);
-      showToast(err.response?.data?.error || t('settings.roleChangeFailed'), 'error');
+      showToast(err.response?.data?.error || t('agents.roleChangeFailed'), 'error');
     }
   }
 
@@ -70,10 +70,10 @@ export default function AgentsSection() {
     try {
       const data = await agentsSettingsApi.update(id, { status });
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, status: data.user.status } : a)));
-      showToast(t('settings.statusUpdatedSuccess'), 'success');
+      showToast(t('agents.statusUpdatedSuccess'), 'success');
     } catch (err) {
       console.error('[API] changeAgentStatus error:', err);
-      showToast(err.response?.data?.error || t('settings.statusChangeFailed'), 'error');
+      showToast(err.response?.data?.error || t('agents.statusChangeFailed'), 'error');
     }
   }
 
@@ -84,9 +84,9 @@ export default function AgentsSection() {
       const data = await agentsSettingsApi.update(id, { display_name: trimmed });
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, display_name: data.user.display_name } : a)));
       setEditingNameId(null);
-      showToast(t('settings.nameUpdatedSuccess'), 'success');
+      showToast(t('agents.nameUpdatedSuccess'), 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || t('settings.nameUpdateFailed'), 'error');
+      showToast(err.response?.data?.error || t('agents.nameUpdateFailed'), 'error');
     }
   }
 
@@ -103,22 +103,22 @@ export default function AgentsSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>{t('settings.agents')}</h2>
-            <div className="settings-top-desc">{t('settings.agentsDesc')}</div>
+            <h2>{t('agents.title')}</h2>
+            <div className="settings-top-desc">{t('agents.subtitle')}</div>
           </div>
           {canManage && (
             <button className="page-btn" onClick={() => setAddModalOpen(true)}>
-              <UserPlus size={16} /> {t('settings.addAgentTitle')}
+              <UserPlus size={16} /> {t('agents.addAgent')}
             </button>
           )}
         </div>
         <table className="settings-table">
           <thead>
             <tr>
-              <th style={{ width: '26%' }}>{t('settings.agentCol')}</th>
-              <th style={{ width: '32%' }}>{t('settings.emailCol')}</th>
-              <th style={{ width: '16%' }}>{t('settings.roleCol')}</th>
-              <th style={{ width: '16%' }}>{t('settings.statusCol')}</th>
+              <th style={{ width: '26%' }}>{t('agents.columns.agent')}</th>
+              <th style={{ width: '32%' }}>{t('agents.columns.email')}</th>
+              <th style={{ width: '16%' }}>{t('agents.columns.role')}</th>
+              <th style={{ width: '16%' }}>{t('agents.columns.status')}</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
@@ -126,21 +126,21 @@ export default function AgentsSection() {
             {loading && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  {t('settings.loadingAgentsTable')}
+                  {t('agents.loading')}
                 </td>
               </tr>
             )}
             {!loading && failed && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  {t('settings.loadAgentsFailed')}
+                  {t('agents.loadFailed')}
                 </td>
               </tr>
             )}
             {!loading && !failed && agents.length === 0 && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  {t('settings.noAgentsRegisteredYet')}
+                  {t('agents.empty')}
                 </td>
               </tr>
             )}
@@ -170,7 +170,7 @@ export default function AgentsSection() {
                         ) : (
                           <span>
                             {a.display_name}
-                            {isMe && <span className="agent-you-tag">{t('settings.you')}</span>}
+                            {isMe && <span className="agent-you-tag">{t('agents.you')}</span>}
                           </span>
                         )}
                       </div>
@@ -183,11 +183,11 @@ export default function AgentsSection() {
                             className="sr-chip"
                             style={{ marginTop: 6, fontSize: 11, padding: '4px 10px' }}
                             onClick={() => copyInviteLink(a.id)}
-                            title={t('settings.copyInviteLinkBtn')}
-                            aria-label={t('settings.copyInviteLinkBtn')}
+                            title={t('agents.copyInviteLink')}
+                            aria-label={t('agents.copyInviteLink')}
                           >
                             <Copy size={11} style={{ verticalAlign: -2, marginLeft: 4 }} />
-                            {t('settings.copyInviteLinkBtn')}
+                            {t('agents.copyInviteLink')}
                           </button>
                         </div>
                       )}
@@ -200,12 +200,12 @@ export default function AgentsSection() {
                           value={a.role}
                           onChange={(e) => changeRole(a.id, e.target.value)}
                         >
-                          <option value={2}>{t('settings.roleAgent')}</option>
-                          <option value={1}>{t('settings.roleAdmin')}</option>
-                          <option value={0}>{t('settings.roleOwnerShort')}</option>
+                          <option value={2}>{t('agents.roleOptions.agent')}</option>
+                          <option value={1}>{t('agents.roleOptions.admin')}</option>
+                          <option value={0}>{t('agents.roleOptions.owner')}</option>
                         </select>
                       ) : (
-                        <span className={`st-pill ${roleBadgeClass(a.role)}`}>{roleLabel(a.role, lang)}</span>
+                        <span className={`st-pill ${roleBadgeClass(a.role)}`}>{roleLabel(a.role)}</span>
                       )}
                     </td>
                     <td>
@@ -216,8 +216,8 @@ export default function AgentsSection() {
                           value={isActive ? 'active' : 'inactive'}
                           onChange={(e) => changeStatus(a.id, e.target.value)}
                         >
-                          <option value="active">{t('settings.active')}</option>
-                          <option value="inactive">{t('settings.inactive2')}</option>
+                          <option value="active">{t('agents.statusOptions.active')}</option>
+                          <option value="inactive">{t('agents.statusOptions.inactive')}</option>
                         </select>
                       ) : (
                         <span className={`st-pill ${isActive ? 'status-online' : 'status-offline'}`}>
@@ -225,7 +225,7 @@ export default function AgentsSection() {
                             className="st-pill-dot"
                             style={{ background: isActive ? 'var(--success)' : 'var(--text-secondary)' }}
                           ></span>
-                          {isActive ? t('settings.active') : a.status || t('settings.inactive2')}
+                          {isActive ? t('agents.statusOptions.active') : a.status || t('agents.statusOptions.inactive')}
                         </span>
                       )}
                     </td>
@@ -233,8 +233,8 @@ export default function AgentsSection() {
                       {isMe && editingNameId !== a.id && (
                         <button
                           className="st-icon-btn"
-                          title={t('settings.editDisplayName')}
-                          aria-label={t('settings.editDisplayName')}
+                          title={t('agents.editName')}
+                          aria-label={t('agents.editName')}
                           onClick={() => {
                             setEditingNameId(a.id);
                             setNameDraft(a.display_name || '');
@@ -244,15 +244,15 @@ export default function AgentsSection() {
                         </button>
                       )}
                       {isMe && editingNameId === a.id && (
-                        <button className="st-icon-btn" title={t('settings.saveBtn')} aria-label={t('settings.saveBtn')} onClick={() => saveOwnName(a.id)}>
+                        <button className="st-icon-btn" title={t('agents.save')} aria-label={t('agents.save')} onClick={() => saveOwnName(a.id)}>
                           <Check size={14} />
                         </button>
                       )}
                       {canEditThisAgent && (
                         <button
                           className="st-icon-btn"
-                          title={t('settings.deleteAgentTitle2')}
-                          aria-label={t('settings.deleteAgentTitle2')}
+                          title={t('agents.deleteAgent')}
+                          aria-label={t('agents.deleteAgent')}
                           style={{ color: 'var(--danger)' }}
                           onClick={() => setDeleteTarget(a)}
                         >
@@ -275,7 +275,7 @@ export default function AgentsSection() {
           onDeleted={(id) => {
             setAgents((prev) => prev.filter((a) => a.id !== id));
             setDeleteTarget(null);
-            showToast(t('settings.agentDeletedSuccess'), 'success');
+            showToast(t('agents.deleteSuccess'), 'success');
           }}
         />
       )}

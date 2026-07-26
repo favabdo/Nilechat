@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pencil, Check, X } from 'lucide-react';
 
 export default function EditableFieldRow({ label, desc, value, placeholder, type = 'text', onSave }) {
+  const { t } = useTranslation('common');
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || '');
   const [saving, setSaving] = useState(false);
@@ -31,7 +33,7 @@ export default function EditableFieldRow({ label, desc, value, placeholder, type
           ) : (
             <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>{placeholder || '—'}</span>
           )}
-          <button className="st-icon-btn" title="Edit" aria-label="Edit" onClick={startEdit}>
+          <button className="st-icon-btn" title={t('actions.edit')} aria-label={t('actions.edit')} onClick={startEdit}>
             <Pencil size={13} />
           </button>
         </span>
@@ -57,10 +59,10 @@ export default function EditableFieldRow({ label, desc, value, placeholder, type
             }}
           />
           <span className="agent-name-edit-actions">
-            <button className="st-icon-btn" title="Save" aria-label="Save" disabled={saving} onClick={confirm}>
+            <button className="st-icon-btn" title={t('actions.save')} aria-label={t('actions.save')} disabled={saving} onClick={confirm}>
               <Check size={14} />
             </button>
-            <button className="st-icon-btn" title="Cancel" aria-label="Cancel" onClick={() => setEditing(false)}>
+            <button className="st-icon-btn" title={t('actions.cancel')} aria-label={t('actions.cancel')} onClick={() => setEditing(false)}>
               <X size={14} />
             </button>
           </span>

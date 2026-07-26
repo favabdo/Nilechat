@@ -1,12 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Check } from 'lucide-react';
 import useToastStore from '../../../store/toastStore';
 import { conversationsApi } from '../services/chats.service';
 import Modal from '../../../components/ui/Modal';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function ResolveModal({ conversation, categories, onClose, onResolved }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
@@ -20,10 +20,10 @@ export default function ResolveModal({ conversation, categories, onClose, onReso
     try {
       await conversationsApi.resolve(conversation.id, catName, notes.trim());
       onResolved(catName);
-      showToast(t('chats.resolveSuccessToast', { category: catName }), 'success');
+      showToast(t('resolve.successToast', { category: catName }), 'success');
     } catch (err) {
       console.error('[API] confirmResolve error:', err);
-      showToast(err.response?.data?.error || t('chats.resolveFailedToast'), 'error');
+      showToast(err.response?.data?.error || t('resolve.failedToast'), 'error');
     } finally {
       setSaving(false);
     }
@@ -35,11 +35,11 @@ export default function ResolveModal({ conversation, categories, onClose, onReso
         <div className="resolve-modal-icon">
           <CheckCircle2 size={22} />
         </div>
-        <div className="resolve-modal-title">{t('chats.resolveModalTitle')}</div>
+        <div className="resolve-modal-title">{t('resolve.title')}</div>
       </div>
-      <div className="resolve-modal-sub">{t('chats.resolveModalSub')}</div>
+      <div className="resolve-modal-sub">{t('resolve.subtitle')}</div>
 
-      <div className="resolve-cats-label">{t('chats.resolveCategoryLabel')}</div>
+      <div className="resolve-cats-label">{t('resolve.categoryLabel')}</div>
       <div className="resolve-cats-grid">
         {categories.map((cat) => (
           <div
@@ -54,21 +54,21 @@ export default function ResolveModal({ conversation, categories, onClose, onReso
         ))}
       </div>
 
-      <div className="resolve-notes-label">{t('chats.resolveNotesLabel')}</div>
+      <div className="resolve-notes-label">{t('resolve.notesLabel')}</div>
       <textarea
         className="resolve-notes"
-        placeholder={t('chats.resolveNotesPlaceholder')}
+        placeholder={t('resolve.notesPlaceholder')}
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
       />
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          {t('common.cancel')}
+          {t('resolve.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={!selectedCategory || saving} onClick={confirm}>
           <Check size={16} />
-          {saving ? t('common.saving') : t('chats.resolveConfirmBtn')}
+          {saving ? t('resolve.saving') : t('resolve.confirm')}
         </button>
       </div>
     </Modal>

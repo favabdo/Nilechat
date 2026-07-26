@@ -1,4 +1,5 @@
 import { formatTime, formatMessageTimestamp, formatDateTimeLabel, daysAgoLabel } from '../../../utils/dateFormat';
+import i18n from '../../../i18n';
 
 export function parseLabelsJson(raw) {
   if (!raw) return [];
@@ -86,10 +87,10 @@ export function mapApiMessage(m) {
 }
 
 export function mediaKindLabel(type) {
-  if (type === 'image' || type === 'sticker') return '📷 Photo';
-  if (type === 'video') return '🎥 Video';
-  if (type === 'audio') return '🎤 Voice message';
-  return '📎 Document';
+  if (type === 'image' || type === 'sticker') return i18n.t('mediaKind.photo', { ns: 'chats' });
+  if (type === 'video') return i18n.t('mediaKind.video', { ns: 'chats' });
+  if (type === 'audio') return i18n.t('mediaKind.voice', { ns: 'chats' });
+  return i18n.t('mediaKind.document', { ns: 'chats' });
 }
 
 export function docKindLabel(mimeType, fileName) {
@@ -99,7 +100,7 @@ export function docKindLabel(mimeType, fileName) {
   if (mime.includes('word') || name.endsWith('.doc') || name.endsWith('.docx')) return 'Word';
   if (mime.includes('sheet') || mime.includes('excel') || name.endsWith('.xls') || name.endsWith('.xlsx')) return 'Excel';
   if (mime.includes('zip') || name.endsWith('.zip')) return 'ZIP';
-  return 'File';
+  return i18n.t('docKind.file', { ns: 'chats' });
 }
 
 export function hexToRgba(hex, alpha) {
@@ -130,8 +131,8 @@ export function dayDividerLabel(isoString) {
   const now = new Date();
   const startOfDay = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
   const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 0) return i18n.t('dayDivider.today', { ns: 'chats' });
+  if (diffDays === 1) return i18n.t('dayDivider.yesterday', { ns: 'chats' });
   return d.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
@@ -152,7 +153,7 @@ export function mapPrevConversation(row) {
     id: row.id,
     date: row.last_message_at ? formatDateTimeLabel(row.last_message_at) : '',
     daysAgo: row.last_message_at ? daysAgoLabel(row.last_message_at) : '',
-    preview: row.last_message_text || '(بدون رسائل)',
+    preview: row.last_message_text || i18n.t('mapper.noMessages', { ns: 'chats' }),
     count: row.message_count || 0,
     phone: row.contact_number || '',
     handledBy: row.assigned_agent_name || null,

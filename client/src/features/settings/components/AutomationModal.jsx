@@ -1,71 +1,32 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Workflow, MessageCircle, Check, Trash2, CalendarX, Star } from 'lucide-react';
 import { agentsSettingsApi, teamsApi } from '../services/settings.service';
 import Modal from '../../../components/ui/Modal';
-import useTranslation from '../../../i18n/useTranslation';
 
 const WELCOME_SCHEDULE_DAY_ORDER = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DEFAULT_DAY = { enabled: false, start: '09:00', end: '17:00' };
 
-function buildRuleMeta(t) {
-  return {
-    auto_assign: {
-      title: t('settings.ruleAutoAssignTitle'),
-      icon: Workflow,
-      enableDesc: t('settings.amAutoAssignEnableDesc'),
-    },
-    welcome: {
-      title: t('settings.ruleWelcomeTitle'),
-      icon: MessageCircle,
-      enableDesc: t('settings.amWelcomeEnableDesc'),
-      messageLabel: t('settings.amWelcomeMessageLabel'),
-      messageHint: t('settings.amWelcomeMessageHint'),
-      placeholder: t('settings.amWelcomePlaceholder'),
-    },
-    csat: {
-      title: t('settings.ruleCsatTitle'),
-      icon: Workflow,
-      enableDesc: t('settings.amCsatEnableDesc'),
-      messageLabel: t('settings.amCsatMessageLabel'),
-      messageHint: t('settings.amCsatMessageHint'),
-      placeholder: t('settings.amCsatPlaceholder'),
-    },
-    keyword_routing: {
-      title: t('settings.ruleKeywordTitle'),
-      icon: Workflow,
-      enableDesc: t('settings.amKeywordEnableDesc'),
-    },
-    contract_expired: {
-      title: t('settings.ruleContractExpiredTitle'),
-      icon: CalendarX,
-      enableDesc: t('settings.amContractExpiredEnableDesc'),
-      messageLabel: t('settings.amContractExpiredMessageLabel'),
-      messageHint: t('settings.amContractExpiredMessageHint'),
-      placeholder: t('settings.amContractExpiredPlaceholder'),
-      repeatToggleLabel: t('settings.amRepeatToggleLabel'),
-      repeatToggleDesc: t('settings.amRepeatToggleDesc'),
-    },
-    rating: {
-      title: t('settings.ruleRatingTitle'),
-      icon: Star,
-      enableDesc: t('settings.amRatingEnableDesc'),
-    },
-  };
-}
+const RULE_ICONS = {
+  auto_assign: Workflow,
+  welcome: MessageCircle,
+  csat: Workflow,
+  keyword_routing: Workflow,
+  contract_expired: CalendarX,
+  rating: Star,
+};
 
 export default function AutomationModal({ type, settings, onClose, onSaved }) {
-  const { t } = useTranslation();
-  const WELCOME_SCHEDULE_DAY_LABELS = {
-    sun: t('settings.weekdaySun'),
-    mon: t('settings.weekdayMon'),
-    tue: t('settings.weekdayTue'),
-    wed: t('settings.weekdayWed'),
-    thu: t('settings.weekdayThu'),
-    fri: t('settings.weekdayFri'),
-    sat: t('settings.weekdaySat'),
+  const { t } = useTranslation('settings');
+  const meta = {
+    title: t(`automationModal.meta.${type}.title`),
+    enableDesc: t(`automationModal.meta.${type}.enableDesc`),
+    messageLabel: t(`automationModal.meta.${type}.messageLabel`, { defaultValue: '' }),
+    messageHint: t(`automationModal.meta.${type}.messageHint`, { defaultValue: '' }),
+    placeholder: t(`automationModal.meta.${type}.placeholder`, { defaultValue: '' }),
+    repeatToggleLabel: t(`automationModal.meta.${type}.repeatToggleLabel`, { defaultValue: '' }),
+    repeatToggleDesc: t(`automationModal.meta.${type}.repeatToggleDesc`, { defaultValue: '' }),
   };
-  const RULE_META = buildRuleMeta(t);
-  const meta = RULE_META[type];
   const s = settings || {};
 
   const [enabled, setEnabled] = useState(
@@ -155,34 +116,34 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
     const body = {};
 
     if (type === 'auto_assign') {
-      if (enabled && !agentId) return setError(t('settings.agentRequiredError'));
+      if (enabled && !agentId) return setError(t('automationModal.errors.selectAgentFirst'));
       body.auto_assign_enabled = enabled;
       body.auto_assign_agent_id = agentId ? Number(agentId) : null;
     } else if (type === 'rating') {
       body.rating_enabled = enabled;
     } else if (type === 'keyword_routing') {
       const completeRules = rules.filter((r) => r.team_id && r.keywords.length);
-      if (enabled && !completeRules.length) return setError(t('settings.keywordRuleRequiredError'));
+      if (enabled && !completeRules.length) return setError(t('automationModal.errors.addOneCompleteRule'));
       body.keyword_routing_enabled = enabled;
       body.keyword_routing_rules = completeRules;
     } else if (type === 'contract_expired') {
       const text = message.trim();
-      if ((enabled || repeatEnabled) && !text) return setError(t('settings.messageTextRequiredError'));
+      if ((enabled || repeatEnabled) && !text) return setError(t('automationModal.errors.writeMessageFirst'));
       body.contract_expired_enabled = enabled;
       body.contract_expired_message = text;
       body.contract_expired_repeat_enabled = repeatEnabled;
     } else {
       const text = message.trim();
-      if (enabled && !text) return setError(t('settings.messageTextRequiredError'));
+      if (enabled && !text) return setError(t('automationModal.errors.writeMessageFirst'));
       if (type === 'welcome') {
         body.welcome_enabled = enabled;
         body.welcome_message = text;
         body.welcome_schedule_enabled = useSchedule;
         if (useSchedule) {
           const offText = offHoursMessage.trim();
-          if (enabled && !offText) return setError(t('settings.offHoursMessageRequiredError'));
+          if (enabled && !offText) return setError(t('automationModal.errors.writeOffHoursMessageFirst'));
           const hasEnabledDay = WELCOME_SCHEDULE_DAY_ORDER.some((k) => days[k].enabled);
-          if (enabled && !hasEnabledDay) return setError(t('settings.scheduleDayRequiredError'));
+          if (enabled && !hasEnabledDay) return setError(t('automationModal.errors.enableOneDay'));
           body.welcome_offhours_message = offText;
           body.welcome_schedule = { timezone: 'Africa/Cairo', days };
         }
@@ -196,13 +157,13 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
     try {
       await onSaved(body);
     } catch (err) {
-      setError(err.response?.data?.error || t('settings.saveFailed'));
+      setError(err.response?.data?.error || t('automationModal.errors.saveFailed'));
     } finally {
       setSaving(false);
     }
   }
 
-  const Icon = meta.icon;
+  const Icon = RULE_ICONS[type] || Workflow;
 
   return (
     <Modal onClose={onClose}>
@@ -220,9 +181,9 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
 
       {type === 'auto_assign' && (
         <div style={{ marginTop: 8 }}>
-          <div className="resolve-cats-label">{t('settings.assignNewConvTo')}</div>
+          <div className="resolve-cats-label">{t('automationModal.assignNewConversationsTo')}</div>
           <select className="iw-input" value={agentId} onChange={(e) => setAgentId(e.target.value)}>
-            <option value="">{t('settings.selectAgentPlaceholder')}</option>
+            <option value="">{t('automationModal.selectAgent')}</option>
             {agents.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.display_name || a.email}
@@ -235,7 +196,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
       {(type === 'welcome' || type === 'csat' || type === 'contract_expired') && (
         <div style={{ marginTop: 8 }}>
           <div className="resolve-cats-label">
-            {useSchedule && type === 'welcome' ? t('settings.welcomeMessageBusinessHours') : meta.messageLabel}
+            {useSchedule && type === 'welcome' ? t('automationModal.welcomeMessageInHours') : meta.messageLabel}
           </div>
           <textarea
             className="resolve-notes"
@@ -245,16 +206,14 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
             onChange={(e) => setMessage(e.target.value)}
           />
           <div className="iw-form-hint" style={{ marginBottom: 12 }}>
-            {useSchedule && type === 'welcome'
-              ? t('settings.welcomeScheduleSentHint')
-              : meta.messageHint}
+            {useSchedule && type === 'welcome' ? t('automationModal.scheduleHint') : meta.messageHint}
           </div>
 
           {type === 'welcome' && (
             <>
               <div className="setting-row" style={{ border: 'none', padding: '6px 0' }}>
                 <div className="setting-label" style={{ fontSize: 12.5 }}>
-                  {t('settings.useTwoScheduledMessages')}
+                  {t('automationModal.useTwoMessagesBySchedule')}
                 </div>
                 <button className={`toggle${useSchedule ? ' on' : ''}`} onClick={() => setUseSchedule((v) => !v)}></button>
               </div>
@@ -284,7 +243,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                             onChange={(e) => updateDay(key, { enabled: e.target.checked })}
                             style={{ width: 16, height: 16 }}
                           />
-                          {WELCOME_SCHEDULE_DAY_LABELS[key]}
+                          {t(`automationModal.days.${key}`)}
                         </label>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <input
@@ -294,7 +253,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                             value={days[key].start}
                             onChange={(e) => updateDay(key, { start: e.target.value })}
                           />
-                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('settings.toLabel')}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('automationModal.to')}</span>
                           <input
                             type="time"
                             className="iw-input"
@@ -306,10 +265,10 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                       </div>
                     ))}
                   </div>
-                  <div className="resolve-cats-label">{t('settings.offHoursMessageLabel')}</div>
+                  <div className="resolve-cats-label">{t('automationModal.offHoursMessageLabel')}</div>
                   <textarea
                     className="resolve-notes"
-                    placeholder={t('settings.offHoursMessagePlaceholder')}
+                    placeholder={t('automationModal.offHoursMessagePlaceholder')}
                     value={offHoursMessage}
                     onChange={(e) => setOffHoursMessage(e.target.value)}
                   />
@@ -333,9 +292,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
       {type === 'keyword_routing' && (
         <div style={{ marginTop: 8 }}>
           {rules.length === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>
-              {t('settings.noRulesYetAddOne')}
-            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 10 }}>{t('automationModal.noRulesYet')}</div>
           )}
           {rules.map((rule, idx) => (
             <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 10 }}>
@@ -346,17 +303,17 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
                   value={rule.team_id || ''}
                   onChange={(e) => setRuleTeam(idx, e.target.value)}
                 >
-                  <option value="">{t('settings.selectTeamPlaceholder')}</option>
-                  {teams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name}
+                  <option value="">{t('automationModal.selectTeamPlaceholder')}</option>
+                  {teams.map((tm) => (
+                    <option key={tm.id} value={tm.id}>
+                      {tm.name}
                     </option>
                   ))}
                 </select>
                 <button
                   className="st-icon-btn"
-                  title={t('settings.deleteThisRule')}
-                  aria-label={t('settings.deleteThisRule')}
+                  title={t('automationModal.removeRule')}
+                  aria-label={t('automationModal.removeRule')}
                   onClick={() => removeRule(idx)}
                 >
                   <Trash2 size={14} />
@@ -364,7 +321,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
                 {rule.keywords.length === 0 ? (
-                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{t('settings.noKeywordsYetForRule')}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>{t('automationModal.noKeywordsYet')}</div>
                 ) : (
                   rule.keywords.map((kw, kwIdx) => (
                     <span
@@ -396,7 +353,7 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
               <input
                 className="iw-input"
                 style={{ marginBottom: 0 }}
-                placeholder={t('settings.typeKeywordEnterHint')}
+                placeholder={t('automationModal.keywordInputPlaceholder')}
                 value={kwDraft[idx] || ''}
                 onChange={(e) => setKwDraft((prev) => ({ ...prev, [idx]: e.target.value }))}
                 onKeyDown={(e) => {
@@ -409,17 +366,17 @@ export default function AutomationModal({ type, settings, onClose, onSaved }) {
             </div>
           ))}
           <button className="resolve-cancel-btn" style={{ width: '100%' }} onClick={addRule}>
-            {t('settings.addAnotherTeamRule')}
+            {t('automationModal.addAnotherTeamRule')}
           </button>
         </div>
       )}
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          {t('common.cancel')}
+          {t('automationModal.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={save}>
-          <Check size={16} /> {saving ? t('settings.savingEllipsis') : t('common.save')}
+          <Check size={16} /> {saving ? t('automationModal.saving') : t('automationModal.save')}
         </button>
       </div>
       {error && (

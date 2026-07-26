@@ -1,19 +1,20 @@
+import { useTranslation } from 'react-i18next';
 import { BarChart3 } from 'lucide-react';
 
-// نفس محتوى #page-analytics في الأصل بالظبط — "Coming Soon" في التطبيق الأصلي نفسه.
 export default function AnalyticsPage() {
+  const { t } = useTranslation('analytics');
   return (
     <div id="page-analytics" className="page">
       <div className="page-content">
         <div className="page-header">
-          <h2>Analytics</h2>
+          <h2>{t('title')}</h2>
         </div>
         <div className="coming-soon-box">
           <div className="coming-soon-icon">
             <BarChart3 size={26} color="#fff" />
           </div>
-          <h3>Coming Soon</h3>
-          <p>صفحة الـ Analytics هتتفعّل قريب.</p>
+          <h3>{t('comingSoon')}</h3>
+          <p>{t('comingSoonDesc')}</p>
         </div>
       </div>
     </div>

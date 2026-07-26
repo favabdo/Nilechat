@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, Users } from 'lucide-react';
 import { teamsApi, agentsSettingsApi } from '../services/settings.service';
 import { roleLabel } from '../../../utils/roles';
 import Modal from '../../../components/ui/Modal';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function TeamMembersModal({ team, onClose, onSaved }) {
-  const { t, lang } = useTranslation();
+  const { t } = useTranslation('settings');
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -50,14 +50,14 @@ export default function TeamMembersModal({ team, onClose, onSaved }) {
         <div className="resolve-modal-icon">
           <Users size={22} />
         </div>
-        <div className="resolve-modal-title">{t('settings.manageAgentsTitle', { team: team.name })}</div>
+        <div className="resolve-modal-title">{t('teamMembersModal.titlePrefix')}{team.name}</div>
       </div>
 
       <div className="iw-agent-list">
         {loading ? (
-          <div className="iw-empty">{t('settings.loadingAgents')}</div>
+          <div className="iw-empty">{t('teamMembersModal.loadingAgents')}</div>
         ) : agents.length === 0 ? (
-          <div className="iw-empty">{t('settings.noAgentsRegisteredYet')}</div>
+          <div className="iw-empty">{t('teamMembersModal.noAgents')}</div>
         ) : (
           agents.map((a) => {
             const isSelected = selectedIds.has(String(a.id));
@@ -65,7 +65,7 @@ export default function TeamMembersModal({ team, onClose, onSaved }) {
               <div key={a.id} className={`iw-agent-row${isSelected ? ' selected' : ''}`} onClick={() => toggle(a.id)}>
                 <div className="iw-agent-check">{isSelected && <Check size={12} />}</div>
                 <div className="iw-agent-name">{a.display_name || a.email}</div>
-                <div className="iw-agent-role">{roleLabel(a.role, lang)}</div>
+                <div className="iw-agent-role">{roleLabel(a.role)}</div>
               </div>
             );
           })
@@ -74,10 +74,10 @@ export default function TeamMembersModal({ team, onClose, onSaved }) {
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          {t('common.cancel')}
+          {t('teamMembersModal.cancel')}
         </button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={save}>
-          <Check size={16} /> {t('settings.saveAgents')}
+          <Check size={16} /> {t('teamMembersModal.saveAgents')}
         </button>
       </div>
     </Modal>

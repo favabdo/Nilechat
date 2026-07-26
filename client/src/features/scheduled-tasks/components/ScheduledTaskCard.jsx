@@ -1,19 +1,21 @@
+import { useTranslation } from 'react-i18next';
 import { UserRoundSearch, UserRound, Clock, Calendar, CalendarCheck, Check, AlarmClock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useChatsStore from '../../chats/store/chatsStore';
 import useToastStore from '../../../store/toastStore';
 import { formatSchedDate } from '../../../utils/dateFormat';
 
-export default function ScheduledTaskCard({ t, ended, onEnd }) {
+export default function ScheduledTaskCard({ t: task, ended, onEnd }) {
+  const { t } = useTranslation('scheduledTasks');
   const navigate = useNavigate();
   const showToast = useToastStore((s) => s.showToast);
   const conversations = useChatsStore((s) => s.conversations);
   const selectChat = useChatsStore((s) => s.selectChat);
-  const isLate = t.delivery_status === 'late';
+  const isLate = task.delivery_status === 'late';
 
   function goToTaskConversation() {
-    const match = conversations.find((c) => String(c.contactId) === String(t.contact_id));
-    if (!match) return showToast('محادثة العميل ده مش ظاهرة في القايمة دلوقتي', 'info');
+    const match = conversations.find((c) => String(c.contactId) === String(task.contact_id));
+    if (!match) return showToast(t('card.conversationNotVisible'), 'info');
     navigate('/dashboard/chats');
     selectChat(match.id);
   }
@@ -26,49 +28,49 @@ export default function ScheduledTaskCard({ t, ended, onEnd }) {
           onClick={goToTaskConversation}
           style={{ cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted' }}
         >
-          {t.customer_name || 'Unknown customer'}
+          {task.customer_name || t('card.unknownCustomer')}
         </span>
       </div>
       <div className="sched-task-subrow">
         <span>
           <UserRound size={13} />
-          {t.agent_name || 'Unknown'}
+          {task.agent_name || t('card.unknownAgent')}
         </span>
         <span>
           <Clock size={13} />
-          Due: {formatSchedDate(t.due_date)}
+          {t('card.due')} {formatSchedDate(task.due_date)}
         </span>
       </div>
-      <div className="sched-task-text">{t.task_text}</div>
+      <div className="sched-task-text">{task.task_text}</div>
       <div className="sched-task-meta">
         <Calendar size={13} />
-        Added: {formatSchedDate(t.created_at)}
+        {t('card.added')} {formatSchedDate(task.created_at)}
       </div>
       {ended && (
         <div className="sched-task-meta">
           <CalendarCheck size={13} />
-          Ended: {formatSchedDate(t.ended_at)}
+          {t('card.ended')} {formatSchedDate(task.ended_at)}
         </div>
       )}
       <div className="sched-task-actions">
         {ended ? (
           <span className={`sched-ended-tag${isLate ? ' late' : ''}`}>
-            {t.delivery_status ? (
+            {task.delivery_status ? (
               <>
                 {isLate ? <AlarmClock size={12} /> : <CheckCircle size={12} />}
-                {isLate ? 'Late delivery' : 'Delivered on time'}
+                {isLate ? t('card.lateDelivery') : t('card.deliveredOnTime')}
               </>
             ) : (
               <>
                 <CheckCircle size={12} />
-                Ended
+                {t('card.endedTag')}
               </>
             )}
           </span>
         ) : (
-          <button className="sched-end-btn" onClick={() => onEnd(t.id, t.contact_id)}>
+          <button className="sched-end-btn" onClick={() => onEnd(task.id, task.contact_id)}>
             <Check size={13} />
-            End Task
+            {t('card.endTask')}
           </button>
         )}
       </div>

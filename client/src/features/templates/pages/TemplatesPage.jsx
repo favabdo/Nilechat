@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Zap, Tag, Plus, Check } from 'lucide-react';
 import { cannedResponsesApi, resolveCategoriesApi } from '../services/templates.service';
 import { useDragReorder } from '../../../hooks/useDragReorder';
@@ -9,6 +10,7 @@ import CategoryCard from '../components/CategoryCard';
 import '../templates.css';
 
 export default function TemplatesPage() {
+  const { t } = useTranslation('templates');
   const showToast = useToastStore((s) => s.showToast);
   const refreshChatsStaticData = useChatsStore((s) => s.loadStaticData);
 
@@ -47,8 +49,8 @@ export default function TemplatesPage() {
   async function addQuickReply() {
     const label = newLabel.trim();
     const text = newText.trim();
-    if (!label) return showToast('اكتب اسم الزرار (Label) أولاً', 'error');
-    if (!text) return showToast('اكتب نص الرد أولاً', 'error');
+    if (!label) return showToast(t('quickReplies.labelRequired'), 'error');
+    if (!text) return showToast(t('quickReplies.textRequired'), 'error');
     try {
       const data = await cannedResponsesApi.create(label, text);
       setReplies((prev) => [...prev, data]);
@@ -56,9 +58,9 @@ export default function TemplatesPage() {
       setNewLabel('');
       setNewText('');
       refreshChatsStaticData();
-      showToast('تم إضافة الرد السريع', 'success');
+      showToast(t('quickReplies.addSuccess'), 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل إضافة الرد السريع', 'error');
+      showToast(err.response?.data?.error || t('quickReplies.addFailed'), 'error');
     }
   }
 
@@ -67,9 +69,9 @@ export default function TemplatesPage() {
       const data = await cannedResponsesApi.update(id, label, text);
       setReplies((prev) => prev.map((r) => (r.id === id ? data : r)));
       refreshChatsStaticData();
-      showToast('تم تعديل الرد', 'success');
+      showToast(t('quickReplies.updateSuccess'), 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل تعديل الرد', 'error');
+      showToast(err.response?.data?.error || t('quickReplies.updateFailed'), 'error');
     }
   }
 
@@ -78,16 +80,16 @@ export default function TemplatesPage() {
       await cannedResponsesApi.remove(id);
       setReplies((prev) => prev.filter((r) => r.id !== id));
       refreshChatsStaticData();
-      showToast('تم حذف الرد', 'info');
+      showToast(t('quickReplies.deleteSuccess'), 'info');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل حذف الرد', 'error');
+      showToast(err.response?.data?.error || t('quickReplies.deleteFailed'), 'error');
     }
   }
 
   // ---------- Problem Categories ----------
   async function addCategory() {
     const name = newCatName.trim();
-    if (!name) return showToast('اكتب اسم التصنيف أولاً', 'error');
+    if (!name) return showToast(t('categories.nameRequired'), 'error');
     try {
       const data = await resolveCategoriesApi.create({
         name,
@@ -101,9 +103,9 @@ export default function TemplatesPage() {
       setNewCatIcon('');
       setNewCatDesc('');
       refreshChatsStaticData();
-      showToast('تم إضافة التصنيف', 'success');
+      showToast(t('categories.addSuccess'), 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل إضافة التصنيف', 'error');
+      showToast(err.response?.data?.error || t('categories.addFailed'), 'error');
     }
   }
 
@@ -118,9 +120,9 @@ export default function TemplatesPage() {
       });
       setCategories((prev) => prev.map((c) => (c.id === id ? data : c)));
       refreshChatsStaticData();
-      showToast('تم تعديل التصنيف', 'success');
+      showToast(t('categories.updateSuccess'), 'success');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل تعديل التصنيف', 'error');
+      showToast(err.response?.data?.error || t('categories.updateFailed'), 'error');
     }
   }
 
@@ -129,9 +131,9 @@ export default function TemplatesPage() {
       await resolveCategoriesApi.remove(id);
       setCategories((prev) => prev.filter((c) => c.id !== id));
       refreshChatsStaticData();
-      showToast('تم حذف التصنيف', 'info');
+      showToast(t('categories.deleteSuccess'), 'info');
     } catch (err) {
-      showToast(err.response?.data?.error || 'فشل حذف التصنيف', 'error');
+      showToast(err.response?.data?.error || t('categories.deleteFailed'), 'error');
     }
   }
 
@@ -139,7 +141,7 @@ export default function TemplatesPage() {
     <div id="page-templates" className="page">
       <div className="page-content">
         <div className="page-header">
-          <h2>Message Templates</h2>
+          <h2>{t('pageTitle')}</h2>
         </div>
 
         {/* QUICK REPLIES SECTION */}
@@ -160,39 +162,39 @@ export default function TemplatesPage() {
                 <Zap size={18} color="var(--primary)" />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700 }}>Quick Replies</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>ردود سريعة تظهر في شريط المحادثة</div>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{t('quickReplies.title')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('quickReplies.subtitle')}</div>
               </div>
             </div>
             <button className="page-btn" style={{ padding: '8px 16px', fontSize: 12 }} onClick={() => setShowAddReply((v) => !v)}>
-              <Plus size={14} /> إضافة رد
+              <Plus size={14} /> {t('quickReplies.addReply')}
             </button>
           </div>
 
           {showAddReply && (
             <div className="tpl-add-form">
-              <div className="tpl-add-form-title">رد جديد</div>
-              <label className="tpl-field-label">اسم الزرار (Label)</label>
+              <div className="tpl-add-form-title">{t('quickReplies.newReply')}</div>
+              <label className="tpl-field-label">{t('quickReplies.labelName')}</label>
               <input
                 className="tpl-input"
-                placeholder="مثال: Greeting"
+                placeholder={t('quickReplies.labelPlaceholder')}
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
               />
-              <label className="tpl-field-label">نص الرد</label>
+              <label className="tpl-field-label">{t('quickReplies.replyText')}</label>
               <textarea
                 className="tpl-textarea"
                 rows={6}
-                placeholder="اكتب الرد السريع هنا..."
+                placeholder={t('quickReplies.replyTextPlaceholder')}
                 value={newText}
                 onChange={(e) => setNewText(e.target.value)}
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
                 <button className="page-btn" style={{ padding: '8px 16px', fontSize: 12 }} onClick={addQuickReply}>
-                  <Check size={14} /> حفظ
+                  <Check size={14} /> {t('quickReplies.save')}
                 </button>
                 <button className="tpl-cancel-btn" onClick={() => setShowAddReply(false)}>
-                  إلغاء
+                  {t('quickReplies.cancel')}
                 </button>
               </div>
             </div>
@@ -201,7 +203,7 @@ export default function TemplatesPage() {
           <div id="qr-list" ref={qrListRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {replies.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13 }}>
-                لا توجد ردود سريعة — أضف ردًا جديدًا
+                {t('quickReplies.empty')}
               </div>
             ) : (
               replies.map((r) => <QuickReplyItem key={r.id} r={r} onSave={saveQuickReply} onDelete={deleteQuickReply} />)
@@ -227,8 +229,8 @@ export default function TemplatesPage() {
                 <Tag size={18} color="var(--success)" />
               </div>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 700 }}>Problem Category</div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>تصنيفات مشاكل العملاء عند الـ Resolve</div>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{t('categories.title')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('categories.subtitle')}</div>
               </div>
             </div>
             <button
@@ -236,26 +238,26 @@ export default function TemplatesPage() {
               style={{ padding: '8px 16px', fontSize: 12, background: 'var(--success)' }}
               onClick={() => setShowAddCat((v) => !v)}
             >
-              <Plus size={14} /> إضافة تصنيف
+              <Plus size={14} /> {t('categories.addCategory')}
             </button>
           </div>
 
           {showAddCat && (
             <div className="tpl-add-form cat">
-              <div className="tpl-add-form-title">تصنيف جديد</div>
+              <div className="tpl-add-form-title">{t('categories.newCategory')}</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <label className="tpl-field-label">اسم التصنيف</label>
+                  <label className="tpl-field-label">{t('categories.categoryName')}</label>
                   <input
                     className="tpl-input"
                     style={{ marginBottom: 0 }}
-                    placeholder="مثال: مشكلة شبكة"
+                    placeholder={t('categories.categoryNamePlaceholder')}
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="tpl-field-label">الأيقونة (Emoji)</label>
+                  <label className="tpl-field-label">{t('categories.icon')}</label>
                   <input
                     className="cat-edit-icon-input"
                     style={{ width: '100%' }}
@@ -266,10 +268,10 @@ export default function TemplatesPage() {
                   />
                 </div>
               </div>
-              <label className="tpl-field-label">وصف مختصر</label>
+              <label className="tpl-field-label">{t('categories.shortDescription')}</label>
               <input
                 className="cat-edit-desc-input"
-                placeholder="مثال: مشكلة في الاتصال بالإنترنت"
+                placeholder={t('categories.descPlaceholder')}
                 value={newCatDesc}
                 onChange={(e) => setNewCatDesc(e.target.value)}
               />
@@ -279,10 +281,10 @@ export default function TemplatesPage() {
                   style={{ padding: '8px 16px', fontSize: 12, background: 'var(--success)' }}
                   onClick={addCategory}
                 >
-                  <Check size={14} /> حفظ
+                  <Check size={14} /> {t('categories.save')}
                 </button>
                 <button className="tpl-cancel-btn" onClick={() => setShowAddCat(false)}>
-                  إلغاء
+                  {t('categories.cancel')}
                 </button>
               </div>
             </div>
@@ -295,7 +297,7 @@ export default function TemplatesPage() {
           >
             {categories.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13, gridColumn: '1/-1' }}>
-                لا توجد تصنيفات — أضف تصنيفًا جديدًا
+                {t('categories.empty')}
               </div>
             ) : (
               categories.map((c) => <CategoryCard key={c.id} c={c} onSave={saveCategory} onDelete={deleteCategory} />)

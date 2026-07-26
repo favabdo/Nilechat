@@ -1,8 +1,8 @@
+import { useTranslation } from 'react-i18next';
 import { Phone, User } from 'lucide-react';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function PrevConversationCard({ p, onClick }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   return (
     <div className="prev-conv-item" onClick={onClick}>
       <div className="prev-conv-top-row">
@@ -16,7 +16,7 @@ export default function PrevConversationCard({ p, onClick }) {
       )}
       <div className="prev-conv-preview">{p.preview}</div>
       <div className="prev-conv-footer">
-        <span className="prev-conv-count">{p.count} {t('chats.messagesCount')}</span>
+        <span className="prev-conv-count">{p.count} {t('prevConversation.messages')}</span>
         {p.handledBy && (
           <span className="prev-conv-agent">
             <User size={11} /> {p.handledBy}

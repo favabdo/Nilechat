@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Building2, Phone, User, CalendarClock, Layers, CalendarPlus, FilePlus2, Briefcase, Pencil, Tag, Unlink, Crown, UserX } from 'lucide-react';
 import { customerDetailsApi } from '../services/customerDetails.service';
 import { contactsApi } from '../../contacts/services/contacts.service';
 import { formatSchedDate, formatDurationDays } from '../../../utils/dateFormat';
+import i18n from '../../../i18n';
 import useChatsStore from '../../chats/store/chatsStore';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
@@ -18,6 +20,7 @@ import CustomerCardModal from '../../contacts/components/CustomerCardModal';
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
 export default function CustomerDetailsPage() {
+  const { t } = useTranslation('customerDetails');
   const { contactId } = useParams();
   const navigate = useNavigate();
   const showToast = useToastStore((s) => s.showToast);
@@ -67,7 +70,7 @@ export default function CustomerDetailsPage() {
 
   function openConversation() {
     const conv = conversations.find((c) => String(c.contactId) === String(contactId));
-    if (!conv) return showToast('مفيش محادثات مسجلة لجهة الاتصال دي لسه', 'info');
+    if (!conv) return showToast(t('noConversationYet'), 'info');
     navigate('/dashboard/chats');
     selectChat(conv.id);
   }
@@ -78,29 +81,29 @@ export default function CustomerDetailsPage() {
   async function editPhoneLabel(phoneNumber) {
     if (!contact) return;
     const p = (contact.phones || []).find((ph) => ph.phone_number === phoneNumber);
-    const newLabel = window.prompt('اكتب اسم ثانوي للرقم ده (مثلاً: الشغل، الرقم الشخصي) — سيبه فاضي عشان تمسح الاسم الثانوي', (p && p.label) || '');
+    const newLabel = window.prompt(t('phoneNumbers.promptLabel'), (p && p.label) || '');
     if (newLabel === null) return;
     try {
       await contactsApi.updatePhoneLabel(contactId, phoneNumber, newLabel.trim());
       loadContact();
-      showToast('تم حفظ الاسم الثانوي بنجاح', 'success');
+      showToast(t('phoneNumbers.labelSaved'), 'success');
     } catch (err) {
       console.error('[API] editPhoneLabel error:', err);
-      showToast(err.response?.data?.error || 'فشل حفظ الاسم الثانوي', 'error');
+      showToast(err.response?.data?.error || t('phoneNumbers.labelSaveFailed'), 'error');
     }
   }
 
   if (loading) {
     return (
       <div id="page-customer-details" className="page">
-        <div className="page-content" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>جارِ التحميل...</div>
+        <div className="page-content" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('loading')}</div>
       </div>
     );
   }
   if (!contact) {
     return (
       <div id="page-customer-details" className="page">
-        <div className="page-content" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>تعذر تحميل بيانات العميل</div>
+        <div className="page-content" style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('loadFailed')}</div>
       </div>
     );
   }
@@ -111,19 +114,19 @@ export default function CustomerDetailsPage() {
   // كأنه هو الفرع، عشان صف "الفروع" في الصفحة دي يفضل معروض له قيمة لكل
   // العملاء بدل ما يفضل فاضي للعملاء اللي معندهمش فروع متعددة مسجلة
   const branchNames = (contact.branches || []).map((b) => b.name || b.location).filter(Boolean);
-  const branchesDisplay = branchNames.length > 0 ? branchNames.join('، ') : contact.location || '-';
+  const branchesDisplay = branchNames.length > 0 ? branchNames.join(i18n.t('listSeparator', { ns: 'common' })) : contact.location || '-';
 
   return (
     <div id="page-customer-details" className="page">
       <div className="page-content">
         <div className="page-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="mobile-back-btn" title="رجوع" aria-label="رجوع" onClick={() => navigate('/dashboard/contacts')}>
+            <button className="mobile-back-btn" title={t('back')} aria-label={t('back')} onClick={() => navigate('/dashboard/contacts')}>
               <ArrowLeft size={18} />
             </button>
             <div>
               <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                {contact.name || 'بدون اسم'}
+                {contact.name || t('noName')}
                 {contact.is_vip === 1 && (
                   <span className="label-chip" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', fontSize: 11.5 }}>
                     <Crown size={12} style={{ verticalAlign: -2 }} /> VIP
@@ -131,7 +134,7 @@ export default function CustomerDetailsPage() {
                 )}
                 {contact.is_inactive === 1 && (
                   <span className="label-chip" style={{ background: 'rgba(148,163,184,0.18)', color: 'var(--text-secondary)', fontSize: 11.5 }}>
-                    <UserX size={12} style={{ verticalAlign: -2 }} /> غير نشط
+                    <UserX size={12} style={{ verticalAlign: -2 }} /> {t('inactive')}
                   </span>
                 )}
               </h2>
@@ -141,47 +144,47 @@ export default function CustomerDetailsPage() {
           <div style={{ display: 'flex', gap: 8 }}>
             {canManage && (
               <button className="page-btn" style={{ background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)' }} onClick={() => setEditOpen(true)}>
-                <Pencil size={15} /> Edit
+                <Pencil size={15} /> {t('edit')}
               </button>
             )}
-            <button className="page-btn" onClick={openConversation}>فتح المحادثة</button>
+            <button className="page-btn" onClick={openConversation}>{t('openConversation')}</button>
           </div>
         </div>
 
         <div className="settings-section">
-          <h3>بيانات العميل</h3>
+          <h3>{t('customerInfo.title')}</h3>
           <div className="setting-row">
-            <div><div className="setting-label"><Briefcase size={13} style={{ verticalAlign: -2 }} /> المدير المسؤول</div></div>
+            <div><div className="setting-label"><Briefcase size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.manager')}</div></div>
             <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
               {contact.manager_name || '-'}{contact.manager_phone ? ` · ${contact.manager_phone}` : ''}
             </span>
           </div>
           <div className="setting-row">
-            <div><div className="setting-label"><CalendarClock size={13} style={{ verticalAlign: -2 }} /> تاريخ التعاقد</div></div>
+            <div><div className="setting-label"><CalendarClock size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.contractDate')}</div></div>
             <div style={{ textAlign: 'left' }}>
               <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{formatSchedDate(contact.contract_date)}</span>
               {contact.created_by && (
                 <div style={{ opacity: 0.65, fontSize: 12, marginTop: 2 }}>
-                  {contact.created_by_name || `Agent ID: ${contact.created_by}`}
+                  {contact.created_by_name || t('customerInfo.agentId', { id: contact.created_by })}
                 </div>
               )}
             </div>
           </div>
           {currentContract && (
             <div className="setting-row">
-              <div><div className="setting-label"><CalendarClock size={13} style={{ verticalAlign: -2 }} /> عقد الصيانة الحالي</div></div>
+              <div><div className="setting-label"><CalendarClock size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.currentMaintenanceContract')}</div></div>
               <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>
                 {formatSchedDate(currentContract.start_date)} → {formatSchedDate(currentContract.end_date)} ({remainingLabel})
               </span>
             </div>
           )}
           <div className="setting-row">
-            <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> الفروع</div></div>
+            <div><div className="setting-label"><Building2 size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.branches')}</div></div>
             <span style={{ fontSize: 13.5, color: 'var(--text-secondary)' }}>{branchesDisplay}</span>
           </div>
           {contact.modules && contact.modules.length > 0 && (
             <div style={{ padding: '12px 0 4px' }}>
-              <div className="setting-label" style={{ marginBottom: 8 }}><Layers size={13} style={{ verticalAlign: -2 }} /> الموديولات المشترك فيها</div>
+              <div className="setting-label" style={{ marginBottom: 8 }}><Layers size={13} style={{ verticalAlign: -2 }} /> {t('customerInfo.subscribedModules')}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {contact.modules.map((m) => (
                   <span key={m.name || m} className="label-chip" style={{ background: 'rgba(108,92,231,0.1)', color: 'var(--primary)' }}>
@@ -194,7 +197,7 @@ export default function CustomerDetailsPage() {
         </div>
 
         <div className="settings-section">
-          <h3>أرقام التليفون</h3>
+          <h3>{t('phoneNumbers.title')}</h3>
           <div className="info-list" style={{ marginBottom: 10 }}>
             {(contact.phones || []).map((p) => (
               <div key={p.phone_number} className="info-item">
@@ -208,10 +211,10 @@ export default function CustomerDetailsPage() {
                     <button
                       className="resolve-cancel-btn"
                       style={{ padding: '4px 9px', fontSize: 11.5 }}
-                      title="حط/عدّل اسم ثانوي للرقم"
+                      title={t('phoneNumbers.editLabel')}
                       onClick={() => editPhoneLabel(p.phone_number)}
                     >
-                      <Tag size={12} /> اسم ثانوي
+                      <Tag size={12} /> {t('phoneNumbers.secondaryName')}
                     </button>
                   )}
                   {canManage && (contact.phones || []).length > 1 && (
@@ -220,7 +223,7 @@ export default function CustomerDetailsPage() {
                       style={{ padding: '4px 9px', fontSize: 11.5 }}
                       onClick={() => setUnlinkTarget(p.phone_number)}
                     >
-                      <Unlink size={12} /> فصل
+                      <Unlink size={12} /> {t('phoneNumbers.unlink')}
                     </button>
                   )}
                 </div>
@@ -232,23 +235,23 @@ export default function CustomerDetailsPage() {
 
         <div className="sched-page-tabs">
           <button className={`sched-page-tab${tab === 'visits' ? ' active' : ''}`} onClick={() => setTab('visits')}>
-            <User size={14} /> Visits <span className="sched-subhead-count">({visits.length})</span>
+            <User size={14} /> {t('tabs.visits')} <span className="sched-subhead-count">({visits.length})</span>
           </button>
           <button className={`sched-page-tab${tab === 'contracts' ? ' active' : ''}`} onClick={() => setTab('contracts')}>
-            <FilePlus2 size={14} /> Maintenance History <span className="sched-subhead-count">({contracts.length})</span>
+            <FilePlus2 size={14} /> {t('tabs.maintenanceHistory')} <span className="sched-subhead-count">({contracts.length})</span>
           </button>
         </div>
 
         {tab === 'visits' && (
           <div>
             <button className="page-btn" style={{ marginBottom: 12 }} onClick={() => setAddVisitOpen(true)}>
-              <CalendarPlus size={16} /> إضافة زيارة
+              <CalendarPlus size={16} /> {t('visits.add')}
             </button>
             <div className="sched-tasks-grid">
               {visitsLoading ? (
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>جارِ التحميل...</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('visits.loading')}</div>
               ) : visits.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>لا توجد زيارات مسجلة</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('visits.empty')}</div>
               ) : (
                 visits.map((v) => <VisitCard key={v.id} v={v} />)
               )}
@@ -259,13 +262,13 @@ export default function CustomerDetailsPage() {
         {tab === 'contracts' && (
           <div>
             <button className="page-btn" style={{ marginBottom: 12 }} onClick={() => setAddContractOpen(true)}>
-              <FilePlus2 size={16} /> إضافة عقد صيانة
+              <FilePlus2 size={16} /> {t('contracts.add')}
             </button>
             <div className="sched-tasks-grid">
               {contractsLoading ? (
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>جارِ التحميل...</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('contracts.loading')}</div>
               ) : contracts.length === 0 ? (
-                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>لا توجد عقود صيانة مسجلة</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{t('contracts.empty')}</div>
               ) : (
                 contracts.map((c) => (
                   <MaintenanceContractCard
@@ -291,7 +294,7 @@ export default function CustomerDetailsPage() {
           onClose={() => setAddVisitOpen(false)}
           onAdded={() => {
             setAddVisitOpen(false);
-            showToast('تم إضافة الزيارة بنجاح', 'success');
+            showToast(t('visits.addedSuccess'), 'success');
             customerDetailsApi.listVisits(contactId).then(setVisits);
           }}
         />
@@ -303,7 +306,7 @@ export default function CustomerDetailsPage() {
           onClose={() => setAddContractOpen(false)}
           onAdded={() => {
             setAddContractOpen(false);
-            showToast('تم إضافة عقد الصيانة بنجاح', 'success');
+            showToast(t('contracts.addedSuccess'), 'success');
             customerDetailsApi.listMaintenanceContracts(contactId).then(setContracts);
             loadContact();
           }}
@@ -316,7 +319,7 @@ export default function CustomerDetailsPage() {
           onClose={() => setEditOpen(false)}
           onSaved={() => {
             setEditOpen(false);
-            showToast('تم تحديث بيانات العميل بنجاح', 'success');
+            showToast(t('customerUpdatedSuccess'), 'success');
             loadContact();
           }}
         />
@@ -329,7 +332,7 @@ export default function CustomerDetailsPage() {
           onClose={() => setUnlinkTarget(null)}
           onUnlinked={() => {
             setUnlinkTarget(null);
-            showToast('تم فصل الرقم لعميل جديد منفصل', 'success');
+            showToast(t('phoneUnlinkedSuccess'), 'success');
             loadContact();
           }}
         />

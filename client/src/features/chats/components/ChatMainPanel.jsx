@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle } from 'lucide-react';
 import useChatsStore from '../store/chatsStore';
 import { formatMessageTimestamp } from '../../../utils/dateFormat';
@@ -11,7 +12,6 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import CustomerPanel from './CustomerPanel';
 import ResolveModal from './ResolveModal';
-import useTranslation from '../../../i18n/useTranslation';
 
 function detectMediaKind(mimeType) {
   if (!mimeType) return 'document';
@@ -25,7 +25,7 @@ function generateClientId() {
 }
 
 export default function ChatMainPanel({ conversation, currentAgentName, socketRef }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const {
     customerPanelOpen,
     noteMode,
@@ -52,8 +52,8 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
           <div className="empty-chat-icon">
             <MessageCircle size={36} />
           </div>
-          <h3>NileChat</h3>
-          <p>{t('chats.selectConversationToStart')}</p>
+          <h3>{t('mainPanel.emptyTitle')}</h3>
+          <p>{t('mainPanel.emptySubtitle')}</p>
         </div>
       </div>
     );
@@ -87,13 +87,13 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
         await conversationsApi.addNote(c.id, text);
       } catch (err) {
         console.error('[API] sendNoteText error:', err);
-        showToast(err.response?.data?.error || t('chats.addNoteFailed'), 'error');
+        showToast(err.response?.data?.error || t('mainPanel.addNoteFailed'), 'error');
       }
       return;
     }
 
     if (c.rawStatus === 'closed') {
-      showToast(t('chats.conversationLockedSendError'), 'error');
+      showToast(t('mainPanel.conversationClosed'), 'error');
       return;
     }
 
@@ -113,7 +113,7 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
       await conversationsApi.reply(c.id, text);
     } catch (err) {
       console.error('[API] sendMessage error:', err);
-      showToast(err.response?.data?.error || t('chats.sendMessageFailed'), 'error');
+      showToast(err.response?.data?.error || t('mainPanel.sendFailed'), 'error');
     }
   }
 
@@ -122,7 +122,7 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
   // بدل النص، عشان أكتر من ملف ممكن يتبعتوا بنفس اللحظة
   async function handleSendFile(file) {
     if (c.rawStatus === 'closed') {
-      showToast(t('chats.conversationLockedSendError'), 'error');
+      showToast(t('mainPanel.conversationClosed'), 'error');
       return;
     }
 
@@ -157,7 +157,7 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
       // أو يعلّمها فشلت (message_failed) لما الرفع لواتساب يخلص فعليًا في الخلفية
     } catch (err) {
       console.error('[API] sendMediaFile error:', err);
-      showToast(err.response?.data?.error || t('chats.uploadFileFailed'), 'error');
+      showToast(err.response?.data?.error || t('mainPanel.uploadFailed'), 'error');
       useChatsStore.getState().replaceMessage(c.id, (m) => m === pendingMsg, (m) => ({ ...m, _pending: false, failed: true }));
     }
   }
@@ -174,9 +174,9 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
       try {
         await conversationsApi.reopen(c.id);
         patchConversation(c.id, { status: 'open', rawStatus: 'open' });
-        showToast(t('chats.reopenedSuccess'), 'success');
+        showToast(t('mainPanel.reopenedSuccess'), 'success');
       } catch (err) {
-        showToast(err.response?.data?.error || t('chats.reopenFailed'), 'error');
+        showToast(err.response?.data?.error || t('mainPanel.reopenFailed'), 'error');
       }
     } else {
       setResolveOpen(true);

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import useChatsStore from '../store/chatsStore';
 import { conversationsApi } from '../services/chats.service';
 import { mapApiConversation, mapApiMessage, mediaKindLabel } from '../utils/mappers';
@@ -8,10 +9,9 @@ import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
 import ChatListPanel from '../components/ChatListPanel';
 import ChatMainPanel from '../components/ChatMainPanel';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function ChatsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const { user } = useAuthStore();
   const currentAgentName = user?.display_name || user?.email;
   const showToast = useToastStore((s) => s.showToast);
@@ -22,7 +22,7 @@ export default function ChatsPage() {
   const pollTimerRef = useRef(null);
 
   useEffect(() => {
-    store.loadConversations().catch(() => showToast(t('chats.connectFailedToast'), 'error'));
+    store.loadConversations().catch(() => showToast(t('toasts.connectionError'), 'error'));
     store.loadStaticData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -74,7 +74,7 @@ export default function ChatsPage() {
       const c = state.conversations.find((x) => String(x.id) === String(conversationId));
       if (!c) {
         state.loadConversations();
-        showToast(t('chats.newMessageToast'), 'info');
+        showToast(t('toasts.newMessageFromCustomer'), 'info');
         return;
       }
       if (message.direction === 'system') {
@@ -180,7 +180,7 @@ export default function ChatsPage() {
         (m) => m._pending && m.text === text,
         (m) => ({ ...m, _pending: false, failed: true })
       );
-      showToast(t('chats.sendMessageRetryToast'), 'error');
+      showToast(t('toasts.sendFailed'), 'error');
     }
 
     function onNoteFailed({ conversationId, text }) {
@@ -192,7 +192,7 @@ export default function ChatsPage() {
         (m) => m.isNote && m._pending && m.text === text,
         (m) => ({ ...m, _pending: false, failed: true })
       );
-      showToast(t('chats.saveNoteRetryToast'), 'error');
+      showToast(t('toasts.noteSaveFailed'), 'error');
     }
 
     function onTyping({ conversationId, agentName } = {}) {
@@ -235,7 +235,7 @@ export default function ChatsPage() {
     }
     function onAgentStatusChanged({ userId } = {}) {
       if (!user || String(userId) !== String(user.id)) return;
-      showToast(t('chats.accountDisabledToast'), 'error');
+      showToast(t('toasts.accountDisabled'), 'error');
       setTimeout(() => useAuthStore.getState().logout(), 1200);
     }
 
@@ -304,7 +304,7 @@ export default function ChatsPage() {
     return (
       <div id="page-chats" className="page">
         <div className="empty-chat" style={{ flex: 1 }}>
-          <p>{t('chats.loadingConversations')}</p>
+          <p>{t('loadingConversations')}</p>
         </div>
       </div>
     );

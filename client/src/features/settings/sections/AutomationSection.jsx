@@ -1,128 +1,132 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Workflow, MessageCircle, Pencil, CalendarX, Star } from 'lucide-react';
 import { companyApi } from '../services/settings.service';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
-import useTranslation from '../../../i18n/useTranslation';
 import AutomationModal from '../components/AutomationModal';
 
 const isOwnerOrAdmin = (user) => (user?.role ?? 2) <= 1;
 
-function autoAssignDesc(s, t) {
-  return s.auto_assign_enabled && s.auto_assign_agent_name
-    ? t('settings.ruleAutoAssignOnCreate', { agent: s.auto_assign_agent_name })
-    : t('settings.ruleAutoAssignDisabled');
-}
-function welcomeDesc(s, t) {
-  if (s.welcome_enabled && s.welcome_schedule_enabled && s.welcome_message) {
-    return t('settings.ruleWelcomeSchedule');
+function useRuleDescriptions(t) {
+  function autoAssignDesc(s) {
+    return s.auto_assign_enabled && s.auto_assign_agent_name
+      ? t('automation.desc.autoAssignOn', { name: s.auto_assign_agent_name })
+      : t('automation.desc.autoAssignOff');
   }
-  if (s.welcome_enabled && s.welcome_message) {
-    const message = `${s.welcome_message.slice(0, 60)}${s.welcome_message.length > 60 ? '…' : ''}`;
-    return t('settings.ruleWelcomeSend', { message });
+  function welcomeDesc(s) {
+    if (s.welcome_enabled && s.welcome_schedule_enabled && s.welcome_message) {
+      return t('automation.desc.welcomeSchedule');
+    }
+    if (s.welcome_enabled && s.welcome_message) {
+      const preview = `${s.welcome_message.slice(0, 60)}${s.welcome_message.length > 60 ? '…' : ''}`;
+      return t('automation.desc.welcomeOn', { preview });
+    }
+    return t('automation.desc.welcomeOff');
   }
-  return t('settings.ruleWelcomeDisabled');
-}
-function csatDesc(s, t) {
-  if (!(s.csat_enabled && s.csat_message)) return t('settings.ruleCsatDisabled');
-  const message = `${s.csat_message.slice(0, 60)}${s.csat_message.length > 60 ? '…' : ''}`;
-  return t('settings.ruleCsatSend', { message });
-}
-function keywordRoutingDesc(s, t) {
-  const rules = (s.keyword_routing_rules || []).filter((r) => r.team_id && r.keywords && r.keywords.length);
-  if (!(s.keyword_routing_enabled && rules.length)) return t('settings.ruleKeywordDisabled');
-  if (rules.length === 1) {
-    const kws = rules[0].keywords;
-    const preview = kws
-      .slice(0, 3)
-      .map((k) => `"${k}"`)
-      .join(` ${t('common.or')} `);
-    return t('settings.ruleKeywordSingle', {
-      preview: `${preview}${kws.length > 3 ? '…' : ''}`,
-      team: rules[0].team_name || t('settings.ruleKeywordSelectedTeam'),
+  function csatDesc(s) {
+    if (!(s.csat_enabled && s.csat_message)) return t('automation.desc.csatOff');
+    const preview = `${s.csat_message.slice(0, 60)}${s.csat_message.length > 60 ? '…' : ''}`;
+    return t('automation.desc.csatOn', { preview });
+  }
+  function keywordRoutingDesc(s) {
+    const rules = (s.keyword_routing_rules || []).filter((r) => r.team_id && r.keywords && r.keywords.length);
+    if (!(s.keyword_routing_enabled && rules.length)) return t('automation.desc.keywordRoutingOff');
+    if (rules.length === 1) {
+      const kws = rules[0].keywords;
+      const preview = kws
+        .slice(0, 3)
+        .map((k) => `"${k}"`)
+        .join(' — ');
+      return t('automation.desc.keywordRoutingSingle', {
+        preview: preview + (kws.length > 3 ? '…' : ''),
+        team: rules[0].team_name || t('automation.desc.selectedTeamFallback'),
+      });
+    }
+    return t('automation.desc.keywordRoutingMultiple', {
+      count: rules.length,
+      teams: rules.map((r) => r.team_name || t('automation.desc.teamFallback')).join(t('listSeparator', { ns: 'common' })),
     });
   }
-  return t('settings.ruleKeywordMultiple', {
-    count: rules.length,
-    teams: rules.map((r) => r.team_name || t('settings.ruleKeywordTeamFallback')).join(', '),
-  });
-}
-function contractExpiredDesc(s, t) {
-  const repeatSuffix = s.contract_expired_repeat_enabled ? t('settings.ruleContractExpiredRepeatSuffix') : '';
-  if (s.contract_expired_enabled && s.contract_expired_message) {
-    return t('settings.ruleContractExpiredOnce', { suffix: repeatSuffix });
+  function contractExpiredDesc(s) {
+    const repeatSuffix = s.contract_expired_repeat_enabled ? t('automation.desc.contractExpiredRepeatSuffix') : '';
+    if (s.contract_expired_enabled && s.contract_expired_message) {
+      return t('automation.desc.contractExpiredSingle', { suffix: repeatSuffix });
+    }
+    if (s.contract_expired_repeat_enabled && s.contract_expired_message) {
+      return t('automation.desc.contractExpiredRepeatOnly');
+    }
+    return t('automation.desc.contractExpiredOff');
   }
-  if (s.contract_expired_repeat_enabled && s.contract_expired_message) {
-    return t('settings.ruleContractExpiredRepeat');
+  function ratingDesc(s) {
+    return s.rating_enabled ? t('automation.desc.ratingOn') : t('automation.desc.ratingOff');
   }
-  return t('settings.ruleContractExpiredDisabled');
+  return { autoAssignDesc, welcomeDesc, csatDesc, keywordRoutingDesc, contractExpiredDesc, ratingDesc };
 }
-function ratingDesc(s, t) {
-  return s.rating_enabled ? t('settings.ruleRatingEnabled') : t('settings.ruleRatingDisabled');
-}
-
-const RULES = [
-  {
-    key: 'auto_assign',
-    titleKey: 'settings.ruleAutoAssignTitle',
-    icon: Workflow,
-    color: 'var(--primary)',
-    bg: 'rgba(108,92,231,0.1)',
-    desc: autoAssignDesc,
-    enabledKey: 'auto_assign_enabled',
-  },
-  {
-    key: 'welcome',
-    titleKey: 'settings.ruleWelcomeTitle',
-    icon: MessageCircle,
-    color: 'var(--secondary)',
-    bg: 'rgba(0,210,255,0.1)',
-    desc: welcomeDesc,
-    enabledKey: 'welcome_enabled',
-  },
-  {
-    key: 'keyword_routing',
-    titleKey: 'settings.ruleKeywordTitle',
-    icon: Workflow,
-    color: 'var(--warning)',
-    bg: 'rgba(245,158,11,0.1)',
-    desc: keywordRoutingDesc,
-    enabledKey: 'keyword_routing_enabled',
-  },
-  {
-    key: 'csat',
-    titleKey: 'settings.ruleCsatTitle',
-    icon: Workflow,
-    color: 'var(--success)',
-    bg: 'rgba(16,185,129,0.1)',
-    desc: csatDesc,
-    enabledKey: 'csat_enabled',
-  },
-  {
-    key: 'contract_expired',
-    titleKey: 'settings.ruleContractExpiredTitle',
-    icon: CalendarX,
-    color: 'var(--danger)',
-    bg: 'rgba(239,68,68,0.1)',
-    desc: contractExpiredDesc,
-    enabledKey: 'contract_expired_enabled',
-  },
-  {
-    key: 'rating',
-    titleKey: 'settings.ruleRatingTitle',
-    icon: Star,
-    color: 'var(--warning)',
-    bg: 'rgba(245,158,11,0.1)',
-    desc: ratingDesc,
-    enabledKey: 'rating_enabled',
-  },
-];
 
 export default function AutomationSection() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
   const canEdit = isOwnerOrAdmin(user);
+  const descFns = useRuleDescriptions(t);
+
+  const RULES = [
+    {
+      key: 'auto_assign',
+      title: t('automation.rules.autoAssign.title'),
+      icon: Workflow,
+      color: 'var(--primary)',
+      bg: 'rgba(108,92,231,0.1)',
+      desc: descFns.autoAssignDesc,
+      enabledKey: 'auto_assign_enabled',
+    },
+    {
+      key: 'welcome',
+      title: t('automation.rules.welcome.title'),
+      icon: MessageCircle,
+      color: 'var(--secondary)',
+      bg: 'rgba(0,210,255,0.1)',
+      desc: descFns.welcomeDesc,
+      enabledKey: 'welcome_enabled',
+    },
+    {
+      key: 'keyword_routing',
+      title: t('automation.rules.keywordRouting.title'),
+      icon: Workflow,
+      color: 'var(--warning)',
+      bg: 'rgba(245,158,11,0.1)',
+      desc: descFns.keywordRoutingDesc,
+      enabledKey: 'keyword_routing_enabled',
+    },
+    {
+      key: 'csat',
+      title: t('automation.rules.csat.title'),
+      icon: Workflow,
+      color: 'var(--success)',
+      bg: 'rgba(16,185,129,0.1)',
+      desc: descFns.csatDesc,
+      enabledKey: 'csat_enabled',
+    },
+    {
+      key: 'contract_expired',
+      title: t('automation.rules.contractExpired.title'),
+      icon: CalendarX,
+      color: 'var(--danger)',
+      bg: 'rgba(239,68,68,0.1)',
+      desc: descFns.contractExpiredDesc,
+      enabledKey: 'contract_expired_enabled',
+    },
+    {
+      key: 'rating',
+      title: t('automation.rules.rating.title'),
+      icon: Star,
+      color: 'var(--warning)',
+      bg: 'rgba(245,158,11,0.1)',
+      desc: descFns.ratingDesc,
+      enabledKey: 'rating_enabled',
+    },
+  ];
 
   const [settings, setSettings] = useState(null);
   const [modalType, setModalType] = useState(null);
@@ -142,7 +146,7 @@ export default function AutomationSection() {
       return data;
     } catch (err) {
       console.error('[API] patchAutomationSettings error:', err);
-      showToast(err.response?.data?.error || t('settings.saveAutomationFailed'), 'error');
+      showToast(err.response?.data?.error || t('automation.saveFailed'), 'error');
       throw err;
     }
   }
@@ -167,11 +171,11 @@ export default function AutomationSection() {
         <div className="page-content">
           <div className="settings-top-row">
             <div>
-              <h2>{t('settings.automation')}</h2>
-              <div className="settings-top-desc">{t('settings.automationDesc')}</div>
+              <h2>{t('automation.title')}</h2>
+              <div className="settings-top-desc">{t('automation.subtitle')}</div>
             </div>
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('common.loading')}</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('automation.loading')}</div>
         </div>
       </div>
     );
@@ -182,8 +186,8 @@ export default function AutomationSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>{t('settings.automation')}</h2>
-            <div className="settings-top-desc">{t('settings.automationDesc')}</div>
+            <h2>{t('automation.title')}</h2>
+            <div className="settings-top-desc">{t('automation.subtitle')}</div>
           </div>
         </div>
 
@@ -196,8 +200,8 @@ export default function AutomationSection() {
                   <Icon size={18} />
                 </div>
                 <div>
-                  <div className="rule-row-title">{t(rule.titleKey)}</div>
-                  <div className="rule-row-desc">{rule.desc(settings, t)}</div>
+                  <div className="rule-row-title">{rule.title}</div>
+                  <div className="rule-row-desc">{rule.desc(settings)}</div>
                 </div>
               </div>
               <div className="rule-row-right">
@@ -225,7 +229,7 @@ export default function AutomationSection() {
           onSaved={async (body) => {
             await patch(body);
             setModalType(null);
-            showToast(t('settings.automationSavedSuccess'), 'success');
+            showToast(t('automation.savedSuccess'), 'success');
           }}
         />
       )}

@@ -1,10 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { UserRound, Crown } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import { hexToRgba } from '../utils/mappers';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function ChatListItem({ c, active, onClick }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   return (
     <div className={`chat-item${active ? ' active' : ''}`} onClick={onClick}>
       <div className="chat-item-avatar">
@@ -17,7 +17,7 @@ export default function ChatListItem({ c, active, onClick }) {
             {c.name}
             {c.isVip && (
               <span
-                title={t('contacts.vip')}
+                title={t('list.vipCustomer')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -30,7 +30,7 @@ export default function ChatListItem({ c, active, onClick }) {
                   borderRadius: 20,
                 }}
               >
-                <Crown size={10} /> {t('chats.vipBadge')}
+                <Crown size={10} /> VIP
               </span>
             )}
           </span>
@@ -42,7 +42,7 @@ export default function ChatListItem({ c, active, onClick }) {
         </div>
         <div className={`chat-item-agent${c.assignedTo ? '' : ' unassigned'}`}>
           <UserRound size={11} />
-          {c.assignedTo || t('chats.unassigned')}
+          {c.assignedTo || t('list.unassigned')}
         </div>
         {((c.labels && c.labels.length > 0) || (c.teams && c.teams.length > 0)) && (
           <div className="chat-item-labels">
@@ -56,14 +56,14 @@ export default function ChatListItem({ c, active, onClick }) {
                 {l.name}
               </span>
             ))}
-            {(c.teams || []).map((team) => (
+            {(c.teams || []).map((t) => (
               <span
-                key={`t${team.id}`}
+                key={`t${t.id}`}
                 className="chat-item-label-chip"
-                style={{ background: hexToRgba(team.color, 0.12), color: team.color || '#6C5CE7' }}
+                style={{ background: hexToRgba(t.color, 0.12), color: t.color || '#6C5CE7' }}
               >
-                <span className="chat-item-label-dot" style={{ background: team.color || '#6C5CE7' }}></span>
-                {team.name}
+                <span className="chat-item-label-dot" style={{ background: t.color || '#6C5CE7' }}></span>
+                {t.name}
               </span>
             ))}
           </div>

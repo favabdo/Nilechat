@@ -1,11 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { agentsSettingsApi } from '../services/settings.service';
 import Modal from '../../../components/ui/Modal';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -13,7 +13,7 @@ export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
   async function submit() {
     setError('');
     if (!password) {
-      setError(t('settings.passwordRequiredConfirm'));
+      setError(t('deleteAgentModal.passwordRequired'));
       return;
     }
     setSaving(true);
@@ -22,7 +22,7 @@ export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
       onDeleted(agent.id);
     } catch (err) {
       console.error('[API] submitDeleteAgent error:', err);
-      setError(err.response?.data?.error || t('settings.deleteAgentFailed'));
+      setError(err.response?.data?.error || t('deleteAgentModal.deleteFailed'));
     } finally {
       setSaving(false);
     }
@@ -34,13 +34,13 @@ export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
         <div className="resolve-modal-icon" style={{ background: 'rgba(239,68,68,0.12)', color: 'var(--danger)' }}>
           <Trash2 size={22} />
         </div>
-        <div className="resolve-modal-title">{t('settings.deleteAgentTitle')}</div>
+        <div className="resolve-modal-title">{t('deleteAgentModal.title')}</div>
       </div>
       <div className="resolve-modal-sub">
-        {t('settings.deleteAgentSubPrefix')} <strong>{agent.email}</strong> {t('settings.deleteAgentSubSuffix')}
+        {t('deleteAgentModal.subtitle', { email: agent.email })}
       </div>
 
-      <div className="resolve-cats-label">{t('settings.yourPassword')}</div>
+      <div className="resolve-cats-label">{t('deleteAgentModal.passwordLabel')}</div>
       <input
         type="password"
         className="iw-input"
@@ -52,10 +52,10 @@ export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
 
       <div className="resolve-modal-actions">
         <button className="resolve-cancel-btn" onClick={onClose}>
-          {t('common.cancel')}
+          {t('deleteAgentModal.cancel')}
         </button>
         <button className="resolve-confirm-btn" style={{ background: 'var(--danger)' }} disabled={saving} onClick={submit}>
-          <Trash2 size={16} /> {saving ? t('settings.deleting') : t('settings.confirmDelete')}
+          <Trash2 size={16} /> {saving ? t('deleteAgentModal.deleting') : t('deleteAgentModal.confirmDelete')}
         </button>
       </div>
       {error && (

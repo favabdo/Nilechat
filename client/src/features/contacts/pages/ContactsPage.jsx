@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Plus, Search, Trash2, AlertTriangle, ShieldCheck, BadgeCheck, Package, MessageCircle, LayoutGrid, Crown, UserX, Layers } from 'lucide-react';
 import { contactsApi } from '../services/contacts.service';
 import Avatar from '../../../components/ui/Avatar';
 import Pagination from '../../../components/ui/Pagination';
 import useAuthStore from '../../../store/authStore';
 import useToastStore from '../../../store/toastStore';
-import useTranslation from '../../../i18n/useTranslation';
 import CustomerCardModal from '../components/CustomerCardModal';
 import { CONTACT_MODULES_LIST } from '../constants';
 
@@ -22,6 +22,7 @@ function resolveCategory(activeTab, registeredSubTab) {
 }
 
 export default function ContactsPage() {
+  const { t } = useTranslation('contacts');
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -38,7 +39,6 @@ export default function ContactsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
-  const { t } = useTranslation();
   const canManage = isOwnerOrAdmin(user);
   const debounceRef = useRef(null);
 
@@ -83,49 +83,49 @@ export default function ContactsPage() {
     if (!deleteTarget) return;
     try {
       await contactsApi.remove(deleteTarget.id);
-      showToast(t('contacts.deleteSuccess'), 'success');
+      showToast(t('deleteSuccess'), 'success');
       load(page);
     } catch (err) {
       console.error('[API] deleteContact error:', err);
-      showToast(err.response?.data?.error || t('contacts.deleteFailed'), 'error');
+      showToast(err.response?.data?.error || t('deleteFailed'), 'error');
     } finally {
       setDeleteTarget(null);
     }
   }
 
   const emptyMsg = search
-    ? t('common.noResults')
+    ? t('empty.search')
     : activeTab === 'registered'
       ? registeredSubTab === 'active_contract'
-        ? t('contacts.noRegisteredCustomers')
+        ? t('empty.activeContract')
         : registeredSubTab === 'expired_contract'
-          ? t('contacts.noRegisteredCustomers')
+          ? t('empty.expiredContract')
           : registeredSubTab === 'no_contract'
-            ? t('contacts.noRegisteredCustomers')
-            : t('contacts.noRegisteredCustomers')
-      : t('contacts.noUnregisteredNumbers');
+            ? t('empty.noContract')
+            : t('empty.registered')
+      : t('empty.unregistered');
 
   return (
     <div id="page-contacts" className="page">
       <div className="page-content">
         <div className="page-header">
-          <h2>{t('contacts.pageTitle')}</h2>
+          <h2>{t('pageTitle')}</h2>
           {canManage && (
             <button className="page-btn" onClick={() => setAddModalOpen(true)}>
-              <Plus size={16} /> {t('contacts.addContact')}
+              <Plus size={16} /> {t('addContact')}
             </button>
           )}
         </div>
 
         <div className="contacts-tabs" id="contacts-tabs">
           <button className={`contacts-tab${activeTab === 'registered' ? ' active' : ''}`} onClick={() => switchTab('registered')}>
-            <BadgeCheck size={14} /> {t('contacts.registeredCustomers')}
+            <BadgeCheck size={14} /> {t('tabs.registered')}
             <span className="contacts-tab-count">
               {(counts.activeContract || 0) + (counts.expiredContract || 0) + (counts.noContract || 0)}
             </span>
           </button>
           <button className={`contacts-tab${activeTab === 'unregistered' ? ' active' : ''}`} onClick={() => switchTab('unregistered')}>
-            <MessageCircle size={14} /> {t('contacts.unregisteredNumbers')}
+            <MessageCircle size={14} /> {t('tabs.unregistered')}
             <span className="contacts-tab-count">{counts.unregistered || 0}</span>
           </button>
         </div>
@@ -136,7 +136,7 @@ export default function ContactsPage() {
               className={`contacts-subtab${registeredSubTab === 'all' ? ' active' : ''}`}
               onClick={() => setRegisteredSubTab('all')}
             >
-              <LayoutGrid size={13} /> {t('common.all')}
+              <LayoutGrid size={13} /> {t('tabs.all')}
               <span className="contacts-tab-count">
                 {(counts.activeContract || 0) + (counts.expiredContract || 0) + (counts.noContract || 0)}
               </span>
@@ -148,7 +148,7 @@ export default function ContactsPage() {
                 setRegisteredSubTab('active_contract');
               }}
             >
-              <ShieldCheck size={13} /> {t('contacts.activeContract')}
+              <ShieldCheck size={13} /> {t('tabs.activeContract')}
               <span className="contacts-tab-count">{counts.activeContract || 0}</span>
             </button>
             <button
@@ -158,7 +158,7 @@ export default function ContactsPage() {
                 setRegisteredSubTab('expired_contract');
               }}
             >
-              <AlertTriangle size={13} /> {t('contacts.expiredContract')}
+              <AlertTriangle size={13} /> {t('tabs.expiredContract')}
               <span className="contacts-tab-count">{counts.expiredContract || 0}</span>
             </button>
             <button
@@ -168,7 +168,7 @@ export default function ContactsPage() {
                 setRegisteredSubTab('no_contract');
               }}
             >
-              <Package size={13} /> {t('contacts.noContract')}
+              <Package size={13} /> {t('tabs.noContract')}
               <span className="contacts-tab-count">{counts.noContract || 0}</span>
             </button>
           </div>
@@ -184,7 +184,7 @@ export default function ContactsPage() {
                 value={moduleFilter}
                 onChange={(e) => setModuleFilter(e.target.value)}
               >
-                <option value="">{t('contacts.moduleFilterAll')}</option>
+                <option value="">{t('moduleFilterAll')}</option>
                 {CONTACT_MODULES_LIST.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -199,7 +199,7 @@ export default function ContactsPage() {
             <input
               type="text"
               className="cl-search"
-              placeholder={t('contacts.searchPlaceholder')}
+              placeholder={t('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -209,12 +209,12 @@ export default function ContactsPage() {
         <div className="contacts-grid" id="contacts-grid">
           {loading && (
             <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13, gridColumn: '1/-1' }}>
-              {t('common.loading')}
+              {t('loading')}
             </div>
           )}
           {!loading && failed && (
             <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-secondary)', fontSize: 13, gridColumn: '1/-1' }}>
-              {t('contacts.loadFailed')}
+              {t('loadFailed')}
             </div>
           )}
           {!loading && !failed && contacts.length === 0 && (
@@ -233,8 +233,8 @@ export default function ContactsPage() {
                     <button
                       className="st-icon-btn"
                       style={{ position: 'absolute', top: 10, insetInlineStart: 10, color: 'var(--danger)' }}
-                      title={t('contacts.deleteCustomerTitle')}
-                      aria-label={t('contacts.deleteCustomerAria')}
+                      title={t('deleteContact')}
+                      aria-label={t('deleteContact')}
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeleteTarget(c);
@@ -248,15 +248,15 @@ export default function ContactsPage() {
                   </div>
                   <div>
                     <div className="contact-card-name" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      {c.name || t('contacts.noName')}
+                      {c.name || t('noName')}
                       {c.is_vip === 1 && (
                         <span className="label-chip" style={{ background: 'rgba(245,166,35,0.15)', color: '#f5a623', fontSize: 10.5, padding: '2px 6px' }}>
-                          <Crown size={10} style={{ verticalAlign: -1 }} /> {t('chats.vipBadge')}
+                          <Crown size={10} style={{ verticalAlign: -1 }} /> VIP
                         </span>
                       )}
                       {c.is_inactive === 1 && (
                         <span className="label-chip" style={{ background: 'rgba(148,163,184,0.18)', color: 'var(--text-secondary)', fontSize: 10.5, padding: '2px 6px' }}>
-                          <UserX size={10} style={{ verticalAlign: -1 }} /> {t('contacts.inactiveBadge')}
+                          <UserX size={10} style={{ verticalAlign: -1 }} /> {t('inactive')}
                         </span>
                       )}
                     </div>
@@ -270,7 +270,7 @@ export default function ContactsPage() {
                       <div className="contact-card-info" style={{ marginTop: 4, fontWeight: 700, color: isExpired ? 'var(--danger)' : 'var(--success)' }}>
                         {isExpired ? <AlertTriangle size={12} style={{ verticalAlign: -2 }} /> : <ShieldCheck size={12} style={{ verticalAlign: -2 }} />}
                         {' '}
-                        {isExpired ? t('contacts.contractExpiredBadge') : t('contacts.contractActiveBadge')}
+                        {isExpired ? t('maintenanceExpired') : t('maintenanceActive')}
                       </div>
                     )}
                   </div>
@@ -288,7 +288,7 @@ export default function ContactsPage() {
           onClose={() => setAddModalOpen(false)}
           onSaved={() => {
             setAddModalOpen(false);
-            showToast(t('contacts.addSuccess'), 'success');
+            showToast(t('addSuccess'), 'success');
             load(1);
           }}
         />
@@ -297,13 +297,13 @@ export default function ContactsPage() {
       {deleteTarget && (
         <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 200, alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'var(--surface)', borderRadius: 14, padding: 20, width: 320, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}>{t('contacts.deleteCustomerTitle')}</div>
+            <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 8 }}>{t('deleteModal.title')}</div>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
-              {t('contacts.deleteConfirmBodyPrefix')} "{deleteTarget.name || t('contacts.theCustomer')}"{t('contacts.deleteConfirmBodySuffix')}
+              {t('deleteModal.confirm', { name: deleteTarget.name || t('deleteModal.fallbackName') })}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="tpl-cancel-btn" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</button>
-              <button className="resolve-confirm-btn" style={{ background: 'var(--danger)' }} onClick={confirmDelete}>{t('common.delete')}</button>
+              <button className="tpl-cancel-btn" onClick={() => setDeleteTarget(null)}>{t('deleteModal.cancel')}</button>
+              <button className="resolve-confirm-btn" style={{ background: 'var(--danger)' }} onClick={confirmDelete}>{t('deleteModal.delete')}</button>
             </div>
           </div>
         </div>

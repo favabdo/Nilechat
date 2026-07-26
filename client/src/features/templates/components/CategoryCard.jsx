@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GripVertical, Edit2, Trash2, Check } from 'lucide-react';
 
 export default function CategoryCard({ c, onSave, onDelete }) {
+  const { t } = useTranslation('templates');
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(c.name);
   const [icon, setIcon] = useState(c.icon);
@@ -27,8 +29,8 @@ export default function CategoryCard({ c, onSave, onDelete }) {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <div
-                title="اسحب لترتيب التصنيفات"
-                aria-label="اسحب لترتيب التصنيفات"
+                title={t('categories.dragHandle')}
+                aria-label={t('categories.dragHandle')}
                 style={{ cursor: 'grab', color: 'var(--text-secondary)', flexShrink: 0, touchAction: 'none' }}
                 data-drag-handle
               >
@@ -41,8 +43,8 @@ export default function CategoryCard({ c, onSave, onDelete }) {
             <div style={{ display: 'flex', gap: 4 }}>
               <button
                 onClick={startEdit}
-                title="تعديل"
-                aria-label="تعديل"
+                title={t('categories.edit')}
+                aria-label={t('categories.edit')}
                 className="qr-icon-action"
                 style={{ width: 30, height: 30 }}
               >
@@ -50,8 +52,8 @@ export default function CategoryCard({ c, onSave, onDelete }) {
               </button>
               <button
                 onClick={() => onDelete(c.id)}
-                title="حذف"
-                aria-label="حذف"
+                title={t('categories.delete')}
+                aria-label={t('categories.delete')}
                 className="qr-icon-action danger"
                 style={{ width: 30, height: 30 }}
               >
@@ -68,13 +70,13 @@ export default function CategoryCard({ c, onSave, onDelete }) {
             <input className="cat-edit-icon-input" value={icon} maxLength={2} onChange={(e) => setIcon(e.target.value)} />
             <input className="cat-edit-name-input" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <input className="cat-edit-desc-input" placeholder="وصف مختصر" value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <input className="cat-edit-desc-input" placeholder={t('categories.shortDescription')} value={desc} onChange={(e) => setDesc(e.target.value)} />
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="tpl-save-btn" style={{ background: 'var(--success)' }} onClick={save}>
-              <Check size={12} /> حفظ
+              <Check size={12} /> {t('categories.save')}
             </button>
             <button className="tpl-cancel-btn" onClick={() => setEditing(false)}>
-              إلغاء
+              {t('categories.cancel')}
             </button>
           </div>
         </div>

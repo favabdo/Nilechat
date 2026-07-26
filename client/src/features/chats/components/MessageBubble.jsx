@@ -1,7 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { Lock } from 'lucide-react';
 import { findPhoneLabel } from '../utils/mappers';
 import MediaBubbleContent from './MediaBubbleContent';
-import useTranslation from '../../../i18n/useTranslation';
 
 const MEDIA_TYPES = ['image', 'video', 'audio', 'document', 'sticker'];
 
@@ -31,13 +31,13 @@ function HighlightedText({ text, query, isActiveMatch }) {
 }
 
 export default function MessageBubble({ m, c, searchQuery, onOpenLightbox }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   if (m.from === 'note') {
     return (
       <div className="msg-row note-row fade-in">
         <div className="note-bubble">
           <div className="note-label">
-            <Lock size={11} /> {t('chats.privateNoteLabel')}{m.senderName ? ` — ${m.senderName}` : ''}
+            <Lock size={11} /> {t('messageBubble.privateNote')}{m.senderName ? ` — ${m.senderName}` : ''}
           </div>
           <div className="note-text">{m.text}</div>
           <div className="note-time">{m.time}</div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, Upload, Lock, Eye, EyeOff, Copy, X } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import useAuthStore from '../../../store/authStore';
@@ -8,16 +9,17 @@ import { meApi } from '../services/profile.service';
 import EditableFieldRow from '../components/EditableFieldRow';
 import NotifPrefsTable from '../components/NotifPrefsTable';
 
-function getPushButtonState() {
-  if (typeof window === 'undefined' || !('Notification' in window)) return { text: 'Not supported', disabled: true };
-  if (Notification.permission === 'granted') return { text: 'Enabled ✓', disabled: true };
-  if (Notification.permission === 'denied') return { text: 'Blocked by browser', disabled: true };
-  return { text: 'Enable', disabled: false };
-}
-
 export default function ProfilePage() {
+  const { t } = useTranslation('profile');
   const { user, setAuth, token } = useAuthStore();
   const showToast = useToastStore((s) => s.showToast);
+
+  function getPushButtonState() {
+    if (typeof window === 'undefined' || !('Notification' in window)) return { text: t('notSupported'), disabled: true };
+    if (Notification.permission === 'granted') return { text: t('enabled'), disabled: true };
+    if (Notification.permission === 'denied') return { text: t('blockedByBrowser'), disabled: true };
+    return { text: t('enable'), disabled: false };
+  }
 
   const [pwCurrent, setPwCurrent] = useState('');
   const [pwNew, setPwNew] = useState('');
@@ -45,21 +47,21 @@ export default function ProfilePage() {
   async function saveField(field, value) {
     const trimmed = (value || '').trim();
     if (field === 'display_name' && trimmed.length < 2) {
-      showToast('الاسم قصير جدًا', 'error');
+      showToast(t('errors.nameTooShort'), 'error');
       return false;
     }
     if (field === 'email' && !trimmed) {
-      showToast('اكتب إيميل صحيح', 'error');
+      showToast(t('errors.emailRequired'), 'error');
       return false;
     }
     try {
       const data = await meApi.update({ [field]: trimmed });
       patchUser({ [field]: data.user[field] });
-      showToast('تم التحديث بنجاح', 'success');
+      showToast(t('success.updated'), 'success');
       return true;
     } catch (err) {
       console.error('[API] submitProfileFieldChange error:', err);
-      showToast(err.response?.data?.error || 'فشل التحديث', 'error');
+      showToast(err.response?.data?.error || t('failures.updateFailed'), 'error');
       return false;
     }
   }
@@ -68,44 +70,44 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) return showToast('اختار صورة صحيحة', 'error');
-    if (file.size > 5 * 1024 * 1024) return showToast('حجم الصورة أكبر من 5 ميجا', 'error');
+    if (!file.type.startsWith('image/')) return showToast(t('errors.invalidImage'), 'error');
+    if (file.size > 5 * 1024 * 1024) return showToast(t('errors.imageTooLarge'), 'error');
     try {
       const data = await meApi.uploadAvatar(file);
       patchUser({ avatar_url: data.avatar_url });
-      showToast('تم تحديث صورة البروفايل بنجاح', 'success');
+      showToast(t('success.avatarUpdated'), 'success');
     } catch (err) {
       console.error('[API] handleProfileAvatarSelected error:', err);
-      showToast(err.response?.data?.error || 'فشل رفع الصورة', 'error');
+      showToast(err.response?.data?.error || t('failures.avatarUploadFailed'), 'error');
     }
   }
 
   async function handleAvatarRemove() {
-    if (!user.avatar_url) return showToast('مفيش صورة بروفايل أصلاً', 'info');
+    if (!user.avatar_url) return showToast(t('errors.noAvatarYet'), 'info');
     try {
       await meApi.removeAvatar();
       patchUser({ avatar_url: null });
-      showToast('تم حذف صورة البروفايل', 'success');
+      showToast(t('success.avatarRemoved'), 'success');
     } catch (err) {
       console.error('[API] removeProfileAvatar error:', err);
-      showToast(err.response?.data?.error || 'فشل حذف الصورة', 'error');
+      showToast(err.response?.data?.error || t('failures.avatarRemoveFailed'), 'error');
     }
   }
 
   async function submitPasswordChange() {
-    if (!pwCurrent || !pwNew || !pwConfirm) return showToast('املأ كل خانات كلمة السر', 'error');
-    if (pwNew.length < 6) return showToast('كلمة السر الجديدة لازم تكون 6 حروف على الأقل', 'error');
-    if (pwNew !== pwConfirm) return showToast('كلمة السر الجديدة والتأكيد مش متطابقين', 'error');
+    if (!pwCurrent || !pwNew || !pwConfirm) return showToast(t('errors.fillAllPasswordFields'), 'error');
+    if (pwNew.length < 6) return showToast(t('errors.passwordTooShort'), 'error');
+    if (pwNew !== pwConfirm) return showToast(t('errors.passwordMismatch'), 'error');
 
     try {
       await meApi.changePassword(pwCurrent, pwNew);
       setPwCurrent('');
       setPwNew('');
       setPwConfirm('');
-      showToast('تم تحديث كلمة السر بنجاح', 'success');
+      showToast(t('success.passwordUpdated'), 'success');
     } catch (err) {
       console.error('[API] submitPasswordChange error:', err);
-      showToast(err.response?.data?.error || 'فشل تحديث كلمة السر', 'error');
+      showToast(err.response?.data?.error || t('failures.passwordUpdateFailed'), 'error');
     }
   }
 
@@ -118,21 +120,21 @@ export default function ProfilePage() {
       setNotifPrefs(saved);
     } catch (err) {
       console.error('[API] toggleNotifPref error:', err);
-      showToast(err.response?.data?.error || 'فشل حفظ تفضيلات الإشعارات', 'error');
+      showToast(err.response?.data?.error || t('failures.notifPrefsSaveFailed'), 'error');
       setNotifPrefs(prevPrefs);
     }
   }
 
   async function requestPushPermission() {
-    if (!('Notification' in window)) return showToast('المتصفح ده مش بيدعم الإشعارات', 'error');
+    if (!('Notification' in window)) return showToast(t('errors.notificationsNotSupported'), 'error');
     try {
       const perm = await Notification.requestPermission();
       setPushState(getPushButtonState());
       if (perm === 'granted') {
-        showToast('تم تفعيل إشعارات المتصفح', 'success');
-        new Notification('NileChat', { body: 'هتوصلك إشعارات هنا أول ما رسالة جديدة توصل 🎉' });
+        showToast(t('success.pushEnabled'), 'success');
+        new Notification('NileChat', { body: t('success.pushNotifBody') });
       } else {
-        showToast('مسموحش بالإشعارات — ممكن تفعّلها من إعدادات المتصفح', 'error');
+        showToast(t('errors.notificationsBlocked'), 'error');
       }
     } catch (err) {
       console.error('[Push] requestPushPermission error:', err);
@@ -140,24 +142,24 @@ export default function ProfilePage() {
   }
 
   async function regenerateAccessToken() {
-    if (user?.access_token && !window.confirm('التوكن الحالي هيتلغي فورًا ومش هيشتغل تاني — متأكد؟')) return;
+    if (user?.access_token && !window.confirm(t('confirmRegenerateToken'))) return;
     try {
       const data = await meApi.regenerateToken();
       patchUser({ access_token: data.access_token });
       setTokenVisible(true);
-      showToast('تم توليد توكن جديد', 'success');
+      showToast(t('success.tokenGenerated'), 'success');
     } catch (err) {
       console.error('[API] regenerateAccessToken error:', err);
-      showToast(err.response?.data?.error || 'فشل توليد التوكن', 'error');
+      showToast(err.response?.data?.error || t('failures.tokenGenerateFailed'), 'error');
     }
   }
 
   function copyAccessToken() {
-    if (!user?.access_token) return showToast('اعمل Regenerate الأول عشان تولّد توكن', 'error');
+    if (!user?.access_token) return showToast(t('errors.regenerateFirst'), 'error');
     navigator.clipboard
       .writeText(user.access_token)
-      .then(() => showToast('تم نسخ التوكن', 'success'))
-      .catch(() => showToast('فشل النسخ', 'error'));
+      .then(() => showToast(t('success.tokenCopied'), 'success'))
+      .catch(() => showToast(t('errors.copyFailed'), 'error'));
   }
 
   if (!user) return null;
@@ -167,7 +169,7 @@ export default function ProfilePage() {
       ? user.access_token
       : user.access_token
         ? '•'.repeat(28)
-        : 'No token generated yet — click Regenerate';
+        : t('accessToken.noTokenYet');
 
   return (
     <div id="page-profile" className="page">
@@ -177,18 +179,18 @@ export default function ProfilePage() {
       >
         <div className="settings-top-row">
           <div>
-            <h2>Profile Settings</h2>
-            <div className="settings-top-desc">Your personal account details</div>
+            <h2>{t('pageTitle')}</h2>
+            <div className="settings-top-desc">{t('pageSubtitle')}</div>
           </div>
         </div>
 
         <div className="settings-section">
-          <h3>Profile Picture</h3>
+          <h3>{t('profilePicture.title')}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 4 }}>
             <div
               style={{ position: 'relative', cursor: 'pointer' }}
-              title="Change profile picture"
-              aria-label="Change profile picture"
+              title={t('profilePicture.changeTitle')}
+              aria-label={t('profilePicture.changeTitle')}
               onClick={() => document.getElementById('profile-avatar-input').click()}
             >
               <div
@@ -237,7 +239,7 @@ export default function ProfilePage() {
                   }}
                   onClick={() => document.getElementById('profile-avatar-input').click()}
                 >
-                  <Upload size={13} /> Upload photo
+                  <Upload size={13} /> {t('profilePicture.uploadPhoto')}
                 </button>
                 {user.avatar_url && (
                   <button
@@ -250,15 +252,15 @@ export default function ProfilePage() {
                       background: 'var(--bg)',
                       fontSize: 12,
                     }}
-                    title="Remove photo"
-                    aria-label="Remove photo"
+                    title={t('profilePicture.removePhoto')}
+                    aria-label={t('profilePicture.removePhoto')}
                     onClick={handleAvatarRemove}
                   >
-                    <X size={13} /> Remove
+                    <X size={13} /> {t('profilePicture.remove')}
                   </button>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>JPG, PNG, GIF or WEBP. Max 5MB.</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>{t('profilePicture.formatsHint')}</div>
             </div>
             <input
               type="file"
@@ -271,43 +273,43 @@ export default function ProfilePage() {
         </div>
 
         <div className="settings-section">
-          <h3>Personal Information</h3>
+          <h3>{t('personalInfo.title')}</h3>
           <EditableFieldRow
-            label="Full Name"
-            desc="Your legal / full name"
+            label={t('personalInfo.fullName')}
+            desc={t('personalInfo.fullNameDesc')}
             value={user.full_name}
-            placeholder="Add your full name"
+            placeholder={t('personalInfo.fullNamePlaceholder')}
             onSave={(v) => saveField('full_name', v)}
           />
           <EditableFieldRow
-            label="Display Name"
-            desc="Visible to customers instead of your email"
+            label={t('personalInfo.displayName')}
+            desc={t('personalInfo.displayNameDesc')}
             value={displayName}
             onSave={(v) => saveField('display_name', v)}
           />
           <EditableFieldRow
-            label="Email Address"
-            desc="Used to sign in to your account"
+            label={t('personalInfo.email')}
+            desc={t('personalInfo.emailDesc')}
             value={user.email}
             type="email"
             onSave={(v) => saveField('email', v)}
           />
           <div className="setting-row">
             <div>
-              <div className="setting-label">Role</div>
-              <div className="setting-desc">Your permission level</div>
+              <div className="setting-label">{t('personalInfo.role')}</div>
+              <div className="setting-desc">{t('personalInfo.roleDesc')}</div>
             </div>
             <span style={{ fontSize: 14, color: 'var(--primary)', fontWeight: 600 }}>{roleLabel(user.role)}</span>
           </div>
         </div>
 
         <div className="settings-section">
-          <h3>Password</h3>
+          <h3>{t('password.title')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <input
               type="password"
               className="iw-input"
-              placeholder="Current password"
+              placeholder={t('password.current')}
               autoComplete="current-password"
               value={pwCurrent}
               onChange={(e) => setPwCurrent(e.target.value)}
@@ -315,7 +317,7 @@ export default function ProfilePage() {
             <input
               type="password"
               className="iw-input"
-              placeholder="New password"
+              placeholder={t('password.new')}
               autoComplete="new-password"
               value={pwNew}
               onChange={(e) => setPwNew(e.target.value)}
@@ -323,23 +325,23 @@ export default function ProfilePage() {
             <input
               type="password"
               className="iw-input"
-              placeholder="Confirm new password"
+              placeholder={t('password.confirm')}
               autoComplete="new-password"
               value={pwConfirm}
               onChange={(e) => setPwConfirm(e.target.value)}
             />
             <button className="page-btn" style={{ alignSelf: 'flex-start' }} onClick={submitPasswordChange}>
-              <Lock size={14} /> Update Password
+              <Lock size={14} /> {t('password.update')}
             </button>
           </div>
         </div>
 
         <div className="settings-section">
-          <h3>Notification Preferences</h3>
+          <h3>{t('notifications.title')}</h3>
           <div className="setting-row" style={{ borderBottom: '1px solid var(--border)' }}>
             <div>
-              <div className="setting-label">Enable Browser Push Notifications</div>
-              <div className="setting-desc">Allow this browser to show desktop notifications</div>
+              <div className="setting-label">{t('notifications.enablePush')}</div>
+              <div className="setting-desc">{t('notifications.enablePushDesc')}</div>
             </div>
             <button
               className="page-btn"
@@ -356,9 +358,9 @@ export default function ProfilePage() {
         </div>
 
         <div className="settings-section">
-          <h3>Access Token</h3>
+          <h3>{t('accessToken.title')}</h3>
           <div className="setting-desc" style={{ marginBottom: 12 }}>
-            This token can be used if you are building an API based integration
+            {t('accessToken.desc')}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <input
@@ -369,10 +371,10 @@ export default function ProfilePage() {
             <button
               className="st-icon-btn"
               style={{ background: 'var(--bg)' }}
-              title="Show/Hide"
-              aria-label="Show/Hide"
+              title={t('accessToken.showHide')}
+              aria-label={t('accessToken.showHide')}
               onClick={() =>
-                user.access_token ? setTokenVisible((v) => !v) : showToast('اعمل Regenerate الأول عشان تولّد توكن', 'error')
+                user.access_token ? setTokenVisible((v) => !v) : showToast(t('errors.regenerateFirst'), 'error')
               }
             >
               {tokenVisible ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -380,14 +382,14 @@ export default function ProfilePage() {
             <button
               className="st-icon-btn"
               style={{ background: 'var(--bg)' }}
-              title="Copy"
-              aria-label="Copy"
+              title={t('accessToken.copy')}
+              aria-label={t('accessToken.copy')}
               onClick={copyAccessToken}
             >
               <Copy size={15} />
             </button>
             <button className="page-btn" style={{ background: 'var(--danger)' }} onClick={regenerateAccessToken}>
-              Regenerate
+              {t('accessToken.regenerate')}
             </button>
           </div>
         </div>

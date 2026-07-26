@@ -1,12 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import useToastStore from '../../../store/toastStore';
 import { conversationsApi, labelsApi } from '../services/chats.service';
 import { hexToRgba } from '../utils/mappers';
-import useTranslation from '../../../i18n/useTranslation';
 import TagPopover from './TagPopover';
 
 export default function LabelsSection({ conversation, allLabels, onLabelsChange, onRefreshAllLabels }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const showToast = useToastStore((s) => s.showToast);
   const appliedIds = (conversation.labels || []).map((l) => Number(l.id));
 
@@ -33,7 +33,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
       }
     } catch (err) {
       console.error('[API] selectLabel error:', err);
-      showToast(err.response?.data?.error || t('chats.genericError'), 'error');
+      showToast(err.response?.data?.error || t('labels.genericError'), 'error');
       onLabelsChange(previous);
     }
   }
@@ -44,31 +44,31 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
       onLabelsChange(data.labels);
     } catch (err) {
       console.error('[API] removeLabel error:', err);
-      showToast(err.response?.data?.error || t('chats.genericError'), 'error');
+      showToast(err.response?.data?.error || t('labels.genericError'), 'error');
     }
   }
 
   async function createLabel({ name, color }) {
     try {
       const data = await labelsApi.create({ name, color });
-      showToast(t('chats.labelCreated'), 'success');
+      showToast(t('labels.createSuccess'), 'success');
       onRefreshAllLabels();
       return data;
     } catch (err) {
-      showToast(err.response?.data?.error || t('chats.labelCreateFailed'), 'error');
+      showToast(err.response?.data?.error || t('labels.createFailed'), 'error');
     }
   }
 
   return (
     <div className="cp-section" id="cp-section-label">
       <div className="cp-section-header">
-        <div className="cp-section-title">{t('chats.labelSectionTitle')}</div>
+        <div className="cp-section-title">{t('labels.title')}</div>
       </div>
       <div className="cp-section-body">
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
           <div className="conv-label-list">
             {!conversation.labels || conversation.labels.length === 0 ? (
-              <span className="conv-label-empty">{t('chats.noLabelsYet')}</span>
+              <span className="conv-label-empty">{t('labels.empty')}</span>
             ) : (
               conversation.labels.map((l) => (
                 <span
@@ -78,7 +78,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
                 >
                   <span className="conv-label-dot" style={{ background: l.color || '#6C5CE7' }}></span>
                   {l.name}
-                  <button className="conv-label-remove" title={t('chats.remove')} aria-label={t('chats.remove')} onClick={() => removeLabel(l.id)}>
+                  <button className="conv-label-remove" title={t('labels.remove')} aria-label={t('labels.remove')} onClick={() => removeLabel(l.id)}>
                     <X size={9} />
                   </button>
                 </span>
@@ -89,7 +89,7 @@ export default function LabelsSection({ conversation, allLabels, onLabelsChange,
             items={allLabels}
             appliedIds={appliedIds}
             onSelect={selectLabel}
-            emptyText={t('chats.noLabelsYetCreate')}
+            emptyText={t('labels.emptyPopover')}
             allowCreate
             onCreate={createLabel}
           />

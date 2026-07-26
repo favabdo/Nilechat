@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Pencil, CalendarPlus, Phone, Tag } from 'lucide-react';
 import Avatar from '../../../components/ui/Avatar';
 import AssignSection from './AssignSection';
@@ -13,10 +14,10 @@ import PrevConversationCard from './PrevConversationCard';
 import useToastStore from '../../../store/toastStore';
 import useAuthStore from '../../../store/authStore';
 import { contactsApi } from '../../contacts/services/contacts.service';
-import useTranslation from '../../../i18n/useTranslation';
+import i18n from '../../../i18n';
 
 export default function CustomerPanel({ conversation, currentAgentName, onClose }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const [tab, setTab] = useState('card');
   const { conversations, agents, allLabels, teams, patchConversation, refreshLabels, selectChat } = useChatsStore();
   const { modalOpen, modalMode, openModal, closeModal } = useScheduledTasksStore();
@@ -31,29 +32,29 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
   // هو الفرع نفسه، وآخر حل (لو مفيش حتى location) بنرجع للرقم عشان المكان
   // ده متفضلش فاضية خالص
   const branchNames = (c.branches || []).map((b) => b.name || b.location).filter(Boolean);
-  const branchDisplay = branchNames.length > 0 ? branchNames.join('، ') : c.location || c.phone;
+  const branchDisplay = branchNames.length > 0 ? branchNames.join(i18n.t('listSeparator', { ns: 'common' })) : c.location || c.phone;
 
   // نفس فكرة editPhoneLabel الأصلية بالظبط: prompt بسيط لكتابة/تعديل اسم ثانوي للرقم
   async function editPhoneLabel(idx) {
-    if (!c.contactId) return showToast(t('chats.linkContactFirstToLabel'), 'error');
+    if (!c.contactId) return showToast(t('customerPanel.linkPhoneFirst'), 'error');
     const p = c.phones[idx];
     if (!p) return;
-    const newLabel = window.prompt(t('chats.editPhoneLabelPrompt'), p.label || '');
+    const newLabel = window.prompt(t('customerPanel.promptSecondaryLabel'), p.label || '');
     if (newLabel === null) return;
     try {
       const data = await contactsApi.updatePhoneLabel(c.contactId, p.number, newLabel.trim());
       patchConversation(c.id, { phones: data.contact.phones.map((ph) => ({ number: ph.phone_number, label: ph.label || null })) });
-      showToast(t('chats.secondaryLabelSaved'), 'success');
+      showToast(t('customerPanel.labelSavedSuccess'), 'success');
     } catch (err) {
       console.error('[API] editPhoneLabel error:', err);
-      showToast(err.response?.data?.error || t('chats.secondaryLabelFailed'), 'error');
+      showToast(err.response?.data?.error || t('customerPanel.labelSaveFailed'), 'error');
     }
   }
 
   return (
     <div id="customer-panel">
       <div className="cp-header">
-        <h3>{t('chats.customerDetailsTitle')}</h3>
+        <h3>{t('customerPanel.title')}</h3>
         <button className="cp-close-btn" onClick={onClose}>
           <X size={16} />
         </button>
@@ -64,7 +65,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
         </div>
         <div className="cp-name-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           <div className="cp-name">{c.name}</div>
-          <button className="st-icon-btn" title={t('chats.editName')} aria-label={t('chats.editName')} style={{ width: 22, height: 22 }}>
+          <button className="st-icon-btn" title={t('customerPanel.editName')} aria-label={t('customerPanel.editName')} style={{ width: 22, height: 22 }}>
             <Pencil size={12} />
           </button>
         </div>
@@ -73,10 +74,10 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
       <div className="cp-tabs">
         <button className={`cp-tab${tab === 'card' ? ' active' : ''}`} onClick={() => setTab('card')}>
-          {t('chats.cardTab')}
+          {t('customerPanel.cardTab')}
         </button>
         <button className={`cp-tab${tab === 'info' ? ' active' : ''}`} onClick={() => setTab('info')}>
-          {t('chats.infoTab')}
+          {t('customerPanel.infoTab')}
         </button>
       </div>
 
@@ -91,17 +92,17 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
           <div className="cp-section" id="cp-section-sched">
             <div className="cp-section-header">
-              <div className="cp-section-title">{t('chats.scheduledTasksTitle')}</div>
+              <div className="cp-section-title">{t('customerPanel.scheduledTasksTitle')}</div>
             </div>
             <div className="cp-section-body">
               <button
                 className="add-btn"
                 id="sched-add-btn"
                 disabled={!c.contactId}
-                title={c.contactId ? '' : t('chats.linkContactFirst')}
+                title={c.contactId ? '' : t('customerPanel.linkCustomerFirst')}
                 onClick={() => c.contactId && openModal('card')}
               >
-                <CalendarPlus size={16} /> {t('chats.addingScheduledTask')}
+                <CalendarPlus size={16} /> {t('customerPanel.addingScheduledTask')}
               </button>
             </div>
           </div>
@@ -117,12 +118,12 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
 
           <div className="cp-section" id="cp-section-prevconv">
             <div className="cp-section-header">
-              <div className="cp-section-title">{t('chats.previousConversationsTitle')}</div>
+              <div className="cp-section-title">{t('customerPanel.previousConversationsTitle')}</div>
             </div>
             <div className="cp-section-body">
               <div className="prev-conv-list">
                 {!c.prevConvs || c.prevConvs.length === 0 ? (
-                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', padding: 12 }}>{t('chats.noPreviousConversations')}</div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', padding: 12 }}>{t('customerPanel.noPreviousConversations')}</div>
                 ) : (
                   c.prevConvs.map((p) => (
                     <PrevConversationCard
@@ -130,7 +131,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                       p={p}
                       onClick={() => {
                         const target = conversations.find((x) => x.id === p.id);
-                        if (!target) return showToast(t('chats.conversationNotFound'), 'error');
+                        if (!target) return showToast(t('customerPanel.conversationNotFound'), 'error');
                         selectChat(target.id);
                       }}
                     />
@@ -145,7 +146,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
       {tab === 'info' && (
         <div className="cp-tab-content active">
           <div className="cp-section">
-            <div className="cp-section-title">{t('chats.phoneNumbersTitle')}</div>
+            <div className="cp-section-title">{t('customerPanel.phoneNumbersTitle')}</div>
             <div className="info-list" id="phone-list">
               {(c.phones || []).map((p, i) => (
                 <div key={p.number} className="info-item">
@@ -159,7 +160,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                     )}
                   </div>
                   {isOwnerOrAdmin && (
-                    <button className="info-item-del" title={t('chats.editSecondaryLabel')} aria-label={t('chats.editSecondaryLabel')} onClick={() => editPhoneLabel(i)}>
+                    <button className="info-item-del" title={t('customerPanel.editSecondaryLabel')} aria-label={t('customerPanel.editSecondaryLabel')} onClick={() => editPhoneLabel(i)}>
                       <Tag size={14} />
                     </button>
                   )}
@@ -169,7 +170,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
             <AddPhoneForm contactId={c.contactId} onAdded={(phones) => patchConversation(c.id, { phones })} />
           </div>
           <div className="cp-section">
-            <div className="cp-section-title">{t('chats.devicesTitle')}</div>
+            <div className="cp-section-title">{t('customerPanel.devicesTitle')}</div>
             <DevicesSection contactId={c.contactId} />
           </div>
         </div>

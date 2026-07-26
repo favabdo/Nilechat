@@ -1,25 +1,25 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Check } from 'lucide-react';
 import { contactsApi } from '../../contacts/services/contacts.service';
 import useToastStore from '../../../store/toastStore';
-import useTranslation from '../../../i18n/useTranslation';
 
 const CUSTOMER_PHONE_REGEX = /^(201[0125]\d{8}|9665\d{8})$/;
 
 export default function AddPhoneForm({ contactId, onAdded }) {
-  const { t } = useTranslation();
+  const { t } = useTranslation('chats');
   const showToast = useToastStore((s) => s.showToast);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const [invalid, setInvalid] = useState(false);
 
   async function submit() {
-    if (!contactId) return showToast(t('chats.linkContactFirst'), 'error');
+    if (!contactId) return showToast(t('addPhone.linkCustomerFirst'), 'error');
     const phone = value.trim();
-    if (!phone) return showToast(t('chats.phoneRequired'), 'error');
+    if (!phone) return showToast(t('addPhone.phoneRequired'), 'error');
     if (!CUSTOMER_PHONE_REGEX.test(phone)) {
       setInvalid(true);
-      return showToast(t('chats.phoneFormatError'), 'error');
+      return showToast(t('addPhone.phoneInvalid'), 'error');
     }
     try {
       const data = await contactsApi.addPhone(contactId, phone);
@@ -27,17 +27,17 @@ export default function AddPhoneForm({ contactId, onAdded }) {
       setOpen(false);
       setValue('');
       setInvalid(false);
-      showToast(t('chats.phoneAdded'), 'success');
+      showToast(t('addPhone.addSuccess'), 'success');
     } catch (err) {
       console.error('[API] addPhoneNumber error:', err);
-      showToast(err.response?.data?.error || t('chats.phoneAddFailed'), 'error');
+      showToast(err.response?.data?.error || t('addPhone.addFailed'), 'error');
     }
   }
 
   if (!open) {
     return (
       <button id="add-phone-btn" className="add-btn" onClick={() => setOpen(true)}>
-        <Plus size={16} /> {t('chats.addPhoneNumber')}
+        <Plus size={16} /> {t('addPhone.addButton')}
       </button>
     );
   }
@@ -48,7 +48,7 @@ export default function AddPhoneForm({ contactId, onAdded }) {
         type="text"
         id="new-phone-number"
         className="device-edit-input"
-        placeholder="201010293696"
+        placeholder={t('addPhone.placeholder')}
         value={value}
         autoFocus
         onChange={(e) => {
@@ -57,11 +57,11 @@ export default function AddPhoneForm({ contactId, onAdded }) {
         }}
       />
       <div id="new-phone-hint" style={{ fontSize: 11, color: invalid ? 'var(--danger)' : 'var(--text-secondary)', margin: '4px 0 6px' }}>
-        {t('chats.phoneFormatHint')}
+        {t('addPhone.hint')}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         <button className="tpl-save-btn" onClick={submit}>
-          <Check size={12} /> {t('chats.save')}
+          <Check size={12} /> {t('addPhone.save')}
         </button>
         <button
           className="tpl-cancel-btn"
@@ -71,7 +71,7 @@ export default function AddPhoneForm({ contactId, onAdded }) {
             setInvalid(false);
           }}
         >
-          {t('common.cancel')}
+          {t('addPhone.cancel')}
         </button>
       </div>
     </div>

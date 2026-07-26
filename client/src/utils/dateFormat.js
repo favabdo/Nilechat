@@ -52,6 +52,8 @@ export function daysAgoLabel(isoString) {
 }
 
 // نفس formatSchedDate() الأصلية — مستخدمة في Scheduled Tasks و Customer Details (زيارات وعقود صيانة)
+import i18n from '../i18n';
+
 export function formatSchedDate(value) {
   if (!value) return '-';
   const d = new Date(value);
@@ -68,7 +70,7 @@ export function formatDurationDays(fromDate, toDate) {
   const days = Math.round((to - from) / (1000 * 60 * 60 * 24));
   if (isNaN(days)) return '-';
   const months = Math.round(days / 30.44);
-  return `${days} يوم (~${months} شهر)`;
+  return i18n.t('durationPicker.daysMonthsLabel', { ns: 'common', days, months });
 }
 
 // بتضيف شهور على تاريخ (بتاخد بالها من عدد أيام الشهر، زي 31 يناير + شهر = 28/29 فبراير)

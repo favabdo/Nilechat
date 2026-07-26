@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FilePlus2, Check } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
 import ContractDurationPicker from '../../../components/shared/ContractDurationPicker';
 import { customerDetailsApi } from '../services/customerDetails.service';
 
 export default function AddMaintenanceContractModal({ contactId, contactName, onClose, onAdded }) {
+  const { t } = useTranslation('customerDetails');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -13,9 +15,9 @@ export default function AddMaintenanceContractModal({ contactId, contactName, on
 
   async function submit() {
     setError('');
-    if (!startDate) return setError('لازم تحدد تاريخ بدء العقد');
-    if (!endDate) return setError('لازم تحدد تاريخ انتهاء العقد');
-    if (new Date(endDate) < new Date(startDate)) return setError('تاريخ انتهاء العقد لازم يكون بعد تاريخ البدء');
+    if (!startDate) return setError(t('addContractModal.errors.startRequired'));
+    if (!endDate) return setError(t('addContractModal.errors.endRequired'));
+    if (new Date(endDate) < new Date(startDate)) return setError(t('addContractModal.errors.endBeforeStart'));
 
     setSaving(true);
     try {
@@ -23,7 +25,7 @@ export default function AddMaintenanceContractModal({ contactId, contactName, on
       onAdded(data.contact);
     } catch (err) {
       console.error('[API] submitMaintenanceContract error:', err);
-      setError(err.response?.data?.error || 'فشل إضافة عقد الصيانة');
+      setError(err.response?.data?.error || t('addContractModal.errors.genericError'));
     } finally {
       setSaving(false);
     }
@@ -35,36 +37,36 @@ export default function AddMaintenanceContractModal({ contactId, contactName, on
         <div className="resolve-modal-icon" style={{ background: 'rgba(108,92,231,0.12)', color: 'var(--primary)' }}>
           <FilePlus2 size={22} />
         </div>
-        <div className="resolve-modal-title">إضافة عقد صيانة</div>
+        <div className="resolve-modal-title">{t('addContractModal.title')}</div>
       </div>
 
-      <div className="resolve-cats-label">العميل</div>
+      <div className="resolve-cats-label">{t('addContractModal.customer')}</div>
       <div className="st-modal-readonly-value" style={{ marginBottom: 14 }}>{contactName}</div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
         <div>
-          <div className="resolve-cats-label" style={{ marginTop: 0 }}>تاريخ البدء</div>
+          <div className="resolve-cats-label" style={{ marginTop: 0 }}>{t('addContractModal.startDate')}</div>
           <input type="date" className="iw-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
         <div>
-          <div className="resolve-cats-label" style={{ marginTop: 0 }}>تاريخ الانتهاء</div>
+          <div className="resolve-cats-label" style={{ marginTop: 0 }}>{t('addContractModal.endDate')}</div>
           <input type="date" className="iw-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
       </div>
 
-      <div className="resolve-cats-label" style={{ marginTop: 4 }}>مدة عقد الصيانة (اختياري)</div>
+      <div className="resolve-cats-label" style={{ marginTop: 4 }}>{t('addContractModal.durationOptional')}</div>
       <ContractDurationPicker startDate={startDate} onEndDateChange={setEndDate} />
       <div className="iw-form-hint" style={{ marginTop: -2, marginBottom: 14 }}>
-        حدد المدة وهيتحسب تاريخ الانتهاء تلقائي (تقدر تعدله يدوي بعد كده لو حابب).
+        {t('addContractModal.durationHint')}
       </div>
 
-      <div className="resolve-cats-label">ملاحظات (اختياري)</div>
+      <div className="resolve-cats-label">{t('addContractModal.notesOptional')}</div>
       <textarea className="resolve-notes" style={{ marginBottom: 6 }} value={notes} onChange={(e) => setNotes(e.target.value)} />
 
       <div className="resolve-modal-actions">
-        <button className="resolve-cancel-btn" onClick={onClose}>إلغاء</button>
+        <button className="resolve-cancel-btn" onClick={onClose}>{t('addContractModal.cancel')}</button>
         <button className="resolve-confirm-btn" disabled={saving} onClick={submit}>
-          <Check size={16} /> {saving ? 'جارِ الحفظ...' : 'حفظ العقد'}
+          <Check size={16} /> {saving ? t('addContractModal.saving') : t('addContractModal.save')}
         </button>
       </div>
       {error && <div className="login-error" style={{ color: 'var(--danger)', fontSize: 12.5, marginTop: 10, textAlign: 'center' }}>{error}</div>}

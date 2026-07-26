@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { addDaysToDateStr, addMonthsToDateStr, dateObjToInputValue } from '../../utils/dateFormat';
 
 // نفس بالظبط لوجيك render (setContractDurationMode / recalcContractEndDate):
@@ -6,6 +7,7 @@ import { addDaysToDateStr, addMonthsToDateStr, dateObjToInputValue } from '../..
 // وتحطه في الفورم اللي فوقها (عن طريق onEndDateChange). المستخدم لسه يقدر
 // يعدّل تاريخ الانتهاء يدوي بعد كده لو حابب.
 export default function ContractDurationPicker({ startDate, onEndDateChange }) {
+  const { t } = useTranslation('common');
   const [mode, setMode] = useState('days');
   const [days, setDays] = useState('');
   const [value, setValue] = useState('');
@@ -36,10 +38,10 @@ export default function ContractDurationPicker({ startDate, onEndDateChange }) {
     <>
       <div className="mc-duration-toggle">
         <button type="button" className={`mc-duration-btn${mode === 'days' ? ' active' : ''}`} onClick={() => changeMode('days')}>
-          عدد أيام
+          {t('durationPicker.numberOfDays')}
         </button>
         <button type="button" className={`mc-duration-btn${mode === 'unit' ? ' active' : ''}`} onClick={() => changeMode('unit')}>
-          شهر / سنة
+          {t('durationPicker.monthYear')}
         </button>
       </div>
       {mode === 'days' ? (
@@ -47,7 +49,7 @@ export default function ContractDurationPicker({ startDate, onEndDateChange }) {
           type="number"
           min="1"
           className="iw-input"
-          placeholder="عدد الأيام"
+          placeholder={t('durationPicker.daysPlaceholder')}
           style={{ marginBottom: 8 }}
           value={days}
           onChange={(e) => {
@@ -61,7 +63,7 @@ export default function ContractDurationPicker({ startDate, onEndDateChange }) {
             type="number"
             min="1"
             className="iw-input"
-            placeholder="العدد"
+            placeholder={t('durationPicker.countPlaceholder')}
             value={value}
             onChange={(e) => {
               setValue(e.target.value);
@@ -76,8 +78,8 @@ export default function ContractDurationPicker({ startDate, onEndDateChange }) {
               recalc(mode, days, value, e.target.value);
             }}
           >
-            <option value="month">شهر</option>
-            <option value="year">سنة</option>
+            <option value="month">{t('durationPicker.month')}</option>
+            <option value="year">{t('durationPicker.year')}</option>
           </select>
         </div>
       )}

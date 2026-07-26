@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, MessageCircle, Trash2, Inbox as InboxIcon } from 'lucide-react';
 import { inboxesApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import InboxWizard from '../components/InboxWizard';
-import useTranslation from '../../../i18n/useTranslation';
 
 export default function InboxesSection() {
-  const { t } = useTranslation();
+  const { t } = useTranslation('settings');
   const showToast = useToastStore((s) => s.showToast);
   const [inboxes, setInboxes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,19 +35,19 @@ export default function InboxesSection() {
       await inboxesApi.updateStatus(inbox.id, newStatus);
     } catch (err) {
       console.error('[API] iwToggleInboxStatus error:', err);
-      showToast(err.response?.data?.error || t('settings.updateFailed'), 'error');
+      showToast(err.response?.data?.error || t('inboxes.updateFailed'), 'error');
       setInboxes((prev) => prev.map((i) => (i.id === inbox.id ? { ...i, status: inbox.status } : i)));
     }
   }
 
   async function deleteInbox(id) {
-    if (!window.confirm(t('settings.deleteInboxConfirm'))) return;
+    if (!window.confirm(t('inboxes.confirmDelete'))) return;
     try {
       await inboxesApi.remove(id);
       load();
     } catch (err) {
       console.error('[API] iwDeleteInbox error:', err);
-      showToast(err.response?.data?.error || t('settings.deleteFailed'), 'error');
+      showToast(err.response?.data?.error || t('inboxes.deleteFailed'), 'error');
     }
   }
 
@@ -56,20 +56,20 @@ export default function InboxesSection() {
       <div className="page-content">
         <div className="settings-top-row">
           <div>
-            <h2>{t('settings.inboxes')}</h2>
-            <div className="settings-top-desc">{t('settings.inboxesDesc')}</div>
+            <h2>{t('inboxes.title')}</h2>
+            <div className="settings-top-desc">{t('inboxes.subtitle')}</div>
           </div>
           <button className="page-btn" onClick={() => setWizardOpen(true)}>
-            <Plus size={16} /> {t('settings.addInbox')}
+            <Plus size={16} /> {t('inboxes.addInbox')}
           </button>
         </div>
         <table className="settings-table">
           <thead>
             <tr>
-              <th>{t('settings.inboxCol')}</th>
-              <th>{t('settings.channelCol')}</th>
-              <th>{t('settings.agentsCol')}</th>
-              <th>{t('settings.statusCol')}</th>
+              <th>{t('inboxes.columns.inbox')}</th>
+              <th>{t('inboxes.columns.channel')}</th>
+              <th>{t('inboxes.columns.agents')}</th>
+              <th>{t('inboxes.columns.status')}</th>
               <th style={{ width: 50 }}></th>
             </tr>
           </thead>
@@ -77,14 +77,14 @@ export default function InboxesSection() {
             {loading && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  {t('settings.loadingInboxes')}
+                  {t('inboxes.loading')}
                 </td>
               </tr>
             )}
             {!loading && failed && (
               <tr>
                 <td colSpan={5} className="iw-empty">
-                  {t('settings.loadInboxesFailed')}
+                  {t('inboxes.loadFailed')}
                 </td>
               </tr>
             )}
@@ -92,7 +92,7 @@ export default function InboxesSection() {
               <tr>
                 <td colSpan={5} className="iw-empty">
                   <InboxIcon size={28} style={{ opacity: 0.4, display: 'block', margin: '0 auto 8px' }} />
-                  {t('settings.noInboxesYet')}
+                  {t('inboxes.empty')}
                 </td>
               </tr>
             )}

@@ -1,8 +1,11 @@
-export function roleLabel(role, lang = 'en') {
-  if (lang === 'ar') {
-    return role === 0 ? 'مالك أعلى' : role === 1 ? 'مسؤول' : 'موظف';
-  }
-  return role === 0 ? 'Super Admin' : role === 1 ? 'Administrator' : 'Agent';
+import i18n from '../i18n';
+
+export function roleLabel(role) {
+  return role === 0
+    ? i18n.t('roles.superAdmin', { ns: 'common' })
+    : role === 1
+      ? i18n.t('roles.administrator', { ns: 'common' })
+      : i18n.t('roles.agent', { ns: 'common' });
 }
 
 export function roleBadgeClass(role) {

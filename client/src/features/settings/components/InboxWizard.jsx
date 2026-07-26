@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   X,
   ArrowRight,
@@ -17,16 +18,20 @@ import { iconKeyToComponent } from '../../../utils/iconMap';
 import { inboxesApi } from '../services/settings.service';
 import useToastStore from '../../../store/toastStore';
 import { roleLabel } from '../../../utils/roles';
-import useTranslation from '../../../i18n/useTranslation';
 
 const IW_PHONE_REGEX = /^\+[1-9]\d{6,14}$/;
-const STEP_LABEL_KEYS = ['settings.iwStepChooseChannel', 'settings.iwStepCreateInbox', 'settings.iwStepAddAgents', 'settings.iwStepDone'];
 
 export default function InboxWizard({ onClose, onCreated }) {
-  const { t, lang } = useTranslation();
-  const STEPS = STEP_LABEL_KEYS.map((k, i) => ({ n: i + 1, label: t(k) }));
+  const { t } = useTranslation('settings');
   const showToast = useToastStore((s) => s.showToast);
   const [step, setStep] = useState(1);
+
+  const STEPS = [
+    { n: 1, label: t('inboxWizard.steps.1') },
+    { n: 2, label: t('inboxWizard.steps.2') },
+    { n: 3, label: t('inboxWizard.steps.3') },
+    { n: 4, label: t('inboxWizard.steps.4') },
+  ];
 
   const [channels, setChannels] = useState([]);
   const [selectedChannel, setSelectedChannel] = useState(null);
@@ -70,7 +75,7 @@ export default function InboxWizard({ onClose, onCreated }) {
 
   function selectChannel(c) {
     if (!c.available) {
-      showToast(t('settings.channelComingSoonToast', { channel: c.name }), 'info');
+      showToast(t('inboxWizard.channelSoon', { name: c.name }), 'info');
       return;
     }
     setSelectedChannel(c.key);
@@ -83,14 +88,14 @@ export default function InboxWizard({ onClose, onCreated }) {
 
   async function authenticate() {
     if (!phoneNumber || !phoneNumberId || !accessToken) {
-      showToast(t('settings.fillAllAuthFields'), 'error');
+      showToast(t('inboxWizard.fillAllFieldsFirst'), 'error');
       return;
     }
     if (!IW_PHONE_REGEX.test(phoneNumber)) {
-      showToast(t('settings.phoneMustStartPlus'), 'error');
+      showToast(t('inboxWizard.phoneMustStartWithPlus'), 'error');
       return;
     }
-    setAuthStatus({ state: 'pending', text: t('settings.verifyingWithMeta') });
+    setAuthStatus({ state: 'pending', text: t('inboxWizard.verifyingPending') });
     try {
       const data = await inboxesApi.authenticateWhatsapp({ phoneNumber, phoneNumberId, accessToken });
       setAuthenticated({
@@ -102,11 +107,11 @@ export default function InboxWizard({ onClose, onCreated }) {
       });
       setAuthStatus({
         state: 'ok',
-        text: t('settings.verifiedMatch', { name: data.verifiedName || data.displayPhoneNumber || t('settings.accountWorking') }),
+        text: t('inboxWizard.verifiedOk', { name: data.verifiedName || data.displayPhoneNumber || t('inboxWizard.workingAccount') }),
       });
     } catch (err) {
       setAuthenticated(null);
-      setAuthStatus({ state: 'err', text: err.response?.data?.error || t('settings.verificationFailed') });
+      setAuthStatus({ state: 'err', text: err.response?.data?.error || t('inboxWizard.verifyFailed') });
     }
   }
 
@@ -137,10 +142,10 @@ export default function InboxWizard({ onClose, onCreated }) {
           accessToken: authenticated.accessToken,
         });
         setCreatedInbox(data.inbox);
-        showToast(t('settings.inboxCreatedSuccess'), 'success');
+        showToast(t('inboxWizard.inboxCreatedSuccess'), 'success');
         setStep(3);
       } catch (err) {
-        showToast(err.response?.data?.error || t('settings.inboxCreateFailed'), 'error');
+        showToast(err.response?.data?.error || t('inboxWizard.inboxCreateFailed'), 'error');
       } finally {
         setCreating(false);
       }
@@ -151,7 +156,7 @@ export default function InboxWizard({ onClose, onCreated }) {
       try {
         await inboxesApi.setAgents(createdInbox.id, Array.from(selectedAgentIds).map(Number));
       } catch (err) {
-        showToast(err.response?.data?.error || t('settings.addAgentsFailed'), 'error');
+        showToast(err.response?.data?.error || t('inboxWizard.addAgentsFailed'), 'error');
       } finally {
         setSavingAgents(false);
         setStep(4);
@@ -174,7 +179,7 @@ export default function InboxWizard({ onClose, onCreated }) {
     <div className="iw-overlay show" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="iw-modal" onClick={(e) => e.stopPropagation()}>
         <div className="iw-head">
-          <div className="iw-head-title">{t('settings.addInboxTitle')}</div>
+          <div className="iw-head-title">{t('inboxWizard.title')}</div>
           <button className="iw-close-btn" onClick={onClose}>
             <X size={16} />
           </button>
@@ -193,7 +198,7 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 1 && (
             <div className="iw-panel active">
               {channels.length === 0 ? (
-                <div className="iw-empty">{t('settings.loadingChannels')}</div>
+                <div className="iw-empty">{t('inboxWizard.loadingChannels')}</div>
               ) : (
                 <>
                   {Object.keys(groupedChannels).map((groupName) => (
@@ -209,7 +214,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                               onClick={() => selectChannel(c)}
                             >
                               <span className={`iw-channel-badge${c.available ? '' : ' soon'}`}>
-                                {c.available ? t('settings.availableNow') : t('settings.comingSoon')}
+                                {c.available ? t('inboxWizard.available') : t('inboxWizard.soon')}
                               </span>
                               <div className="iw-channel-icon" style={{ background: c.color }}>
                                 <ChIcon size={18} />
@@ -224,9 +229,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                   ))}
                   <div className="iw-protocol-note">
                     <Zap size={16} />
-                    <div>
-                      <b>WhatsApp Cloud API</b> {t('settings.whatsappProtocolNote')}
-                    </div>
+                    <div>{t('inboxWizard.protocolNote')}</div>
                   </div>
                 </>
               )}
@@ -236,25 +239,25 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 2 && (
             <div className="iw-panel active">
               <div className="iw-form-row">
-                <div className="iw-form-label">{t('settings.apiProvider')}</div>
+                <div className="iw-form-label">{t('inboxWizard.apiProvider')}</div>
                 <select className="iw-input" defaultValue="whatsapp_cloud">
                   <option value="whatsapp_cloud">WhatsApp Cloud API (Meta)</option>
-                  <option disabled>360Dialog {t('settings.comingSoonSuffix')}</option>
-                  <option disabled>Baileys (Unofficial) {t('settings.comingSoonSuffix')}</option>
+                  <option disabled>360Dialog — {t('inboxWizard.otherProviderSoon')}</option>
+                  <option disabled>Baileys (Unofficial) — {t('inboxWizard.otherProviderSoon')}</option>
                 </select>
               </div>
               <div className="iw-form-row">
-                <div className="iw-form-label">{t('settings.inboxNameField')}</div>
+                <div className="iw-form-label">{t('inboxWizard.inboxName')}</div>
                 <input
                   type="text"
                   className="iw-input"
-                  placeholder={t('settings.inboxNamePlaceholder')}
+                  placeholder={t('inboxWizard.inboxNamePlaceholder')}
                   value={inboxName}
                   onChange={(e) => setInboxName(e.target.value)}
                 />
               </div>
               <div className="iw-form-row">
-                <div className="iw-form-label">{t('settings.phoneNumberField')}</div>
+                <div className="iw-form-label">{t('inboxWizard.phoneNumber')}</div>
                 <input
                   type="text"
                   className="iw-input"
@@ -266,17 +269,17 @@ export default function InboxWizard({ onClose, onCreated }) {
                   }}
                 />
                 <div className="iw-form-hint" style={{ color: phoneValid ? 'var(--text-secondary)' : 'var(--danger)' }}>
-                  {t('settings.phoneNumberHint')}
+                  {t('inboxWizard.phoneHint')}
                 </div>
               </div>
               <div className="iw-form-row">
                 <div className="iw-form-label">
-                  <Hash size={13} /> {t('settings.phoneNumberIdField')}
+                  <Hash size={13} /> {t('inboxWizard.phoneNumberId')}
                 </div>
                 <input
                   type="text"
                   className="iw-input"
-                  placeholder={t('settings.phoneNumberIdPlaceholder')}
+                  placeholder={t('inboxWizard.phoneNumberIdPlaceholder')}
                   value={phoneNumberId}
                   onChange={(e) => {
                     setPhoneNumberId(e.target.value);
@@ -286,25 +289,23 @@ export default function InboxWizard({ onClose, onCreated }) {
               </div>
               <div className="iw-form-row">
                 <div className="iw-form-label">
-                  <Key size={13} /> {t('settings.apiKeyField')}
+                  <Key size={13} /> {t('inboxWizard.apiKey')}
                 </div>
                 <input
                   type="password"
                   className="iw-input"
-                  placeholder="Permanent Access Token"
+                  placeholder={t('inboxWizard.apiKeyPlaceholder')}
                   value={accessToken}
                   onChange={(e) => {
                     setAccessToken(e.target.value);
                     resetAuth();
                   }}
                 />
-                <div className="iw-form-hint">
-                  {t('settings.apiKeyHint')}
-                </div>
+                <div className="iw-form-hint">{t('inboxWizard.apiKeyHint')}</div>
               </div>
               <div className="iw-verify-row">
                 <button className="iw-btn iw-btn-primary" style={{ flexShrink: 0 }} onClick={authenticate}>
-                  <ShieldCheck size={14} /> {t('settings.authenticateBtn')}
+                  <ShieldCheck size={14} /> {t('inboxWizard.authenticate')}
                 </button>
                 {authStatus && (
                   <div className={`iw-verify-status ${authStatus.state}`}>
@@ -320,13 +321,13 @@ export default function InboxWizard({ onClose, onCreated }) {
           {step === 3 && (
             <div className="iw-panel active">
               <div className="iw-form-label" style={{ marginBottom: 12 }}>
-                {t('settings.chooseAgentsForInbox')}
+                {t('inboxWizard.chooseAgentsLabel')}
               </div>
               <div className="iw-agent-list">
                 {agentsLoading ? (
-                  <div className="iw-empty">{t('settings.loadingAgents')}</div>
+                  <div className="iw-empty">{t('inboxWizard.loadingAgents')}</div>
                 ) : agents.length === 0 ? (
-                  <div className="iw-empty">{t('settings.noAgentsAvailable')}</div>
+                  <div className="iw-empty">{t('inboxWizard.noAgents')}</div>
                 ) : (
                   agents.map((a) => {
                     const isSelected = selectedAgentIds.has(String(a.id));
@@ -338,7 +339,7 @@ export default function InboxWizard({ onClose, onCreated }) {
                       >
                         <div className="iw-agent-check">{isSelected && <Check size={12} />}</div>
                         <div className="iw-agent-name">{a.display_name || a.email}</div>
-                        <div className="iw-agent-role">{roleLabel(a.role, lang)}</div>
+                        <div className="iw-agent-role">{roleLabel(a.role)}</div>
                       </div>
                     );
                   })
@@ -353,10 +354,8 @@ export default function InboxWizard({ onClose, onCreated }) {
                 <div className="iw-success-icon">
                   <PartyPopper size={34} />
                 </div>
-                <div className="iw-success-title">{t('settings.allSetTitle')}</div>
-                <div className="iw-success-desc">
-                  {t('settings.inboxReadyDesc')}
-                </div>
+                <div className="iw-success-title">{t('inboxWizard.successTitle')}</div>
+                <div className="iw-success-desc">{t('inboxWizard.successDesc')}</div>
                 {createdInbox && (
                   <div className="iw-success-card">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -364,10 +363,10 @@ export default function InboxWizard({ onClose, onCreated }) {
                       <b>{createdInbox.name}</b>
                     </div>
                     <div>
-                      {t('settings.theNumberLabel')}{' '}
+                      {t('inboxWizard.number')}{' '}
                       {createdInbox.phone_number || createdInbox.display_phone_number || createdInbox.phone_number_id || '—'}
                     </div>
-                    <div>{t('settings.agentsAddedLabel')} {selectedAgentIds.size}</div>
+                    <div>{t('inboxWizard.agentsAdded')} {selectedAgentIds.size}</div>
                   </div>
                 )}
               </div>
@@ -381,7 +380,7 @@ export default function InboxWizard({ onClose, onCreated }) {
             style={{ visibility: step === 1 ? 'hidden' : 'visible' }}
             onClick={() => setStep((s) => Math.max(1, s - 1))}
           >
-            <ArrowRight size={14} /> {t('settings.backBtn')}
+            <ArrowRight size={14} /> {t('inboxWizard.back')}
           </button>
           <button
             className="iw-btn iw-btn-primary"
@@ -389,14 +388,14 @@ export default function InboxWizard({ onClose, onCreated }) {
             onClick={goNext}
           >
             {step === 2 && creating
-              ? t('settings.creatingEllipsis')
+              ? t('inboxWizard.creating')
               : step === 3 && savingAgents
-                ? t('settings.savingEllipsis')
+                ? t('inboxWizard.saving')
                 : step === 3
-                  ? t('settings.addAgentsAndContinue')
+                  ? t('inboxWizard.addAgentsAndContinue')
                   : step === 4
-                    ? t('settings.doneLetsGo')
-                    : t('settings.nextBtn')}
+                    ? t('inboxWizard.allDone')
+                    : t('inboxWizard.next')}
           </button>
         </div>
       </div>

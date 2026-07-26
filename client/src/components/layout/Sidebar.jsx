@@ -1,26 +1,27 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { MessageCircle, Bot, User, LayoutGrid, ChartBar, CalendarClock, Settings, LogOut, Bell, Languages } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { MessageCircle, Bot, User, LayoutGrid, ChartBar, CalendarClock, Settings, LogOut, Bell } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import useNotificationsStore from '../../features/notifications/store/notificationsStore';
-import useTranslation from '../../i18n/useTranslation';
 import Avatar from '../ui/Avatar';
+import LanguageToggle from '../shared/LanguageToggle';
 import './Sidebar.css';
 
 const NAV_ITEMS = [
-  { to: '/dashboard/chats', icon: MessageCircle, titleKey: 'sidebar.chats', badgeKey: 'chats' },
-  { to: '/dashboard/ai', icon: Bot, titleKey: 'sidebar.aiAssistant' },
-  { to: '/dashboard/contacts', icon: User, titleKey: 'sidebar.contacts' },
-  { to: '/dashboard/templates', icon: LayoutGrid, titleKey: 'sidebar.templates' },
-  { to: '/dashboard/analytics', icon: ChartBar, titleKey: 'sidebar.analytics' },
-  { to: '/dashboard/scheduled-tasks', icon: CalendarClock, titleKey: 'sidebar.scheduledTasks', badgeKey: 'sched' },
-  { to: '/dashboard/settings', icon: Settings, titleKey: 'sidebar.settings' },
+  { to: '/dashboard/chats', icon: MessageCircle, titleKey: 'nav.chats', badgeKey: 'chats' },
+  { to: '/dashboard/ai', icon: Bot, titleKey: 'nav.aiAssistant' },
+  { to: '/dashboard/contacts', icon: User, titleKey: 'nav.contacts' },
+  { to: '/dashboard/templates', icon: LayoutGrid, titleKey: 'nav.templates' },
+  { to: '/dashboard/analytics', icon: ChartBar, titleKey: 'nav.analytics' },
+  { to: '/dashboard/scheduled-tasks', icon: CalendarClock, titleKey: 'nav.scheduledTasks', badgeKey: 'sched' },
+  { to: '/dashboard/settings', icon: Settings, titleKey: 'nav.settings' },
 ];
 
 export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
+  const { t } = useTranslation('sidebar');
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const { unreadCount, openPanel } = useNotificationsStore();
-  const { t, lang, toggleLang } = useTranslation();
 
   const badgeCounts = { chats: openChatsCount, sched: dueTasksCount };
 
@@ -55,39 +56,15 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
         })}
       </nav>
       <div className="sidebar-bottom">
-        <button
-          className="sidebar-btn"
-          title={lang === 'ar' ? t('language.toggleToEnglish') : t('language.toggleToArabic')}
-          aria-label={lang === 'ar' ? t('language.toggleToEnglish') : t('language.toggleToArabic')}
-          onClick={toggleLang}
-          style={{ position: 'relative' }}
-        >
-          <Languages size={20} />
-          <span
-            style={{
-              position: 'absolute',
-              bottom: -2,
-              insetInlineEnd: -2,
-              fontSize: 9,
-              fontWeight: 700,
-              background: 'var(--primary)',
-              color: '#fff',
-              borderRadius: 6,
-              padding: '0 3px',
-              lineHeight: '13px',
-            }}
-          >
-            {t('language.short')}
-          </span>
-        </button>
-        <button className="sidebar-btn" title={t('sidebar.logout')} aria-label={t('sidebar.logout')} onClick={handleLogout}>
+        <LanguageToggle />
+        <button className="sidebar-btn" title={t('logout')} aria-label={t('logout')} onClick={handleLogout}>
           <LogOut size={20} />
         </button>
         <button
           className="sidebar-btn"
           id="notifications-btn"
-          title={t('sidebar.notifications')}
-          aria-label={t('sidebar.notifications')}
+          title={t('notifications')}
+          aria-label={t('notifications')}
           onClick={openPanel}
         >
           <Bell size={20} />
@@ -98,7 +75,7 @@ export default function Sidebar({ openChatsCount = 0, dueTasksCount = 0 }) {
         <div
           className="sidebar-avatar"
           id="my-avatar"
-          title={user?.display_name || user?.email || t('sidebar.myProfile')}
+          title={user?.display_name || user?.email || t('myProfile')}
           onClick={() => navigate('/dashboard/profile')}
         >
           <Avatar

@@ -1,18 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { Search, Inbox } from 'lucide-react';
 import useChatsStore from '../store/chatsStore';
-import useTranslation from '../../../i18n/useTranslation';
 import ChatListItem from './ChatListItem';
 
-const FILTERS = [
-  { key: 'all', labelKey: 'chats.filterAll' },
-  { key: 'me', labelKey: 'chats.filterMe' },
-  { key: 'open', labelKey: 'chats.filterOpen' },
-  { key: 'resolved', labelKey: 'chats.filterResolved' },
-];
+const FILTER_KEYS = ['all', 'me', 'open', 'resolved'];
 
 export default function ChatListPanel({ currentAgentName }) {
+  const { t } = useTranslation('chats');
   const { conversations, filter, search, selectedChatId, setFilter, setSearch, selectChat } = useChatsStore();
-  const { t } = useTranslation();
 
   let filtered = conversations;
   if (filter === 'me') {
@@ -35,21 +30,21 @@ export default function ChatListPanel({ currentAgentName }) {
           <input
             type="text"
             className="cl-search"
-            placeholder={t('chats.searchPlaceholder')}
+            placeholder={t('list.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
       <div className="cl-filters">
-        {FILTERS.map((f) => (
+        {FILTER_KEYS.map((key) => (
           <button
-            key={f.key}
-            className={`cl-filter-btn${filter === f.key ? ' active' : ''}`}
-            data-filter={f.key}
-            onClick={() => setFilter(f.key)}
+            key={key}
+            className={`cl-filter-btn${filter === key ? ' active' : ''}`}
+            data-filter={key}
+            onClick={() => setFilter(key)}
           >
-            {t(f.labelKey)} {(f.key === 'me' || f.key === 'open') && <span className="cl-filter-count">{counts[f.key]}</span>}
+            {t(`list.filters.${key}`)} {(key === 'me' || key === 'open') && <span className="cl-filter-count">{counts[key]}</span>}
           </button>
         ))}
       </div>
@@ -57,7 +52,7 @@ export default function ChatListPanel({ currentAgentName }) {
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
             <Inbox size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.4 }} />
-            <div style={{ fontSize: 13 }}>{t('chats.noConversationsFound')}</div>
+            <div style={{ fontSize: 13 }}>{t('list.empty')}</div>
           </div>
         ) : (
           filtered.map((c) => <ChatListItem key={c.id} c={c} active={c.id === selectedChatId} onClick={() => selectChat(c.id)} />)
