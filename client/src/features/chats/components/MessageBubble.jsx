@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import { Lock, RotateCw, X, Clock } from 'lucide-react';
+import { Lock, RotateCw, X } from 'lucide-react';
 import { findPhoneLabel } from '../utils/mappers';
 import MediaBubbleContent from './MediaBubbleContent';
 
 const MEDIA_TYPES = ['image', 'video', 'audio', 'document', 'sticker'];
 
-// شريط الحالة تحت الفقاعة: "جاري الإرسال…" وهي Pending، أو Retry/Cancel لو فشلت —
-// بيفضل العنصر ظاهر لحد ما الـ Retry ينجح أو اليوزر يعمل Cancel (مش بيتشال بصمت)
+// شريط الحالة تحت الفقاعة: بيظهر بس لما الرسالة تفشل (Retry/Cancel). لسه بتظهر
+// الرسالة فورًا وبتاخد حالة pending داخليًا (dim خفيف عالفقاعة) بس من غير أي
+// نص ظاهر "جاري الإرسال…" — العميل نفسه محتاج يفضل يشوف إنها اتبعتت فورًا
+// من غير أي إشارة ظاهرة إنها لسه مش متأكدة، لحد ما تفشل فعلاً
 function MessageStatusRow({ m, t, onRetry, onCancel }) {
   if (m.failed) {
     return (
@@ -18,14 +20,6 @@ function MessageStatusRow({ m, t, onRetry, onCancel }) {
         <button type="button" className="msg-status-action" onClick={() => onCancel(m)}>
           <X size={11} /> {t('messageBubble.cancel')}
         </button>
-      </div>
-    );
-  }
-  if (m._pending) {
-    return (
-      <div className="msg-status-row msg-status-pending">
-        <Clock size={11} />
-        <span className="msg-status-text">{t('messageBubble.sending')}</span>
       </div>
     );
   }
