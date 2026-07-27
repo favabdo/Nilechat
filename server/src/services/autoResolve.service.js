@@ -6,6 +6,7 @@
 
 const conversationRepo = require('../repositories/conversation.repo');
 const companyRepo = require('../repositories/company.repo');
+const socketService = require('../sockets/socket');
 const logger = require('../utils/logger');
 
 // كل قد إيه بنعمل فحص جديد للمحادثات الخاملة (كل 15 دقيقة كفاية جدًا لدقة على
@@ -44,7 +45,7 @@ async function runAutoResolveSweep(io) {
         const updated = await conversationRepo.getConversationById(id);
         if (io && updated) {
           io.emit('conversation_updated', updated);
-          io.emit('new_message', { conversationId: updated.id, message: systemMessage });
+          socketService.emitToConversationRoom(io, updated.id, 'new_message', { conversationId: updated.id, message: systemMessage });
         }
 
         logger.info(`⏳ محادثة #${id} اتقفلت تلقائيًا بعد ${days} يوم من عدم التفاعل`);

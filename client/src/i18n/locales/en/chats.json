@@ -128,7 +128,11 @@
     "tapToOpen": "tap to open"
   },
   "messageBubble": {
-    "privateNote": "Private note"
+    "privateNote": "Private note",
+    "failedToSend": "Failed to send",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "sending": "Sending…"
   },
   "prevConversation": {
     "messages": "messages"

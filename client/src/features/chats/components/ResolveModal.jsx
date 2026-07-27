@@ -12,21 +12,26 @@ export default function ResolveModal({ conversation, categories, onClose, onReso
   const [saving, setSaving] = useState(false);
   const showToast = useToastStore((s) => s.showToast);
 
-  async function confirm() {
-    if (!selectedCategory) return;
+  function confirm() {
+    if (!selectedCategory || saving) return;
     const cat = categories.find((x) => String(x.id) === String(selectedCategory));
     const catName = cat ? cat.name : selectedCategory;
     setSaving(true);
-    try {
-      await conversationsApi.resolve(conversation.id, catName, notes.trim());
-      onResolved(catName);
-      showToast(t('resolve.successToast', { category: catName }), 'success');
-    } catch (err) {
-      console.error('[API] confirmResolve error:', err);
-      showToast(err.response?.data?.error || t('resolve.failedToast'), 'error');
-    } finally {
-      setSaving(false);
-    }
+
+    // Optimistic: نسكّر المودال ونحدّث الحالة فورًا، ونستنى تأكيد السيرفر في الخلفية.
+    // لو فشل، بنرجّع الحالة القديمة ونوريه Toast واضح إنه يحاول تاني.
+    onResolved(catName);
+
+    conversationsApi
+      .resolve(conversation.id, catName, notes.trim())
+      .then(() => {
+        showToast(t('resolve.successToast', { category: catName }), 'success');
+      })
+      .catch((err) => {
+        console.error('[API] confirmResolve error:', err);
+        onResolved(null, { rollback: true });
+        showToast(err.response?.data?.error || t('resolve.failedToast'), 'error');
+      });
   }
 
   return (

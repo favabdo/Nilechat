@@ -8,6 +8,7 @@ const maintenanceContractRepo = require('../repositories/maintenanceContract.rep
 const conversationRepo = require('../repositories/conversation.repo');
 const companyRepo = require('../repositories/company.repo');
 const whatsappService = require('../services/whatsapp.service');
+const socketService = require('../sockets/socket');
 const logger = require('../utils/logger');
 
 // فحص جديد كل 24 ساعة (يوميًا) — كفاية جدًا لدقة على مستوى أيام، ومفيش داعي
@@ -51,7 +52,7 @@ async function runContractExpirySweep(io) {
         const updated = await conversationRepo.getConversationById(conversationId);
         if (io && updated) {
           io.emit('conversation_updated', updated);
-          if (message) io.emit('new_message', { conversationId, message });
+          if (message) socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message });
         }
 
         logger.info(`📨 اتبعت إشعار "عقد الصيانة منتهي" لعميل #${contract.contact_id} (عقد #${contract.contract_id})`);

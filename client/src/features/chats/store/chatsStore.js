@@ -137,6 +137,17 @@ const useChatsStore = create((set, get) => ({
     }));
   },
 
+  // بيشيل رسالة (مستخدمة لما اليوزر يعمل Cancel لرسالة فشلت — الرسالة الفاشلة
+  // لسه client-only أصلاً (مالهاش id من السيرفر) فمفيش حاجة تتحذف بالباك إند)
+  removeMessage(convId, predicate) {
+    set((state) => ({
+      conversations: state.conversations.map((c) => {
+        if (c.id !== convId) return c;
+        return { ...c, messages: c.messages.filter((m) => !predicate(m)) };
+      }),
+    }));
+  },
+
   setFilter: (f) => set({ filter: f }),
   setSearch: (s) => set({ search: s }),
 

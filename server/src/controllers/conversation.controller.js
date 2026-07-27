@@ -10,6 +10,7 @@ const groqAiService = require('../services/groqAi.service');
 const notificationService = require('../services/notification.service');
 const ratingFlowService = require('../services/ratingFlow.service');
 const mediaStorage = require('../utils/mediaStorage');
+const socketService = require('../sockets/socket');
 const env = require('../config/env');
 const logger = require('../utils/logger');
 
@@ -118,7 +119,7 @@ async function assign(req, res) {
     .then((conversation) => {
       if (io && conversation) {
         io.emit('conversation_updated', conversation);
-        io.emit('new_message', { conversationId: conversation.id, message: systemMessage });
+        socketService.emitToConversationRoom(io, conversation.id, 'new_message', { conversationId: conversation.id, message: systemMessage });
       }
       if (conversation) {
         webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.CONVERSATION_UPDATED, {
@@ -178,7 +179,7 @@ async function resolve(req, res) {
   const io = req.app.get('io');
   if (io) {
     io.emit('conversation_updated', updated);
-    io.emit('new_message', { conversationId: updated.id, message: systemMessage });
+    socketService.emitToConversationRoom(io, updated.id, 'new_message', { conversationId: updated.id, message: systemMessage });
   }
 
   res.json({ ok: true, conversation: updated });
@@ -225,7 +226,7 @@ async function reopen(req, res) {
   const io = req.app.get('io');
   if (io) {
     io.emit('conversation_updated', updated);
-    io.emit('new_message', { conversationId: updated.id, message: systemMessage });
+    socketService.emitToConversationRoom(io, updated.id, 'new_message', { conversationId: updated.id, message: systemMessage });
   }
 
   res.json({ ok: true, conversation: updated });
@@ -360,7 +361,10 @@ async function reply(req, res) {
   conversationService
     .sendReplyLive(conversation, text, senderInfo, () => {})
     .then((message) => {
-      if (io) io.emit('new_message', { conversationId: conversation.id, message });
+      if (io) {
+        socketService.emitToConversationRoom(io, conversation.id, 'new_message', { conversationId: conversation.id, message });
+        io.emit('conversation_updated', socketService.buildConversationSummary(conversation.id, message));
+      }
       webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
         conversation_id: conversation.id,
         message: {
@@ -443,7 +447,10 @@ async function replyMedia(req, res) {
       () => {}
     )
     .then((message) => {
-      if (io) io.emit('new_message', { conversationId: conversation.id, message: { ...message, client_id: clientId } });
+      if (io) {
+        socketService.emitToConversationRoom(io, conversation.id, 'new_message', { conversationId: conversation.id, message: { ...message, client_id: clientId } });
+        io.emit('conversation_updated', socketService.buildConversationSummary(conversation.id, message));
+      }
       webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
         conversation_id: conversation.id,
         message: {

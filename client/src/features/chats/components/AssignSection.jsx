@@ -17,6 +17,8 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
   const filteredAgents = query ? agents.filter((a) => agentName(a).toLowerCase().includes(query.toLowerCase())) : agents;
 
   async function assignToMe() {
+    const previous = { assignedTo: conversation.assignedTo, rawStatus: conversation.rawStatus, status: conversation.status };
+    onAssigned({ assignedTo: currentAgentName, rawStatus: 'assigned', status: 'open' });
     try {
       const data = await conversationsApi.assign(conversation.id);
       onAssigned({
@@ -27,12 +29,15 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
       showToast(t('assign.assignedToMeToast'), 'success');
     } catch (err) {
       console.error('[API] assignToMe error:', err);
+      onAssigned(previous);
       showToast(t('assign.assignToMeFailed'), 'error');
     }
   }
 
   async function assignAgent(agent) {
     setOpen(false);
+    const previous = { assignedTo: conversation.assignedTo, rawStatus: conversation.rawStatus, status: conversation.status };
+    onAssigned({ assignedTo: agentName(agent), rawStatus: 'assigned', status: 'open' });
     try {
       const data = await conversationsApi.assign(conversation.id, agent.id);
       onAssigned({
@@ -43,6 +48,7 @@ export default function AssignSection({ conversation, agents, currentAgentName, 
       showToast(t('assign.assignedToAgentToast', { name: agentName(agent) }), 'success');
     } catch (err) {
       console.error('[API] assignAgent error:', err);
+      onAssigned(previous);
       showToast(err.response?.data?.error || t('assign.assignFailed'), 'error');
     }
   }

@@ -128,7 +128,11 @@
     "tapToOpen": "اضغط للفتح"
   },
   "messageBubble": {
-    "privateNote": "ملاحظة خاصة"
+    "privateNote": "ملاحظة خاصة",
+    "failedToSend": "فشل الإرسال",
+    "retry": "إعادة المحاولة",
+    "cancel": "إلغاء",
+    "sending": "جاري الإرسال…"
   },
   "prevConversation": {
     "messages": "رسالة"

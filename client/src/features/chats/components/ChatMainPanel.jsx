@@ -70,10 +70,36 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
       ).length
     : 0;
 
+  // بنبعت النوت فعليًا (مستخدمة من handleSend الأول مرة وكمان من الـ Retry)
+  async function sendNote(text, clientId) {
+    try {
+      await conversationsApi.addNote(c.id, text);
+    } catch (err) {
+      console.error('[API] sendNoteText error:', err);
+      showToast(err.response?.data?.error || t('mainPanel.addNoteFailed'), 'error');
+      useChatsStore.getState().replaceMessage(c.id, (m) => m._clientId === clientId, (m) => ({ ...m, _pending: false, failed: true }));
+    }
+  }
+
+  // بنبعت رسالة نص فعليًا (مستخدمة من handleSend الأول مرة وكمان من الـ Retry) —
+  // الـ socket ('new_message'/'message_failed') هو اللي بيأكد نجاح/فشل الإرسال
+  // الفعلي على واتساب في الخلفية عن طريق مطابقة _clientId
+  async function sendText(text, clientId) {
+    try {
+      await conversationsApi.reply(c.id, text);
+    } catch (err) {
+      console.error('[API] sendMessage error:', err);
+      showToast(err.response?.data?.error || t('mainPanel.sendFailed'), 'error');
+      useChatsStore.getState().replaceMessage(c.id, (m) => m._clientId === clientId, (m) => ({ ...m, _pending: false, failed: true }));
+    }
+  }
+
   async function handleSend(text) {
+    const clientId = generateClientId();
+    const nowIso = new Date().toISOString();
+
     if (noteMode) {
-      const nowIso = new Date().toISOString();
-      const pendingMsg = {
+      addMessage(c.id, {
         from: 'note',
         text,
         time: formatMessageTimestamp(nowIso),
@@ -81,14 +107,9 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
         senderName: currentAgentName,
         isNote: true,
         _pending: true,
-      };
-      addMessage(c.id, pendingMsg);
-      try {
-        await conversationsApi.addNote(c.id, text);
-      } catch (err) {
-        console.error('[API] sendNoteText error:', err);
-        showToast(err.response?.data?.error || t('mainPanel.addNoteFailed'), 'error');
-      }
+        _clientId: clientId,
+      });
+      await sendNote(text, clientId);
       return;
     }
 
@@ -97,56 +118,26 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
       return;
     }
 
-    const nowIso = new Date().toISOString();
-    const pendingMsg = {
+    addMessage(c.id, {
       from: 'agent',
       text,
       time: formatMessageTimestamp(nowIso),
       rawTime: nowIso,
       senderName: currentAgentName,
       _pending: true,
-    };
-    addMessage(c.id, pendingMsg);
+      _clientId: clientId,
+    });
     patchConversation(c.id, { lastMsg: text });
-
-    try {
-      await conversationsApi.reply(c.id, text);
-    } catch (err) {
-      console.error('[API] sendMessage error:', err);
-      showToast(err.response?.data?.error || t('mainPanel.sendFailed'), 'error');
-    }
+    await sendText(text, clientId);
   }
 
   // بديل sendMediaFile() الأصلي: نفس فلسفة handleSend (optimistic فورية + تأكيد لاحق
   // عن طريق الـ socket)، بس هنا بيتبعت ملف فعلي بـ FormData ومطابقة عن طريق client_id
-  // بدل النص، عشان أكتر من ملف ممكن يتبعتوا بنفس اللحظة
-  async function handleSendFile(file) {
-    if (c.rawStatus === 'closed') {
-      showToast(t('mainPanel.conversationClosed'), 'error');
-      return;
-    }
-
-    const clientId = generateClientId();
+  // بدل النص، عشان أكتر من ملف ممكن يتبعتوا بنفس اللحظة. بنحتفظ بالملف الأصلي
+  // (_file) جوه الرسالة عشان الـ Retry يقدر يعيد الرفع من غير ما اليوزر يختار
+  // الملف تاني
+  async function sendMediaFile(file, clientId) {
     const kind = detectMediaKind(file.type);
-    const localUrl = URL.createObjectURL(file);
-    const nowIso = new Date().toISOString();
-
-    const pendingMsg = {
-      from: 'agent',
-      text: '',
-      time: formatMessageTimestamp(nowIso),
-      rawTime: nowIso,
-      senderName: currentAgentName,
-      _pending: true,
-      _clientId: clientId,
-      type: kind,
-      mediaUrl: localUrl,
-      mediaMime: file.type,
-      fileName: file.name,
-    };
-    addMessage(c.id, pendingMsg);
-    patchConversation(c.id, { lastMsg: mediaKindLabel(kind) });
-
     try {
       // بنصغّر الصورة قبل الرفع (لو محتاجة) — مبيأثرش على الـ preview اللي
       // ظهر فورًا فوق (localUrl) لأنه مبني على الملف الأصلي، بس اللي بيتبعت
@@ -158,8 +149,57 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
     } catch (err) {
       console.error('[API] sendMediaFile error:', err);
       showToast(err.response?.data?.error || t('mainPanel.uploadFailed'), 'error');
-      useChatsStore.getState().replaceMessage(c.id, (m) => m === pendingMsg, (m) => ({ ...m, _pending: false, failed: true }));
+      useChatsStore.getState().replaceMessage(c.id, (m) => m._clientId === clientId, (m) => ({ ...m, _pending: false, failed: true }));
     }
+  }
+
+  async function handleSendFile(file) {
+    if (c.rawStatus === 'closed') {
+      showToast(t('mainPanel.conversationClosed'), 'error');
+      return;
+    }
+
+    const clientId = generateClientId();
+    const kind = detectMediaKind(file.type);
+    const localUrl = URL.createObjectURL(file);
+    const nowIso = new Date().toISOString();
+
+    addMessage(c.id, {
+      from: 'agent',
+      text: '',
+      time: formatMessageTimestamp(nowIso),
+      rawTime: nowIso,
+      senderName: currentAgentName,
+      _pending: true,
+      _clientId: clientId,
+      _file: file,
+      type: kind,
+      mediaUrl: localUrl,
+      mediaMime: file.type,
+      fileName: file.name,
+    });
+    patchConversation(c.id, { lastMsg: mediaKindLabel(kind) });
+    await sendMediaFile(file, clientId);
+  }
+
+  // إعادة محاولة رسالة/نوت/ملف فشل إرساله — بيرجّعها Pending تاني ويبعتها من
+  // غير ما اليوزر يكتب أو يختار الملف تاني، وبيفضل ظاهر لحد ما ينجح أو يتلغي
+  function handleRetry(m) {
+    useChatsStore.getState().replaceMessage(c.id, (x) => x === m, (x) => ({ ...x, _pending: true, failed: false }));
+    const clientId = m._clientId || generateClientId();
+    if (m.isNote) {
+      sendNote(m.text, clientId);
+    } else if (m._file) {
+      sendMediaFile(m._file, clientId);
+    } else {
+      sendText(m.text, clientId);
+    }
+  }
+
+  // إلغاء رسالة فشلت — بتتشال من الشات نهائيًا (كانت client-only أصلاً، السيرفر
+  // ماعندوش نسخة منها لأن الإرسال فشل)
+  function handleCancel(m) {
+    useChatsStore.getState().removeMessage(c.id, (x) => x === m);
   }
 
   function handleTypingChange(hasText) {
@@ -169,15 +209,18 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
     else socket.emit('stop_typing', { conversationId: c.id, agentName: currentAgentName });
   }
 
-  async function handleResolveClick() {
+  function handleResolveClick() {
     if (c.status === 'resolved') {
-      try {
-        await conversationsApi.reopen(c.id);
-        patchConversation(c.id, { status: 'open', rawStatus: 'open' });
-        showToast(t('mainPanel.reopenedSuccess'), 'success');
-      } catch (err) {
-        showToast(err.response?.data?.error || t('mainPanel.reopenFailed'), 'error');
-      }
+      const previous = { status: c.status, rawStatus: c.rawStatus };
+      // Optimistic: نفتح المحادثة في الواجهة فورًا، ونستنى تأكيد السيرفر في الخلفية
+      patchConversation(c.id, { status: 'open', rawStatus: 'open' });
+      conversationsApi
+        .reopen(c.id)
+        .then(() => showToast(t('mainPanel.reopenedSuccess'), 'success'))
+        .catch((err) => {
+          patchConversation(c.id, previous);
+          showToast(err.response?.data?.error || t('mainPanel.reopenFailed'), 'error');
+        });
     } else {
       setResolveOpen(true);
     }
@@ -204,7 +247,12 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
           onResolveClick={handleResolveClick}
           onCustomerPanelToggle={toggleCustomerPanel}
         />
-        <MessageList conversation={c} searchQuery={searchOpen ? searchQuery : ''} />
+        <MessageList
+          conversation={c}
+          searchQuery={searchOpen ? searchQuery : ''}
+          onRetryMessage={handleRetry}
+          onCancelMessage={handleCancel}
+        />
         <MessageInput
           conversationId={c.id}
           resolved={c.status === 'resolved'}
@@ -224,7 +272,13 @@ export default function ChatMainPanel({ conversation, currentAgentName, socketRe
           conversation={c}
           categories={resolveCategories}
           onClose={() => setResolveOpen(false)}
-          onResolved={(catName) => {
+          onResolved={(catName, opts) => {
+            if (opts?.rollback) {
+              // فشل الـ resolve في الخلفية بعد ما كنا سكّرنا المحادثة optimistically —
+              // بنرجّعها مفتوحة تاني (المودال نفسه كان اتقفل خلاص لما بدأنا)
+              patchConversation(c.id, { status: 'open', rawStatus: 'open' });
+              return;
+            }
             patchConversation(c.id, { status: 'resolved', rawStatus: 'closed', resolveCategory: catName });
             setResolveOpen(false);
             closeChat();

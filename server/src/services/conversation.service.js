@@ -253,8 +253,14 @@ async function processIncomingMessages(value, io, wabaId = null) {
       rawPayload: JSON.stringify(msg),
     });
 
+    // تيار الرسايل الثقيل (جسم الرسالة كامل) بيتبعت بس لمين فاتح المحادثة دي
+    // فعليًا (غرفة الـ Socket.IO). قايمة المحادثات (unread/lastMsg preview)
+    // بتتحدّث من حدث منفصل خفيف الوزن (conversation_updated) بيوصل للكل —
+    // التفصيل الكامل لسبب الفصل ده في conversationSummary/buildConversationSummary
+    // جوه socket.js
     if (io) {
-      io.emit('new_message', { conversationId, message: saved });
+      socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message: saved });
+      io.emit('conversation_updated', socketService.buildConversationSummary(conversationId, saved));
     }
 
     // دلوقتي بعد ما الرسالة اتسجلت وظهرت للإيجنت فورًا، لو دي رسالة وسائط
@@ -274,8 +280,11 @@ async function processIncomingMessages(value, io, wabaId = null) {
             mediaUrl: downloaded.url,
             mediaMime: downloaded.mimeType,
           });
+          // media_ready بس بيملي صورة/ملف رسالة موجودة بالفعل جوه شات مفتوح —
+          // معندوش أي تأثير على قايمة المحادثات (unread/lastMsg)، فآمن إننا
+          // نبعته بس لمين فاتح المحادثة دي فعلاً (غرفة الـ Socket.IO)
           if (io && updated) {
-            io.emit('message_media_ready', { conversationId, message: updated });
+            socketService.emitToConversationRoom(io, conversationId, 'message_media_ready', { conversationId, message: updated });
           }
         })
         .catch((err) => logger.error('❌ خطأ غير متوقع أثناء تنزيل ميديا واردة:', err.message));
@@ -426,7 +435,7 @@ async function applyAutomationForNewConversation(conversationId, inboxId, contac
         const updated = await conversationRepo.getConversationById(conversationId);
         if (io && updated) {
           io.emit('conversation_updated', updated);
-          io.emit('new_message', { conversationId, message: systemMessage });
+          socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message: systemMessage });
         }
       }
     } catch (err) {
@@ -446,7 +455,8 @@ async function applyAutomationForNewConversation(conversationId, inboxId, contac
       );
       await conversationRepo.touchConversation(conversationId);
       if (io && message) {
-        io.emit('new_message', { conversationId, message });
+        socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message });
+        io.emit('conversation_updated', socketService.buildConversationSummary(conversationId, message));
       }
     } catch (err) {
       logger.error('❌ فشل إرسال رسالة الترحيب التلقائية:', err.message);
@@ -515,7 +525,10 @@ async function applyKeywordRoutingForMessage(conversationId, messageText, io) {
         // كارت العميل وكارت المحادثة في القايمة الجانبية يتحدّثوا فورًا بنفس
         // الطريقة تمامًا من غير أي فرق محسوس عن الإضافة اليدوية
         io.emit('conversation_teams_updated', { conversationId, teams: latestTeams });
-        if (systemMessage) io.emit('new_message', { conversationId, message: systemMessage });
+        if (systemMessage) {
+          socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message: systemMessage });
+          io.emit('conversation_updated', socketService.buildConversationSummary(conversationId, systemMessage));
+        }
       }
     }
   } catch (err) {
@@ -550,7 +563,8 @@ async function applyContractExpiryReplyForMessage(conversationId, contactId, con
   );
   await conversationRepo.touchConversation(conversationId);
   if (io && message) {
-    io.emit('new_message', { conversationId, message });
+    socketService.emitToConversationRoom(io, conversationId, 'new_message', { conversationId, message });
+    io.emit('conversation_updated', socketService.buildConversationSummary(conversationId, message));
   }
 }
 

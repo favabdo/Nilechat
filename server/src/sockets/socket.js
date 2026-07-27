@@ -8,6 +8,14 @@ const logger = require('../utils/logger');
 // المستخدم في middlewares/admin.js وconversation.controller.js
 const PRIVILEGED_ROOM = 'post_resolve_viewers'; // admin/owner بس (role <= 1)
 
+// اسم غرفة الـ Socket.IO الخاصة بمحادثة معينة — أي حدث "تيار الرسايل الثقيل"
+// (typing/stop_typing، media_ready...) بيتبعت للغرفة دي بس عشان منبعتش لكل
+// الإيجنتس المتصلين حتى لو مش فاتحين المحادثة دي أصلاً. new_message نفسه
+// فضل global عمدًا — التفصيل في تعليق conversation.service.js
+function conversationRoom(conversationId) {
+  return `conversation:${conversationId}`;
+}
+
 function initSocket(server) {
   const io = new Server(server, {
     cors: { origin: env.DASHBOARD_ORIGIN },
@@ -43,17 +51,32 @@ function initSocket(server) {
       socket.join(PRIVILEGED_ROOM);
     }
 
-    // مؤشر "بيكتب دلوقتي" — بنستقبله من الإيجنت اللي بيكتب وبنبعته لكل الإيجنتس
-    // التانيين المتصلين (socket.broadcast) عشان اللي فاتحين نفس المحادثة يشوفوه لايف.
-    // الفلترة على أساس conversationId بتحصل في الفرونت إند (مش هنا).
+    // Socket.IO Conversation Rooms — الفرونت إند بيبعت join_conversation لما
+    // يفتح شات معين، وleave_conversation لما يقفله أو يتنقل لشات تاني (قبل ما
+    // ينضم للجديد). كده بدل ما نبعت تيار الرسايل الثقيل (typing/media...) لكل
+    // الإيجنتس المتصلين، بنبعته بس لمين فاتح نفس المحادثة فعلاً.
+    socket.on('join_conversation', (conversationId) => {
+      if (!conversationId) return;
+      socket.join(conversationRoom(conversationId));
+    });
+
+    socket.on('leave_conversation', (conversationId) => {
+      if (!conversationId) return;
+      socket.leave(conversationRoom(conversationId));
+    });
+
+    // مؤشر "بيكتب دلوقتي" — بنستقبله من الإيجنت اللي بيكتب وبنبعته بس للإيجنتس
+    // اللي فاتحين نفس المحادثة (غرفة conversation:${id})، بدل البرودكاست العام
+    // القديم اللي كان بيوصل لكل حد متصل بصرف النظر عن المحادثة المفتوحة عنده.
+    // socket.to(room) زي broadcast.emit بالظبط: بيستثني صاحب الاتصال نفسه.
     socket.on('typing', (payload) => {
       if (!payload || !payload.conversationId) return;
-      socket.broadcast.emit('typing', payload);
+      socket.to(conversationRoom(payload.conversationId)).emit('typing', payload);
     });
 
     socket.on('stop_typing', (payload) => {
       if (!payload || !payload.conversationId) return;
-      socket.broadcast.emit('stop_typing', payload);
+      socket.to(conversationRoom(payload.conversationId)).emit('stop_typing', payload);
     });
 
     socket.on('disconnect', () => {
@@ -72,4 +95,38 @@ function emitToPrivilegedRoom(io, event, payload) {
   io.to(PRIVILEGED_ROOM).emit(event, payload);
 }
 
-module.exports = { initSocket, emitToPrivilegedRoom, PRIVILEGED_ROOM };
+// بيبعت حدث لأصحاب الـ Socket.IO المنضمين لغرفة محادثة معينة بس (اللي فاتحين
+// نفس المحادثة دلوقتي عن طريق join_conversation) — مستخدم لتيار الرسايل
+// الثقيل اللي معندوش تأثير على قايمة المحادثات (زي message_media_ready).
+function emitToConversationRoom(io, conversationId, event, payload) {
+  if (!io || !conversationId) return;
+  io.to(conversationRoom(conversationId)).emit(event, payload);
+}
+
+// بيبني الـ payload الخفيف اللي بيتبعت global في conversation_updated لما
+// رسالة جديدة توصل/تتبعت — بس الحقول اللازمة لتحديث كارت المحادثة في القايمة
+// الجانبية (معاينة آخر رسالة + نوعها + وقتها + اتجاهها عشان الفرونت إند يعرف
+// يحسب عداد unread عليها ولا لأ لو مش فاتح المحادثة دي دلوقتي)، من غير ما
+// نبعت جسم الرسالة كامل ولا أي رسايل تانية من تاريخ المحادثة. لاحظ إننا مش
+// بنبعت unreadCount جاهز من هنا: العداد ده مش متسجل في الداتابيز أصلاً
+// (state في الفرونت إند بس، مش عمود SQL)، وحسابه سيرفر-سايد هيحتاج تغيير في
+// الـ schema/queries، وده برّه نطاق المهمة دي (تحسين توصيل الأحداث بس، من غير
+// أي تغيير في منطق العمل أو الداتابيز).
+function buildConversationSummary(conversationId, message) {
+  return {
+    id: conversationId,
+    lastMessageText: message?.message_text || '',
+    lastMessageType: message?.message_type || 'text',
+    lastMessageDirection: message?.direction || null,
+    lastMessageAt: message?.created_at || null,
+  };
+}
+
+module.exports = {
+  initSocket,
+  emitToPrivilegedRoom,
+  emitToConversationRoom,
+  buildConversationSummary,
+  conversationRoom,
+  PRIVILEGED_ROOM,
+};

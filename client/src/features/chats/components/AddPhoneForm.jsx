@@ -5,14 +5,14 @@ import { contactsApi } from '../../contacts/services/contacts.service';
 import { CUSTOMER_PHONE_REGEX } from '../../contacts/phoneCountries';
 import useToastStore from '../../../store/toastStore';
 
-export default function AddPhoneForm({ contactId, onAdded }) {
+export default function AddPhoneForm({ contactId, phones, onAdded }) {
   const { t } = useTranslation('chats');
   const showToast = useToastStore((s) => s.showToast);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState('');
   const [invalid, setInvalid] = useState(false);
 
-  async function submit() {
+  function submit() {
     if (!contactId) return showToast(t('addPhone.linkCustomerFirst'), 'error');
     const phone = value.trim();
     if (!phone) return showToast(t('addPhone.phoneRequired'), 'error');
@@ -20,17 +20,26 @@ export default function AddPhoneForm({ contactId, onAdded }) {
       setInvalid(true);
       return showToast(t('addPhone.phoneInvalid'), 'error');
     }
-    try {
-      const data = await contactsApi.addPhone(contactId, phone);
-      onAdded(data.contact.phones.map((ph) => ({ number: ph.phone_number, label: ph.label || null })));
-      setOpen(false);
-      setValue('');
-      setInvalid(false);
-      showToast(t('addPhone.addSuccess'), 'success');
-    } catch (err) {
-      console.error('[API] addPhoneNumber error:', err);
-      showToast(err.response?.data?.error || t('addPhone.addFailed'), 'error');
-    }
+
+    const previousPhones = phones || [];
+    // Optimistic: بنضيف الرقم فورًا في اللستة (معلّم كـ pending) ونقفل الفورم،
+    // ولو السيرفر رفضه (رقم مكرر مثلًا) بنرجّع اللستة القديمة ونوضح السبب
+    onAdded([...previousPhones, { number: phone, label: null, _pending: true }]);
+    setOpen(false);
+    setValue('');
+    setInvalid(false);
+
+    contactsApi
+      .addPhone(contactId, phone)
+      .then((data) => {
+        onAdded(data.contact.phones.map((ph) => ({ number: ph.phone_number, label: ph.label || null })));
+        showToast(t('addPhone.addSuccess'), 'success');
+      })
+      .catch((err) => {
+        console.error('[API] addPhoneNumber error:', err);
+        onAdded(previousPhones);
+        showToast(err.response?.data?.error || t('addPhone.addFailed'), 'error');
+      });
   }
 
   if (!open) {

@@ -1,9 +1,36 @@
 import { useTranslation } from 'react-i18next';
-import { Lock } from 'lucide-react';
+import { Lock, RotateCw, X, Clock } from 'lucide-react';
 import { findPhoneLabel } from '../utils/mappers';
 import MediaBubbleContent from './MediaBubbleContent';
 
 const MEDIA_TYPES = ['image', 'video', 'audio', 'document', 'sticker'];
+
+// شريط الحالة تحت الفقاعة: "جاري الإرسال…" وهي Pending، أو Retry/Cancel لو فشلت —
+// بيفضل العنصر ظاهر لحد ما الـ Retry ينجح أو اليوزر يعمل Cancel (مش بيتشال بصمت)
+function MessageStatusRow({ m, t, onRetry, onCancel }) {
+  if (m.failed) {
+    return (
+      <div className="msg-status-row msg-status-failed">
+        <span className="msg-status-text">{t('messageBubble.failedToSend')}</span>
+        <button type="button" className="msg-status-action" onClick={() => onRetry(m)}>
+          <RotateCw size={11} /> {t('messageBubble.retry')}
+        </button>
+        <button type="button" className="msg-status-action" onClick={() => onCancel(m)}>
+          <X size={11} /> {t('messageBubble.cancel')}
+        </button>
+      </div>
+    );
+  }
+  if (m._pending) {
+    return (
+      <div className="msg-status-row msg-status-pending">
+        <Clock size={11} />
+        <span className="msg-status-text">{t('messageBubble.sending')}</span>
+      </div>
+    );
+  }
+  return null;
+}
 
 // بيبني span النص مع تمييز نتايج البحث (بديل عن performChatSearch اللي كانت
 // بتلاعب في innerHTML مباشرة) — بنقسم النص لأجزاء ونعمل <mark> على الجزء المطابق بس
@@ -30,17 +57,18 @@ function HighlightedText({ text, query, isActiveMatch }) {
   return <span className="msg-text">{parts}</span>;
 }
 
-export default function MessageBubble({ m, c, searchQuery, onOpenLightbox }) {
+export default function MessageBubble({ m, c, searchQuery, onOpenLightbox, onRetry, onCancel }) {
   const { t } = useTranslation('chats');
   if (m.from === 'note') {
     return (
       <div className="msg-row note-row fade-in">
-        <div className="note-bubble">
+        <div className={`note-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
           <div className="note-label">
             <Lock size={11} /> {t('messageBubble.privateNote')}{m.senderName ? ` — ${m.senderName}` : ''}
           </div>
           <div className="note-text">{m.text}</div>
           <div className="note-time">{m.time}</div>
+          <MessageStatusRow m={m} t={t} onRetry={onRetry} onCancel={onCancel} />
         </div>
       </div>
     );
@@ -70,6 +98,7 @@ export default function MessageBubble({ m, c, searchQuery, onOpenLightbox }) {
           <div className={`msg-bubble media-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
             <MediaBubbleContent m={m} onOpenLightbox={onOpenLightbox} />
           </div>
+          <MessageStatusRow m={m} t={t} onRetry={onRetry} onCancel={onCancel} />
         </div>
       </div>
     );
@@ -79,10 +108,11 @@ export default function MessageBubble({ m, c, searchQuery, onOpenLightbox }) {
     <div className={`msg-row ${m.from === 'agent' ? 'sent' : 'received'} fade-in`}>
       <div className="msg-col">
         {senderLabel && <div className="msg-sender-name">{senderLabel}</div>}
-        <div className="msg-bubble">
+        <div className={`msg-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
           <HighlightedText text={m.text} query={searchQuery} isActiveMatch={false} />
           <div className="msg-time">{m.time}</div>
         </div>
+        <MessageStatusRow m={m} t={t} onRetry={onRetry} onCancel={onCancel} />
       </div>
     </div>
   );

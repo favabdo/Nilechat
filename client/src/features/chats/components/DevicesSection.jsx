@@ -50,47 +50,70 @@ export default function DevicesSection({ contactId }) {
       .finally(() => setLoading(false));
   }, [contactId]);
 
-  async function saveEdit(deviceId, { name, anydesk, pw }) {
+  function saveEdit(deviceId, { name, anydesk, pw }) {
     if (!name || !anydesk || !pw) return showToast(t('devices.fillAllFields'), 'error');
-    try {
-      const data = await devicesApi.update(contactId, deviceId, { name, anydesk, pw });
-      setDevices((prev) => prev.map((d) => (d.id === deviceId ? data.device : d)));
-      setEditingId(null);
-      showToast(t('devices.updateSuccess'), 'success');
-    } catch (err) {
-      console.error('[API] saveEditDevice error:', err);
-      showToast(err.response?.data?.error || t('devices.updateFailed'), 'error');
-    }
+    const previous = devices;
+    // Optimistic: القيم الجديدة بتظهر فورًا في الكارت وبنقفل فورم التعديل،
+    // ولو السيرفر رفض التحديث بنرجّع القيم القديمة
+    setDevices((prev) => prev.map((d) => (d.id === deviceId ? { ...d, name, anydesk, password: pw, _pending: true } : d)));
+    setEditingId(null);
+
+    devicesApi
+      .update(contactId, deviceId, { name, anydesk, pw })
+      .then((data) => {
+        setDevices((prev) => prev.map((d) => (d.id === deviceId ? data.device : d)));
+        showToast(t('devices.updateSuccess'), 'success');
+      })
+      .catch((err) => {
+        console.error('[API] saveEditDevice error:', err);
+        setDevices(previous);
+        showToast(err.response?.data?.error || t('devices.updateFailed'), 'error');
+      });
   }
 
-  async function removeDevice(deviceId) {
-    try {
-      await devicesApi.remove(contactId, deviceId);
-      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
-      showToast(t('devices.removedToast'), 'info');
-    } catch (err) {
-      console.error('[API] removeDevice error:', err);
-      showToast(err.response?.data?.error || t('devices.removeFailed'), 'error');
-    }
+  function removeDevice(deviceId) {
+    const previous = devices;
+    // Optimistic: الجهاز بيتشال من الشاشة فورًا، ولو الحذف فشل فعليًا بنرجّعه
+    // تاني (مش بنسيبه يختفي بصمت)
+    setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+
+    devicesApi
+      .remove(contactId, deviceId)
+      .then(() => showToast(t('devices.removedToast'), 'info'))
+      .catch((err) => {
+        console.error('[API] removeDevice error:', err);
+        setDevices(previous);
+        showToast(err.response?.data?.error || t('devices.removeFailed'), 'error');
+      });
   }
 
-  async function addDevice() {
+  function addDevice() {
     const name = newName.trim();
     const anydesk = newAnydesk.trim();
     const pw = newPw.trim();
     if (!name || !anydesk || !pw) return showToast(t('devices.fillAllFields'), 'error');
-    try {
-      const data = await devicesApi.add(contactId, { name, anydesk, pw });
-      setDevices((prev) => [...prev, data.device]);
-      setAddOpen(false);
-      setNewName('');
-      setNewAnydesk('');
-      setNewPw('');
-      showToast(t('devices.addSuccess'), 'success');
-    } catch (err) {
-      console.error('[API] addDevice error:', err);
-      showToast(err.response?.data?.error || t('devices.addFailed'), 'error');
-    }
+
+    const previous = devices;
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    // Optimistic: الجهاز بيظهر فورًا في اللستة بـ id مؤقت، وبيتستبدل بالنسخة
+    // الحقيقية من السيرفر لما الرد يوصل، أو بيتشال لو فشلت الإضافة
+    setDevices((prev) => [...prev, { id: tempId, name, anydesk, password: pw, _pending: true }]);
+    setAddOpen(false);
+    setNewName('');
+    setNewAnydesk('');
+    setNewPw('');
+
+    devicesApi
+      .add(contactId, { name, anydesk, pw })
+      .then((data) => {
+        setDevices((prev) => prev.map((d) => (d.id === tempId ? data.device : d)));
+        showToast(t('devices.addSuccess'), 'success');
+      })
+      .catch((err) => {
+        console.error('[API] addDevice error:', err);
+        setDevices(previous);
+        showToast(err.response?.data?.error || t('devices.addFailed'), 'error');
+      });
   }
 
   if (!contactId) {
@@ -109,7 +132,7 @@ export default function DevicesSection({ contactId }) {
             editingId === d.id ? (
               <DeviceEditForm key={d.id} device={d} onCancel={() => setEditingId(null)} onSave={(patch) => saveEdit(d.id, patch)} t={t} />
             ) : (
-              <div className="device-card" key={d.id}>
+            <div key={d.id} className={`device-card${d._pending ? ' opt-pending' : ''}`}>
                 <div className="device-name">
                   <Monitor size={16} />
                   {d.name}
@@ -123,10 +146,10 @@ export default function DevicesSection({ contactId }) {
                   {t('devices.passwordLabel')}: <span className="device-pw">{d.password || '-'}</span>
                 </div>
                 <div className="device-card-actions">
-                  <button className="info-item-del" title={t('devices.edit')} onClick={() => setEditingId(d.id)}>
+                  <button className="info-item-del" title={t('devices.edit')} disabled={d._pending} onClick={() => setEditingId(d.id)}>
                     <Edit2 size={14} />
                   </button>
-                  <button className="info-item-del" title={t('devices.delete')} onClick={() => removeDevice(d.id)}>
+                  <button className="info-item-del" title={t('devices.delete')} disabled={d._pending} onClick={() => removeDevice(d.id)}>
                     <Trash2 size={14} />
                   </button>
                 </div>

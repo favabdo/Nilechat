@@ -3,7 +3,7 @@ import { dayKeyFor, dayDividerLabel } from '../utils/mappers';
 import MessageBubble from './MessageBubble';
 import MediaLightbox from './MediaLightbox';
 
-export default function MessageList({ conversation, searchQuery }) {
+export default function MessageList({ conversation, searchQuery, onRetryMessage, onCancelMessage }) {
   const containerRef = useRef(null);
   const prevConvId = useRef(null);
   const [lightboxUrl, setLightboxUrl] = useState(null);
@@ -34,6 +34,8 @@ export default function MessageList({ conversation, searchQuery }) {
         c={conversation}
         searchQuery={searchQuery}
         onOpenLightbox={setLightboxUrl}
+        onRetry={onRetryMessage}
+        onCancel={onCancelMessage}
       />
     );
   });

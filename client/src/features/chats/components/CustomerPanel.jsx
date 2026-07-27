@@ -36,18 +36,28 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
   const branchDisplay = branchNames.length > 0 ? branchNames.join(i18n.t('listSeparator', { ns: 'common' })) : c.location || c.phone;
 
   // نفس فكرة editPhoneLabel الأصلية بالظبط: prompt بسيط لكتابة/تعديل اسم ثانوي للرقم
+  // — بس دلوقتي optimistic: التعديل بيظهر فورًا في اللستة قبل ما السيرفر يرد،
+  // ولو فشل بنرجّع القايمة القديمة تاني
   async function editPhoneLabel(idx) {
     if (!c.contactId) return showToast(t('customerPanel.linkPhoneFirst'), 'error');
     const p = c.phones[idx];
     if (!p) return;
     const newLabel = window.prompt(t('customerPanel.promptSecondaryLabel'), p.label || '');
     if (newLabel === null) return;
+
+    const previousPhones = c.phones;
+    const trimmedLabel = newLabel.trim();
+    patchConversation(c.id, {
+      phones: previousPhones.map((ph, i) => (i === idx ? { ...ph, label: trimmedLabel || null } : ph)),
+    });
+
     try {
-      const data = await contactsApi.updatePhoneLabel(c.contactId, p.number, newLabel.trim());
+      const data = await contactsApi.updatePhoneLabel(c.contactId, p.number, trimmedLabel);
       patchConversation(c.id, { phones: data.contact.phones.map((ph) => ({ number: ph.phone_number, label: ph.label || null })) });
       showToast(t('customerPanel.labelSavedSuccess'), 'success');
     } catch (err) {
       console.error('[API] editPhoneLabel error:', err);
+      patchConversation(c.id, { phones: previousPhones });
       showToast(err.response?.data?.error || t('customerPanel.labelSaveFailed'), 'error');
     }
   }
@@ -150,7 +160,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
             <div className="cp-section-title">{t('customerPanel.phoneNumbersTitle')}</div>
             <div className="info-list" id="phone-list">
               {(c.phones || []).map((p, i) => (
-                <div key={p.number} className="info-item">
+                <div key={p.number} className={`info-item${p._pending ? ' opt-pending' : ''}`}>
                   <div className="info-item-text">
                     <Phone size={16} />
                     <span>{p.number}</span>
@@ -160,7 +170,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                       </span>
                     )}
                   </div>
-                  {isOwnerOrAdmin && (
+                  {isOwnerOrAdmin && !p._pending && (
                     <button className="info-item-del" title={t('customerPanel.editSecondaryLabel')} aria-label={t('customerPanel.editSecondaryLabel')} onClick={() => editPhoneLabel(i)}>
                       <Tag size={14} />
                     </button>
@@ -168,7 +178,7 @@ export default function CustomerPanel({ conversation, currentAgentName, onClose 
                 </div>
               ))}
             </div>
-            <AddPhoneForm contactId={c.contactId} onAdded={(phones) => patchConversation(c.id, { phones })} />
+            <AddPhoneForm contactId={c.contactId} phones={c.phones} onAdded={(phones) => patchConversation(c.id, { phones })} />
             {isOwnerOrAdmin && <MergeContactSection conversation={c} />}
           </div>
           <div className="cp-section">

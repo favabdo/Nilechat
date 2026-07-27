@@ -20,6 +20,9 @@ export default function ChatsPage() {
   const store = useChatsStore();
   const { conversations, selectedChatId, loaded } = store;
   const pollTimerRef = useRef(null);
+  // آخر conversationId إحنا فعلاً منضمين لغرفته (join_conversation) — بنستخدمه
+  // بس عشان نعرف نعمل rejoin بعد إعادة الاتصال (الغرف بتتصفّر مع أي انقطاع)
+  const joinedConversationIdRef = useRef(null);
 
   useEffect(() => {
     store.loadConversations().catch(() => showToast(t('toasts.connectionError'), 'error'));
@@ -65,18 +68,41 @@ export default function ChatsPage() {
     };
   }, [connected]);
 
+  // Socket.IO Conversation Rooms: لما selectedChatId يتغيّر بنجهّز الـ cleanup
+  // القديم الأول (بيبعت leave_conversation للمحادثة اللي كانت مفتوحة) قبل ما
+  // React ينفّذ نسخة الـ effect الجديدة (بتبعت join_conversation للجديدة لو
+  // فيه واحدة مفتوحة). React بيضمن ترتيب "cleanup القديم قبل الجديد" ده تلقائيًا،
+  // فده بيحقق "leave المحادثة القديمة قبل join الجديدة" بالظبط. لو مفيش محادثة
+  // مفتوحة (selectedChatId=null) منضمش لأي غرفة. نفس الـ cleanup بيشتغل عند
+  // الخروج من صفحة الشاتس (unmount) عشان نسيب أي غرفة لسه منضمين فيها.
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket || selectedChatId == null) return undefined;
+
+    socket.emit('join_conversation', selectedChatId);
+    joinedConversationIdRef.current = selectedChatId;
+
+    return () => {
+      socket.emit('leave_conversation', selectedChatId);
+      if (joinedConversationIdRef.current === selectedChatId) {
+        joinedConversationIdRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedChatId, socketRef?.current]);
+
   useEffect(() => {
     const socket = socketRef?.current;
     if (!socket) return;
 
+    // new_message بقى room-scoped من السيرفر (بيوصل بس لو المحادثة دي فاتحة
+    // فعلاً/منضمين لغرفتها) — فمسؤوليته بقت بس إضافة/تحديث الرسالة في الشات
+    // المفتوح. تحديث كارت القايمة (lastMsg preview + unread) بقى مسؤولية
+    // conversation_updated الخفيف اللي بيوصل global (شوف onConversationUpdated)
     function onNewMessage({ conversationId, message }) {
       const state = useChatsStore.getState();
       const c = state.conversations.find((x) => String(x.id) === String(conversationId));
-      if (!c) {
-        state.loadConversations();
-        showToast(t('toasts.newMessageFromCustomer'), 'info');
-        return;
-      }
+      if (!c) return;
       if (message.direction === 'system') {
         state.addMessage(c.id, {
           from: 'system',
@@ -103,7 +129,6 @@ export default function ChatsPage() {
               fileName: message.media_filename || m.fileName,
             })
           );
-          state.patchConversation(c.id, { lastMsg: message.message_text || '' });
           return;
         }
       }
@@ -120,11 +145,6 @@ export default function ChatsPage() {
         mediaMime: message.media_mime || null,
         fileName: message.media_filename || null,
       });
-      const patch = {
-        lastMsg: message.message_text || (message.message_type && message.message_type !== 'text' ? mediaKindLabel(message.message_type) : ''),
-      };
-      if (message.direction === 'in' && state.selectedChatId !== c.id) patch.unread = (c.unread || 0) + 1;
-      state.patchConversation(c.id, patch);
     }
 
     // الرسالة الواردة (صورة/فيديو/صوت/مستند) بتظهر فورًا من غير صورة (mediaUrl=null)
@@ -205,18 +225,39 @@ export default function ChatsPage() {
       useChatsStore.getState().setAgentTyping(conversationId, agentName, false);
     }
 
+    // conversation_updated بقى الحدث الـ global المسؤول عن تحديث كارت
+    // المحادثة في القايمة الجانبية — بيوصل بشكلين: (1) الصف الكامل من
+    // الداتابيز لما status/assigned_agent يتغيّروا (زي الأول تمامًا)، أو (2)
+    // ملخص خفيف (lastMessageText/Type/Direction/At بس) لما رسالة جديدة توصل/
+    // تتبعت، عشان نحدّث معاينة آخر رسالة وعداد unread حتى لو المحادثة دي مش
+    // مفتوحة دلوقتي (new_message بقى بيوصل بس لمين فاتحها فعليًا)
     function onConversationUpdated(updatedConv) {
       const state = useChatsStore.getState();
       const c = state.conversations.find((x) => String(x.id) === String(updatedConv.id));
-      if (c) {
-        state.patchConversation(c.id, {
-          status: updatedConv.status === 'closed' ? 'resolved' : 'open',
-          rawStatus: updatedConv.status,
-          assignedTo: updatedConv.assigned_agent_name || c.assignedTo,
-        });
-      } else {
+      if (!c) {
         state.loadConversations();
+        if (updatedConv.lastMessageDirection === 'in') {
+          showToast(t('toasts.newMessageFromCustomer'), 'info');
+        }
+        return;
       }
+      const patch = {};
+      if (updatedConv.status !== undefined) {
+        patch.status = updatedConv.status === 'closed' ? 'resolved' : 'open';
+        patch.rawStatus = updatedConv.status;
+      }
+      if (updatedConv.assigned_agent_name !== undefined) {
+        patch.assignedTo = updatedConv.assigned_agent_name || c.assignedTo;
+      }
+      if (updatedConv.lastMessageText !== undefined) {
+        patch.lastMsg =
+          updatedConv.lastMessageText ||
+          (updatedConv.lastMessageType && updatedConv.lastMessageType !== 'text' ? mediaKindLabel(updatedConv.lastMessageType) : '');
+      }
+      if (updatedConv.lastMessageDirection === 'in' && state.selectedChatId !== c.id) {
+        patch.unread = (c.unread || 0) + 1;
+      }
+      state.patchConversation(c.id, patch);
     }
 
     function onLabelsUpdated(labels) {
@@ -253,6 +294,10 @@ export default function ChatsPage() {
         }));
         const openId = useChatsStore.getState().selectedChatId;
         if (openId) {
+          // إعادة الانضمام لغرفة المحادثة المفتوحة بعد إعادة الاتصال — الاتصال
+          // الجديد بيبدأ من غير غرف (الغرف القديمة بتتمسح مع انقطاع الاتصال)
+          socket.emit('join_conversation', openId);
+          joinedConversationIdRef.current = openId;
           const data = await conversationsApi.messages(openId);
           const messages = data.messages
             .filter((m) => ['in', 'out', 'note', 'system'].includes(m.direction))

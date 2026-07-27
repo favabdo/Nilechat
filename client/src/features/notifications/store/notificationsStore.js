@@ -33,24 +33,29 @@ const useNotificationsStore = create((set, get) => ({
 
   async toggleRead(id, currentStatus) {
     const newStatus = currentStatus === 1 ? 0 : 1;
+    const previous = get().notifications;
+    // Optimistic: بنحدّث الحالة والعداد فورًا، ونرجّعهم زي ما كانوا لو السيرفر رفض
+    set((state) => {
+      const notifications = state.notifications.map((n) => (n.id === id ? { ...n, status: newStatus } : n));
+      return { notifications, unreadCount: notifications.filter((n) => n.status === 1).length };
+    });
     try {
       await notificationsApi.setStatus(id, newStatus);
-      set((state) => {
-        const notifications = state.notifications.map((n) => (n.id === id ? { ...n, status: newStatus } : n));
-        return { notifications, unreadCount: notifications.filter((n) => n.status === 1).length };
-      });
     } catch (err) {
       console.error('[API] toggleNotificationRead error:', err);
+      set({ notifications: previous, unreadCount: previous.filter((n) => n.status === 1).length });
       throw err;
     }
   },
 
   async markAllRead() {
+    const previous = get().notifications;
+    set((state) => ({ notifications: state.notifications.map((n) => ({ ...n, status: 0 })), unreadCount: 0 }));
     try {
       await notificationsApi.markAllRead();
-      set((state) => ({ notifications: state.notifications.map((n) => ({ ...n, status: 0 })), unreadCount: 0 }));
     } catch (err) {
       console.error('[API] markAllNotificationsRead error:', err);
+      set({ notifications: previous, unreadCount: previous.filter((n) => n.status === 1).length });
       throw err;
     }
   },
