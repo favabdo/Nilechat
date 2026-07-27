@@ -140,18 +140,23 @@ export default function AutomationSection() {
   useEffect(load, []);
 
   async function patch(body) {
+    const previous = settings;
+    // Optimistic: التبديل/الحفظ بيظهر فورًا، ولو فشل بالسيرفر بنرجّع الإعدادات
+    // القديمة زي ما كانت
+    setSettings((s) => ({ ...s, ...body }));
     try {
       const data = await companyApi.updateAutomationSettings(body);
       setSettings(data);
       return data;
     } catch (err) {
       console.error('[API] patchAutomationSettings error:', err);
+      setSettings(previous);
       showToast(err.response?.data?.error || t('automation.saveFailed'), 'error');
       throw err;
     }
   }
 
-  async function quickToggle(rule) {
+  function quickToggle(rule) {
     if (!canEdit || !settings) return;
     const s = settings;
     if (rule.key === 'auto_assign' && !s.auto_assign_enabled && !s.auto_assign_agent_id) return setModalType('auto_assign');
@@ -162,7 +167,7 @@ export default function AutomationSection() {
       const hasComplete = (s.keyword_routing_rules || []).some((r) => r.team_id && r.keywords && r.keywords.length);
       if (!s.keyword_routing_enabled && !hasComplete) return setModalType('keyword_routing');
     }
-    await patch({ [rule.enabledKey]: !s[rule.enabledKey] }).catch(() => {});
+    patch({ [rule.enabledKey]: !s[rule.enabledKey] }).catch(() => {});
   }
 
   if (!settings) {
@@ -226,10 +231,11 @@ export default function AutomationSection() {
           type={modalType}
           settings={settings}
           onClose={() => setModalType(null)}
-          onSaved={async (body) => {
-            await patch(body);
+          onSaved={(body) => {
             setModalType(null);
-            showToast(t('automation.savedSuccess'), 'success');
+            patch(body)
+              .then(() => showToast(t('automation.savedSuccess'), 'success'))
+              .catch(() => {});
           }}
         />
       )}

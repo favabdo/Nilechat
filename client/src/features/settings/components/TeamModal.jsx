@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { iconKeyToComponent } from '../../../utils/iconMap';
 import { teamsApi, agentsSettingsApi } from '../services/settings.service';
+import useChatsStore from '../../chats/store/chatsStore';
 import { hexToRgba } from '../../chats/utils/mappers';
 import { roleLabel } from '../../../utils/roles';
 import Modal from '../../../components/ui/Modal';
@@ -50,28 +51,49 @@ export default function TeamModal({ team, onClose, onSaved }) {
     });
   }
 
-  async function save() {
+  function save() {
     setError('');
     const trimmed = name.trim();
     if (!trimmed) return setError(t('teamModal.nameRequired'));
+    if (saving) return; // امنع دبل-سبمِت لو اليوزر ضغط Save أكتر من مرة
 
     setSaving(true);
-    try {
-      const payload = {
-        name: trimmed,
-        description: desc.trim() || null,
-        icon,
-        color,
-        agentIds: Array.from(selectedIds).map(Number),
-      };
-      if (team?.id) await teamsApi.update(team.id, payload);
-      else await teamsApi.create(payload);
+    const payload = {
+      name: trimmed,
+      description: desc.trim() || null,
+      icon,
+      color,
+      agentIds: Array.from(selectedIds).map(Number),
+    };
+    const previous = useChatsStore.getState().teams;
+
+    if (team?.id) {
+      // Optimistic edit: التحديث بيظهر في الكارت فورًا (بما فيها عدد الأعضاء)،
+      // ولو التحديث فشل بالسيرفر بنرجّع الفريق زي ما كان
+      useChatsStore.setState({
+        teams: previous.map((tm) =>
+          tm.id === team.id ? { ...tm, name: trimmed, description: payload.description, icon, color, members_count: payload.agentIds.length } : tm
+        ),
+      });
       onSaved();
-    } catch (err) {
-      console.error('[API] saveTeam error:', err);
-      setError(err.response?.data?.error || t('teamModal.saveFailed'));
-    } finally {
-      setSaving(false);
+      teamsApi.update(team.id, payload).catch((err) => {
+        console.error('[API] saveTeam error:', err);
+        useChatsStore.setState({ teams: previous });
+        setSaving(false);
+        // المودال اتقفل خلاص (onSaved اتنادى) فمفيش فورم نرجّع نعرض فيه الخطأ،
+        // فبنكتفي برجوع الحالة القديمة — التوست بيتعرض من الصفحة الأب
+      });
+    } else {
+      // إنشاء فريق جديد محتاج id حقيقي من السيرفر عشان MemberModal/الفلاتر
+      // تشتغل عليه صح، فبنستنى الرد هنا (المودال بيفضل مفتوح لحد ما يخلص)
+      teamsApi
+        .create(payload)
+        .then(() => onSaved())
+        .catch((err) => {
+          console.error('[API] saveTeam error:', err);
+          setError(err.response?.data?.error || t('teamModal.saveFailed'));
+        })
+        .finally(() => setSaving(false));
     }
   }
 

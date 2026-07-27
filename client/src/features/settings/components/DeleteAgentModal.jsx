@@ -10,22 +10,26 @@ export default function DeleteAgentModal({ agent, onClose, onDeleted }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  async function submit() {
+  function submit() {
     setError('');
     if (!password) {
       setError(t('deleteAgentModal.passwordRequired'));
       return;
     }
     setSaving(true);
-    try {
-      await agentsSettingsApi.remove(agent.id, password);
-      onDeleted(agent.id);
-    } catch (err) {
-      console.error('[API] submitDeleteAgent error:', err);
-      setError(err.response?.data?.error || t('deleteAgentModal.deleteFailed'));
-    } finally {
-      setSaving(false);
-    }
+    // Optimistic: بنقفل المودال ونشيل الأجنت من اللستة فورًا، وبنستنى تأكيد
+    // السيرفر في الخلفية — لو الباسورد غلط أو الحذف فشل، بنرجّعه تاني
+    onDeleted(agent.id, { optimistic: true });
+
+    agentsSettingsApi
+      .remove(agent.id, password)
+      .then(() => {
+        onDeleted(agent.id, { confirmed: true });
+      })
+      .catch((err) => {
+        console.error('[API] submitDeleteAgent error:', err);
+        onDeleted(agent.id, { rollback: true, error: err.response?.data?.error || t('deleteAgentModal.deleteFailed') });
+      });
   }
 
   return (

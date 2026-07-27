@@ -37,15 +37,18 @@
     "add": "Add Visit",
     "loading": "Loading...",
     "empty": "No visits recorded",
-    "addedSuccess": "Visit added successfully"
+    "addedSuccess": "Visit added successfully",
+    "addFailed": "Failed to add visit"
   },
   "contracts": {
     "add": "Add Maintenance Contract",
     "loading": "Loading...",
     "empty": "No maintenance contracts recorded",
-    "addedSuccess": "Maintenance contract added successfully"
+    "addedSuccess": "Maintenance contract added successfully",
+    "addFailed": "Failed to add maintenance contract"
   },
   "customerUpdatedSuccess": "Customer data updated successfully",
+  "customerUpdateFailed": "Failed to update customer data",
   "phoneUnlinkedSuccess": "Number unlinked into a new separate customer",
   "visitCard": {
     "arrival": "Arrival: {{time}}",

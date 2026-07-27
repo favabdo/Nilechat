@@ -85,15 +85,20 @@ export default function WebhooksModal({ onClose, onChanged }) {
     }
   }
 
-  async function deleteWebhook(id) {
+  function deleteWebhook(id) {
     if (!window.confirm(t('webhooksModal.confirmDelete'))) return;
-    try {
-      await webhooksApi.remove(id);
-      showToast(t('webhooksModal.deleteSuccess'), 'success');
-      load();
-    } catch (err) {
-      showToast(err.response?.data?.error || t('webhooksModal.deleteFailed'), 'error');
-    }
+    const previous = webhooks;
+    // Optimistic: الويب هوك بيختفي من اللستة فورًا، ولو الحذف فشل بنرجّعه
+    setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    onChanged?.(previous.length - 1);
+    webhooksApi
+      .remove(id)
+      .then(() => showToast(t('webhooksModal.deleteSuccess'), 'success'))
+      .catch((err) => {
+        setWebhooks(previous);
+        onChanged?.(previous.length);
+        showToast(err.response?.data?.error || t('webhooksModal.deleteFailed'), 'error');
+      });
   }
 
   function copySecret(secret) {

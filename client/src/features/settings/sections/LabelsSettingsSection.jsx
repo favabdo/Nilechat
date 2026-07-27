@@ -41,36 +41,65 @@ export default function LabelsSettingsSection() {
     setFormOpen(true);
   }
 
-  async function save() {
+  function save() {
     const trimmedName = name.trim();
     if (!trimmedName) return showToast(t('labelsSettings.nameRequired'), 'error');
+    if (saving) return; // امنع طلبات متكررة لو اليوزر ضغط Save أكتر من مرة بسرعة
     setSaving(true);
-    try {
-      if (editingId !== null) {
-        await labelsSettingsApi.update(editingId, { name: trimmedName, color, description: desc.trim() });
-        showToast(t('labelsSettings.updateSuccess'), 'success');
-      } else {
-        await labelsSettingsApi.create({ name: trimmedName, color, description: desc.trim() });
-        showToast(t('labelsSettings.createSuccess'), 'success');
-      }
-      setFormOpen(false);
-      refreshLabels();
-    } catch (err) {
-      showToast(err.response?.data?.error || t('labelsSettings.genericError'), 'error');
-    } finally {
-      setSaving(false);
+    setFormOpen(false);
+    const isEdit = editingId !== null;
+    const payload = { name: trimmedName, color, description: desc.trim() };
+
+    if (isEdit) {
+      const previous = useChatsStore.getState().allLabels;
+      // Optimistic: نحدّث الليبل في اللستة فورًا، ونرجّعها زي ما كانت لو فشل التحديث
+      useChatsStore.setState({
+        allLabels: previous.map((l) => (l.id === editingId ? { ...l, ...payload } : l)),
+      });
+      labelsSettingsApi
+        .update(editingId, payload)
+        .then(() => {
+          showToast(t('labelsSettings.updateSuccess'), 'success');
+          refreshLabels();
+        })
+        .catch((err) => {
+          useChatsStore.setState({ allLabels: previous });
+          showToast(err.response?.data?.error || t('labelsSettings.genericError'), 'error');
+        })
+        .finally(() => setSaving(false));
+    } else {
+      // إضافة ليبل جديد محتاجة id حقيقي من السيرفر عشان تتربط صح بالمحادثات،
+      // فبنستنى الرد هنا بس من غير ما نفريز الواجهة (الفورم اتقفل خلاص فوق)
+      labelsSettingsApi
+        .create(payload)
+        .then(() => {
+          showToast(t('labelsSettings.createSuccess'), 'success');
+          refreshLabels();
+        })
+        .catch((err) => {
+          showToast(err.response?.data?.error || t('labelsSettings.genericError'), 'error');
+        })
+        .finally(() => setSaving(false));
     }
   }
 
-  async function confirmDelete() {
-    try {
-      await labelsSettingsApi.remove(confirmDeleteId);
-      showToast(t('labelsSettings.deleteSuccess'), 'info');
-      setConfirmDeleteId(null);
-      refreshLabels();
-    } catch (err) {
-      showToast(err.response?.data?.error || t('labelsSettings.deleteFailed'), 'error');
-    }
+  function confirmDelete() {
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
+    const previous = useChatsStore.getState().allLabels;
+    // Optimistic: الليبل بيختفي من اللستة فورًا، ولو الحذف فشل بالسيرفر
+    // (مربوط بمحادثات مثلًا) بنرجّعه تاني
+    useChatsStore.setState({ allLabels: previous.filter((l) => l.id !== id) });
+    labelsSettingsApi
+      .remove(id)
+      .then(() => {
+        showToast(t('labelsSettings.deleteSuccess'), 'info');
+        refreshLabels();
+      })
+      .catch((err) => {
+        useChatsStore.setState({ allLabels: previous });
+        showToast(err.response?.data?.error || t('labelsSettings.deleteFailed'), 'error');
+      });
   }
 
   const deletingLabel = allLabels.find((l) => l.id === confirmDeleteId);

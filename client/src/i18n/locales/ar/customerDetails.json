@@ -37,15 +37,18 @@
     "add": "إضافة زيارة",
     "loading": "جارٍ التحميل...",
     "empty": "لا توجد زيارات مسجلة",
-    "addedSuccess": "تمت إضافة الزيارة بنجاح"
+    "addedSuccess": "تمت إضافة الزيارة بنجاح",
+    "addFailed": "فشل إضافة الزيارة"
   },
   "contracts": {
     "add": "إضافة عقد صيانة",
     "loading": "جارٍ التحميل...",
     "empty": "لا توجد عقود صيانة مسجلة",
-    "addedSuccess": "تمت إضافة عقد الصيانة بنجاح"
+    "addedSuccess": "تمت إضافة عقد الصيانة بنجاح",
+    "addFailed": "فشل إضافة عقد الصيانة"
   },
   "customerUpdatedSuccess": "تم تحديث بيانات العميل بنجاح",
+  "customerUpdateFailed": "فشل تحديث بيانات العميل",
   "phoneUnlinkedSuccess": "تم فصل الرقم لعميل جديد منفصل",
   "visitCard": {
     "arrival": "وصول: {{time}}",

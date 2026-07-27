@@ -290,7 +290,10 @@ export default function CustomerDetailsPage() {
                     key={c.id}
                     contract={c}
                     contactId={contactId}
-                    onChanged={() => {
+                    onPatch={(patch) => setContracts((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...patch } : x)))}
+                    onRemove={() => setContracts((prev) => prev.filter((x) => x.id !== c.id))}
+                    onRestore={(snapshot) => setContracts((prev) => (prev.some((x) => x.id === snapshot.id) ? prev : [...prev, snapshot]))}
+                    onReload={() => {
                       customerDetailsApi.listMaintenanceContracts(contactId).then(setContracts);
                       loadContact();
                     }}
@@ -307,8 +310,17 @@ export default function CustomerDetailsPage() {
           contactId={contactId}
           contactName={contact.name}
           onClose={() => setAddVisitOpen(false)}
-          onAdded={() => {
-            setAddVisitOpen(false);
+          onAdded={(result) => {
+            if (result?.optimistic) {
+              setAddVisitOpen(false);
+              setVisits((prev) => [result.tempVisit, ...prev]);
+              return;
+            }
+            if (result?.rollback) {
+              setVisits((prev) => prev.filter((v) => v.id !== result.tempId));
+              showToast(result.error || t('visits.addFailed'), 'error');
+              return;
+            }
             showToast(t('visits.addedSuccess'), 'success');
             customerDetailsApi.listVisits(contactId).then(setVisits);
           }}
@@ -319,8 +331,17 @@ export default function CustomerDetailsPage() {
           contactId={contactId}
           contactName={contact.name}
           onClose={() => setAddContractOpen(false)}
-          onAdded={() => {
-            setAddContractOpen(false);
+          onAdded={(result) => {
+            if (result?.optimistic) {
+              setAddContractOpen(false);
+              setContracts((prev) => [result.tempContract, ...prev]);
+              return;
+            }
+            if (result?.rollback) {
+              setContracts((prev) => prev.filter((c) => c.id !== result.tempId));
+              showToast(result.error || t('contracts.addFailed'), 'error');
+              return;
+            }
             showToast(t('contracts.addedSuccess'), 'success');
             customerDetailsApi.listMaintenanceContracts(contactId).then(setContracts);
             loadContact();
@@ -332,8 +353,19 @@ export default function CustomerDetailsPage() {
           mode="edit"
           contact={contact}
           onClose={() => setEditOpen(false)}
-          onSaved={() => {
-            setEditOpen(false);
+          onSaved={(result) => {
+            if (result?.optimistic) {
+              // Optimistic: التعديلات بتظهر فورًا على الصفحة، والمودال بيتقفل على طول
+              setContact((prev) => (prev ? { ...prev, ...result.patch } : prev));
+              setEditOpen(false);
+              return;
+            }
+            if (result?.rollback) {
+              // فشل التحديث بالسيرفر — بنرجع نجيب البيانات الحقيقية بدل ما نخمّن حالة الرجوع يدويًا
+              showToast(result.error || t('customerUpdateFailed'), 'error');
+              loadContact();
+              return;
+            }
             showToast(t('customerUpdatedSuccess'), 'success');
             loadContact();
           }}

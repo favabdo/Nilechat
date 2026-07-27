@@ -27,16 +27,19 @@ export default function TeamsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleDelete(team) {
+  function handleDelete(team) {
     if (!window.confirm(t('teams.confirmDelete', { name: team.name }))) return;
-    try {
-      await teamsApi.remove(team.id);
-      showToast(t('teams.deleteSuccess'), 'success');
-      refreshTeams();
-    } catch (err) {
-      console.error('[API] deleteTeam error:', err);
-      showToast(err.response?.data?.error || t('teams.deleteFailed'), 'error');
-    }
+    const previous = useChatsStore.getState().teams;
+    // Optimistic: الفريق بيختفي من الشبكة فورًا، ولو الحذف فشل بنرجّعه
+    useChatsStore.setState({ teams: previous.filter((tm) => tm.id !== team.id) });
+    teamsApi
+      .remove(team.id)
+      .then(() => showToast(t('teams.deleteSuccess'), 'success'))
+      .catch((err) => {
+        console.error('[API] deleteTeam error:', err);
+        useChatsStore.setState({ teams: previous });
+        showToast(err.response?.data?.error || t('teams.deleteFailed'), 'error');
+      });
   }
 
   return (

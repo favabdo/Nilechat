@@ -13,26 +13,37 @@ export default function AddVisitModal({ contactId, contactName, onClose, onAdded
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  async function submit() {
+  function submit() {
     setError('');
     if (!visitDate) return setError(t('addVisitModal.errors.dateRequired'));
     if (!workDone.trim()) return setError(t('addVisitModal.errors.workRequired'));
+    if (saving) return;
 
     setSaving(true);
-    try {
-      await customerDetailsApi.addVisit(contactId, {
+    const tempId = `temp_${Date.now()}`;
+    const optimisticVisit = {
+      id: tempId,
+      visit_date: visitDate,
+      work_done: workDone.trim(),
+      arrival_time: arrivalTime || null,
+      departure_time: departureTime || null,
+      _pending: true,
+    };
+    // Optimistic: الزيارة الجديدة بتظهر فورًا في اللستة، والمودال بيتقفل على طول
+    onAdded({ optimistic: true, tempVisit: optimisticVisit });
+
+    customerDetailsApi
+      .addVisit(contactId, {
         visitDate,
         workDone: workDone.trim(),
         arrivalTime: arrivalTime || null,
         departureTime: departureTime || null,
+      })
+      .then(() => onAdded({ confirmed: true, tempId }))
+      .catch((err) => {
+        console.error('[API] submitVisit error:', err);
+        onAdded({ rollback: true, tempId, error: err.response?.data?.error || t('addVisitModal.errors.genericError') });
       });
-      onAdded();
-    } catch (err) {
-      console.error('[API] submitVisit error:', err);
-      setError(err.response?.data?.error || t('addVisitModal.errors.genericError'));
-    } finally {
-      setSaving(false);
-    }
   }
 
   return (

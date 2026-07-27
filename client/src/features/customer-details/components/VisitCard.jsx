@@ -9,7 +9,7 @@ export default function VisitCard({ v }) {
   if (v.departure_time) timesParts.push(t('visitCard.departure', { time: v.departure_time }));
 
   return (
-    <div className="sched-task-card">
+    <div className={`sched-task-card${v._pending ? ' opt-pending' : ''}`}>
       <div className="sched-task-subrow">
         <span>
           <Calendar size={13} />

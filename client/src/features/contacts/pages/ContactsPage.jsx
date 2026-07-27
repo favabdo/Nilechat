@@ -79,18 +79,29 @@ export default function ContactsPage() {
     setActiveTab(tab);
   }
 
-  async function confirmDelete() {
+  function confirmDelete() {
     if (!deleteTarget) return;
-    try {
-      await contactsApi.remove(deleteTarget.id);
-      showToast(t('deleteSuccess'), 'success');
-      load(page);
-    } catch (err) {
-      console.error('[API] deleteContact error:', err);
-      showToast(err.response?.data?.error || t('deleteFailed'), 'error');
-    } finally {
-      setDeleteTarget(null);
-    }
+    const target = deleteTarget;
+    setDeleteTarget(null);
+    const previousContacts = contacts;
+    // Optimistic: الكارت بيختفي من الشبكة فورًا، ولو الحذف فشل بالسيرفر بنرجّعه
+    // بمكانه القديم بالظبط (splice على نفس الـ index)
+    const idx = previousContacts.findIndex((c) => c.id === target.id);
+    setContacts((prev) => prev.filter((c) => c.id !== target.id));
+
+    contactsApi
+      .remove(target.id)
+      .then(() => showToast(t('deleteSuccess'), 'success'))
+      .catch((err) => {
+        console.error('[API] deleteContact error:', err);
+        setContacts((prev) => {
+          if (prev.some((c) => c.id === target.id)) return prev;
+          const next = [...prev];
+          next.splice(Math.min(idx, next.length), 0, target);
+          return next;
+        });
+        showToast(err.response?.data?.error || t('deleteFailed'), 'error');
+      });
   }
 
   const emptyMsg = search

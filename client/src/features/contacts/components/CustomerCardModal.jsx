@@ -49,7 +49,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
     });
   }
 
-  async function submit() {
+  function submit() {
     setError('');
     const trimmedName = name.trim();
     if (!trimmedName) return setError(t('cardModal.errors.nameRequired'));
@@ -65,6 +65,7 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
     if (!isEdit && contractStart && contractEnd && new Date(contractEnd) < new Date(contractStart)) {
       return setError(t('cardModal.errors.contractEndBeforeStart'));
     }
+    if (saving) return; // امنع دبل-سبمِت
 
     const cleanBranches = branches.map((b) => ({ name: b.name.trim(), location: b.location.trim() })).filter((b) => b.name || b.location);
     const custom = customModules.split(',').map((s) => s.trim()).filter(Boolean);
@@ -92,12 +93,11 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
         };
 
     setSaving(true);
-    try {
-      const data = isEdit ? await contactsApi.updateCustomerCard(contact.id, body) : await contactsApi.createCustomerCard(body);
-      const savedContactId = isEdit ? contact.id : data?.contact?.id;
-      // is_vip و is_inactive أعمدة مستقلة عن باقي بيانات الكارت، ليهم endpoints
-      // خاصة بيهم (setVip/setInactive) — بننادي عليهم بس لو القيمة اتغيرت فعلاً
-      // (في وضع التعديل) أو لو اتحطت من الأول (في وضع الإضافة)
+
+    // is_vip و is_inactive أعمدة مستقلة عن باقي بيانات الكارت، ليهم endpoints
+    // خاصة بيهم (setVip/setInactive) — بننادي عليهم بس لو القيمة اتغيرت فعلاً
+    // (في وضع التعديل) أو لو اتحطت من الأول (في وضع الإضافة)
+    async function persist(savedContactId) {
       if (savedContactId) {
         if (isEdit ? isVip !== initialIsVip : isVip) {
           await contactsApi.setVip(savedContactId, isVip);
@@ -106,12 +106,47 @@ export default function CustomerCardModal({ mode, contact, onClose, onSaved }) {
           await contactsApi.setInactive(savedContactId, isInactive);
         }
       }
-      onSaved(data);
-    } catch (err) {
-      console.error('[API] submitCustomerCard error:', err);
-      setError(err.response?.data?.error || t('cardModal.errors.genericError'));
-    } finally {
-      setSaving(false);
+    }
+
+    if (isEdit) {
+      // Optimistic edit: عندنا الـ id أصلاً، فبنقفل المودال فورًا ونبعت patch
+      // محلي للصفحة الأب تحدّث بيه الشاشة على طول، وبنستنى تأكيد السيرفر
+      // في الخلفية — لو فشل، بنطلب من الأب يرجع يقرا البيانات الحقيقية
+      const patch = {
+        name: trimmedName,
+        branches: cleanBranches,
+        manager_name: managerName.trim() || null,
+        manager_phone: managerPhone.trim() || null,
+        contract_date: signedContractDate ? new Date(signedContractDate).toISOString() : contact?.contract_date,
+        modules: modules.map((m) => ({ name: m })),
+        is_vip: isVip ? 1 : 0,
+        is_inactive: isInactive ? 1 : 0,
+      };
+      onSaved({ optimistic: true, patch });
+
+      contactsApi
+        .updateCustomerCard(contact.id, body)
+        .then(() => persist(contact.id))
+        .then(() => onSaved({ confirmed: true }))
+        .catch((err) => {
+          console.error('[API] submitCustomerCard error:', err);
+          onSaved({ rollback: true, error: err.response?.data?.error || t('cardModal.errors.genericError') });
+        });
+    } else {
+      // إضافة عميل جديد محتاجة id حقيقي من السيرفر عشان تنعرض صح جوه شبكة
+      // مقسّمة صفحات/فلاتر — فبنستنى الرد، بس المودال بيقفل على طول والباقي
+      // بيتم في الخلفية (زي أي إضافة تانية، الصفحة الأب بتعمل reload بعد التأكيد)
+      contactsApi
+        .createCustomerCard(body)
+        .then(async (data) => {
+          await persist(data?.contact?.id);
+          onSaved({ confirmed: true, data });
+        })
+        .catch((err) => {
+          console.error('[API] submitCustomerCard error:', err);
+          setSaving(false);
+          setError(err.response?.data?.error || t('cardModal.errors.genericError'));
+        });
     }
   }
 

@@ -4,6 +4,7 @@ import { Check, Users } from 'lucide-react';
 import { teamsApi, agentsSettingsApi } from '../services/settings.service';
 import { roleLabel } from '../../../utils/roles';
 import Modal from '../../../components/ui/Modal';
+import useChatsStore from '../../chats/store/chatsStore';
 
 export default function TeamMembersModal({ team, onClose, onSaved }) {
   const { t } = useTranslation('settings');
@@ -32,16 +33,22 @@ export default function TeamMembersModal({ team, onClose, onSaved }) {
     });
   }
 
-  async function save() {
+  function save() {
+    if (saving) return;
     setSaving(true);
-    try {
-      await teamsApi.setMembers(team.id, Array.from(selectedIds).map(Number));
-      onSaved();
-    } catch (err) {
+    const ids = Array.from(selectedIds).map(Number);
+    const previous = useChatsStore.getState().teams;
+    // Optimistic: عدد الأعضاء بيتحدّث فورًا في كارت الفريق، ونقفل المودال،
+    // ولو التحديث فشل بنرجّع العدد القديم
+    useChatsStore.setState({
+      teams: previous.map((tm) => (tm.id === team.id ? { ...tm, members_count: ids.length } : tm)),
+    });
+    onSaved();
+    teamsApi.setMembers(team.id, ids).catch((err) => {
       console.error('[API] saveTeamMembers error:', err);
-    } finally {
+      useChatsStore.setState({ teams: previous });
       setSaving(false);
-    }
+    });
   }
 
   return (

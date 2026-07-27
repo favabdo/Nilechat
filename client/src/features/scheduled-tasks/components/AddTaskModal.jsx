@@ -51,7 +51,7 @@ export default function AddTaskModal({ mode, conversation, onClose }) {
     setPickerOpen(false);
   }
 
-  async function submit() {
+  function submit() {
     let contactId, customerName;
     if (mode === 'page') {
       contactId = selectedContactId;
@@ -66,18 +66,18 @@ export default function AddTaskModal({ mode, conversation, onClose }) {
     const text = taskText.trim();
     if (!text) return showToast(t('addModal.taskTextRequired'), 'error');
     if (!dueDate) return showToast(t('addModal.dueDateRequired'), 'error');
+    if (saving) return;
 
     setSaving(true);
-    try {
-      await addTask(contactId, text, dueDate, customerName);
-      showToast(t('addModal.addSuccess'), 'success');
-      onClose();
-    } catch (err) {
-      console.error('[API] submitScheduledTask error:', err);
-      showToast(err.response?.data?.error || t('addModal.addFailed'), 'error');
-    } finally {
-      setSaving(false);
-    }
+    // Optimistic: التاسك بتظهر فورًا في اللستة (شوف addTask في الـ store)،
+    // فبنقفل المودال على طول من غير ما نستنى رد السيرفر
+    onClose();
+    addTask(contactId, text, dueDate, customerName)
+      .then(() => showToast(t('addModal.addSuccess'), 'success'))
+      .catch((err) => {
+        console.error('[API] submitScheduledTask error:', err);
+        showToast(err.response?.data?.error || t('addModal.addFailed'), 'error');
+      });
   }
 
   return (

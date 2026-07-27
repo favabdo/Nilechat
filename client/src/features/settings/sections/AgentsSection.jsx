@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UserPlus, Copy, Pencil, Trash2, Check } from 'lucide-react';
 import { agentsSettingsApi } from '../services/settings.service';
@@ -23,6 +23,7 @@ export default function AgentsSection() {
   const [inviteLinks, setInviteLinks] = useState({});
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const deleteTargetRef = useRef(null);
   const [editingNameId, setEditingNameId] = useState(null);
   const [nameDraft, setNameDraft] = useState('');
 
@@ -56,23 +57,29 @@ export default function AgentsSection() {
   }
 
   async function changeRole(id, role) {
+    const previous = agents;
+    setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, role: Number(role), _pending: true } : a)));
     try {
       const data = await agentsSettingsApi.update(id, { role: Number(role) });
-      setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, role: data.user.role } : a)));
+      setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, role: data.user.role, _pending: false } : a)));
       showToast(t('agents.roleChangedSuccess'), 'success');
     } catch (err) {
       console.error('[API] changeAgentRole error:', err);
+      setAgents(previous);
       showToast(err.response?.data?.error || t('agents.roleChangeFailed'), 'error');
     }
   }
 
   async function changeStatus(id, status) {
+    const previous = agents;
+    setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, status, _pending: true } : a)));
     try {
       const data = await agentsSettingsApi.update(id, { status });
-      setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, status: data.user.status } : a)));
+      setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, status: data.user.status, _pending: false } : a)));
       showToast(t('agents.statusUpdatedSuccess'), 'success');
     } catch (err) {
       console.error('[API] changeAgentStatus error:', err);
+      setAgents(previous);
       showToast(err.response?.data?.error || t('agents.statusChangeFailed'), 'error');
     }
   }
@@ -80,12 +87,15 @@ export default function AgentsSection() {
   async function saveOwnName(id) {
     const trimmed = nameDraft.trim();
     if (!trimmed) return setEditingNameId(null);
+    const previous = agents;
+    setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, display_name: trimmed } : a)));
+    setEditingNameId(null);
     try {
       const data = await agentsSettingsApi.update(id, { display_name: trimmed });
       setAgents((prev) => prev.map((a) => (a.id === id ? { ...a, display_name: data.user.display_name } : a)));
-      setEditingNameId(null);
       showToast(t('agents.nameUpdatedSuccess'), 'success');
     } catch (err) {
+      setAgents(previous);
       showToast(err.response?.data?.error || t('agents.nameUpdateFailed'), 'error');
     }
   }
@@ -198,6 +208,7 @@ export default function AgentsSection() {
                           className="iw-input"
                           style={{ padding: '6px 8px', fontSize: 12, width: 'auto' }}
                           value={a.role}
+                          disabled={a._pending}
                           onChange={(e) => changeRole(a.id, e.target.value)}
                         >
                           <option value={2}>{t('agents.roleOptions.agent')}</option>
@@ -215,6 +226,7 @@ export default function AgentsSection() {
                           className="iw-input"
                           style={{ padding: '6px 8px', fontSize: 12, width: 'auto' }}
                           value={isActive ? 'active' : 'inactive'}
+                          disabled={a._pending}
                           onChange={(e) => changeStatus(a.id, e.target.value)}
                         >
                           <option value="active">{t('agents.statusOptions.active')}</option>
@@ -255,7 +267,11 @@ export default function AgentsSection() {
                           title={t('agents.deleteAgent')}
                           aria-label={t('agents.deleteAgent')}
                           style={{ color: 'var(--danger)' }}
-                          onClick={() => setDeleteTarget(a)}
+                          disabled={a._pending}
+                          onClick={() => {
+                            deleteTargetRef.current = a;
+                            setDeleteTarget(a);
+                          }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -273,9 +289,17 @@ export default function AgentsSection() {
         <DeleteAgentModal
           agent={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onDeleted={(id) => {
-            setAgents((prev) => prev.filter((a) => a.id !== id));
-            setDeleteTarget(null);
+          onDeleted={(id, opts) => {
+            if (opts?.optimistic) {
+              setAgents((prev) => prev.filter((a) => a.id !== id));
+              setDeleteTarget(null);
+              return;
+            }
+            if (opts?.rollback) {
+              setAgents((prev) => (prev.some((a) => a.id === id) ? prev : [...prev, deleteTargetRef.current].filter(Boolean)));
+              showToast(opts.error || t('agents.deleteFailed'), 'error');
+              return;
+            }
             showToast(t('agents.deleteSuccess'), 'success');
           }}
         />

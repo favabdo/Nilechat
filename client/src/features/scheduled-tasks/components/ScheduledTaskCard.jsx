@@ -21,7 +21,7 @@ export default function ScheduledTaskCard({ t: task, ended, onEnd }) {
   }
 
   return (
-    <div className={`sched-task-card${ended ? ' ended' : ''}`}>
+    <div className={`sched-task-card${ended ? ' ended' : ''}${task._pending ? ' opt-pending' : ''}`}>
       <div className="sched-task-customer">
         <UserRoundSearch size={16} />
         <span
@@ -68,7 +68,7 @@ export default function ScheduledTaskCard({ t: task, ended, onEnd }) {
             )}
           </span>
         ) : (
-          <button className="sched-end-btn" onClick={() => onEnd(task.id, task.contact_id)}>
+          <button className="sched-end-btn" disabled={task._pending} onClick={() => onEnd(task.id, task.contact_id)}>
             <Check size={13} />
             {t('card.endTask')}
           </button>

@@ -13,22 +13,34 @@ export default function AddMaintenanceContractModal({ contactId, contactName, on
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  async function submit() {
+  function submit() {
     setError('');
     if (!startDate) return setError(t('addContractModal.errors.startRequired'));
     if (!endDate) return setError(t('addContractModal.errors.endRequired'));
     if (new Date(endDate) < new Date(startDate)) return setError(t('addContractModal.errors.endBeforeStart'));
+    if (saving) return;
 
     setSaving(true);
-    try {
-      const data = await customerDetailsApi.addMaintenanceContract(contactId, { startDate, endDate, notes: notes.trim() || undefined });
-      onAdded(data.contact);
-    } catch (err) {
-      console.error('[API] submitMaintenanceContract error:', err);
-      setError(err.response?.data?.error || t('addContractModal.errors.genericError'));
-    } finally {
-      setSaving(false);
-    }
+    const tempId = `temp_${Date.now()}`;
+    const optimisticContract = {
+      id: tempId,
+      start_date: startDate,
+      end_date: endDate,
+      notes: notes.trim() || null,
+      status: 'active',
+      _pending: true,
+    };
+    // Optimistic: العقد الجديد بيظهر فورًا في اللستة (بحالة pending)، والمودال
+    // بيتقفل على طول من غير ما نستنى رد السيرفر
+    onAdded({ optimistic: true, tempContract: optimisticContract });
+
+    customerDetailsApi
+      .addMaintenanceContract(contactId, { startDate, endDate, notes: notes.trim() || undefined })
+      .then((data) => onAdded({ confirmed: true, tempId, data: data.contact }))
+      .catch((err) => {
+        console.error('[API] submitMaintenanceContract error:', err);
+        onAdded({ rollback: true, tempId, error: err.response?.data?.error || t('addContractModal.errors.genericError') });
+      });
   }
 
   return (

@@ -40,15 +40,18 @@ export default function InboxesSection() {
     }
   }
 
-  async function deleteInbox(id) {
+  function deleteInbox(id) {
     if (!window.confirm(t('inboxes.confirmDelete'))) return;
-    try {
-      await inboxesApi.remove(id);
-      load();
-    } catch (err) {
-      console.error('[API] iwDeleteInbox error:', err);
-      showToast(err.response?.data?.error || t('inboxes.deleteFailed'), 'error');
-    }
+    const previous = inboxes;
+    // Optimistic: الإنبوكس بيختفي من الجدول فورًا، ولو الحذف فشل بنرجّعه
+    setInboxes((prev) => prev.filter((i) => i.id !== id));
+    inboxesApi
+      .remove(id)
+      .catch((err) => {
+        console.error('[API] iwDeleteInbox error:', err);
+        setInboxes(previous);
+        showToast(err.response?.data?.error || t('inboxes.deleteFailed'), 'error');
+      });
   }
 
   return (
