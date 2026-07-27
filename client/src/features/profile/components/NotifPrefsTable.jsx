@@ -1,15 +1,23 @@
 import { useTranslation } from 'react-i18next';
 
 const NOTIF_PREF_KEYS = [
+  'login',
   'conversation_created',
   'conversation_assigned',
   'conversation_mention',
   'assigned_conversation_message',
   'participating_conversation_message',
+  'conversation_reply_activity',
   'contact_created',
   'contact_updated',
   'scheduled_task_created',
   'settings_updated',
+  'team_updated',
+  'inbox_updated',
+  'label_updated',
+  'canned_response_updated',
+  'resolve_category_updated',
+  'webhook_updated',
 ];
 
 export default function NotifPrefsTable({ prefs, onToggle }) {

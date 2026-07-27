@@ -372,14 +372,14 @@ async function reply(req, res) {
         },
       }).catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
 
-      // "أي إضافة رد" — نشاط عام يوصل لكل الإيجنتس (audit log)
+      // "أي إضافة رد" — نشاط عام يوصل لكل الإيجنتس اللي مفعّلين النوع ده (audit log)
       if (senderInfo) {
-        notificationService.broadcastActivity({
-          actorId: senderInfo.id,
-          actorName: senderInfo.name,
-          action: `رد على محادثة مع ${conversation.contact_name || conversation.contact_number}`,
-          referenceId: conversation.id,
-        });
+        notificationService.notifyTypedActivity(
+          req,
+          notificationService.NOTIFICATION_TYPES.CONVERSATION_REPLY_ACTIVITY,
+          `رد على محادثة مع ${conversation.contact_name || conversation.contact_number}`,
+          conversation.id
+        );
       }
     })
     .catch((err) => {
@@ -456,12 +456,12 @@ async function replyMedia(req, res) {
       }).catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
 
       if (senderInfo) {
-        notificationService.broadcastActivity({
-          actorId: senderInfo.id,
-          actorName: senderInfo.name,
-          action: `رد بملف (${messageType}) على محادثة مع ${conversation.contact_name || conversation.contact_number}`,
-          referenceId: conversation.id,
-        });
+        notificationService.notifyTypedActivity(
+          req,
+          notificationService.NOTIFICATION_TYPES.CONVERSATION_REPLY_ACTIVITY,
+          `رد بملف (${messageType}) على محادثة مع ${conversation.contact_name || conversation.contact_number}`,
+          conversation.id
+        );
       }
     })
     .catch((err) => {

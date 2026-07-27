@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Bell, BellOff, MessageCirclePlus, UserCheck, AtSign, Inbox, MessagesSquare, LogIn, Activity, CheckCheck, UserPlus, UserCog, CalendarPlus, Settings } from 'lucide-react';
+import { Bell, BellOff, MessageCirclePlus, UserCheck, AtSign, Inbox, MessagesSquare, LogIn, Activity, CheckCheck, UserPlus, UserCog, CalendarPlus, Settings, Users, Tag, MessageSquareText, Ban, Webhook, Reply } from 'lucide-react';
 import Modal from '../../../components/ui/Modal';
 import useNotificationsStore from '../store/notificationsStore';
 import useToastStore from '../../../store/toastStore';
@@ -16,6 +16,13 @@ const NOTIFICATION_TYPE_ICONS = {
   contact_updated: UserCog,
   scheduled_task_created: CalendarPlus,
   settings_updated: Settings,
+  team_updated: Users,
+  inbox_updated: Inbox,
+  label_updated: Tag,
+  canned_response_updated: MessageSquareText,
+  resolve_category_updated: Ban,
+  webhook_updated: Webhook,
+  conversation_reply_activity: Reply,
 };
 
 function timeAgo(dateStr, t) {

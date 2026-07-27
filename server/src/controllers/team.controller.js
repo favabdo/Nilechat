@@ -32,7 +32,7 @@ async function create(req, res) {
   res.status(201).json(created);
 
   broadcastTeamsList(req);
-  notificationService.logActivity(req, `أنشأ تيم جديد باسم "${created.name}"`, created.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.TEAM_UPDATED, `أنشأ تيم جديد باسم "${created.name}"`, created.id);
 }
 
 async function update(req, res) {
@@ -54,7 +54,7 @@ async function update(req, res) {
   res.json(updated);
 
   broadcastTeamsList(req);
-  notificationService.logActivity(req, `عدّل بيانات تيم "${updated.name}"`, updated.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.TEAM_UPDATED, `عدّل بيانات تيم "${updated.name}"`, updated.id);
 }
 
 async function remove(req, res) {
@@ -63,7 +63,7 @@ async function remove(req, res) {
   res.json({ ok: true });
 
   broadcastTeamsList(req);
-  notificationService.logActivity(req, 'مسح تيم', req.params.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.TEAM_UPDATED, 'مسح تيم', req.params.id);
 }
 
 // بتبعت قايمة التيمز المحدّثة لكل الإيجنتس المتصلين لحظيًا (زي فكرة الليبلز بالظبط)

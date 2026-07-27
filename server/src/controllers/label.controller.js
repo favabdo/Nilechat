@@ -24,7 +24,7 @@ async function create(req, res) {
   res.status(201).json(created);
 
   broadcastLabelsList(req);
-  notificationService.logActivity(req, `أضاف ليبل جديد "${created.name}"`, created.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.LABEL_UPDATED, `أضاف ليبل جديد "${created.name}"`, created.id);
 }
 
 async function update(req, res) {
@@ -40,7 +40,7 @@ async function update(req, res) {
   res.json(updated);
 
   broadcastLabelsList(req);
-  notificationService.logActivity(req, `عدّل ليبل "${updated.name}"`, updated.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.LABEL_UPDATED, `عدّل ليبل "${updated.name}"`, updated.id);
 }
 
 async function remove(req, res) {
@@ -48,7 +48,7 @@ async function remove(req, res) {
   res.json({ ok: true });
 
   broadcastLabelsList(req);
-  notificationService.logActivity(req, 'مسح ليبل', req.params.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.LABEL_UPDATED, 'مسح ليبل', req.params.id);
 }
 
 // بتبعت كل قايمة الليبلز المحدّثة لكل الإيجنتس المتصلين — عشان أي ليبل يتضاف/يتعدل/

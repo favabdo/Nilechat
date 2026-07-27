@@ -69,6 +69,7 @@ function resolveDisplayName(user) {
 
 // القيم الافتراضية لتفضيلات الإشعارات — لو اليوزر لسه معملش أي تعديل عليها
 const DEFAULT_NOTIFICATION_PREFS = {
+  login: { email: false, push: true },
   conversation_created: { email: false, push: true },
   conversation_assigned: { email: false, push: true },
   conversation_mention: { email: false, push: true },
@@ -78,6 +79,13 @@ const DEFAULT_NOTIFICATION_PREFS = {
   contact_updated: { email: false, push: true },
   scheduled_task_created: { email: false, push: true },
   settings_updated: { email: false, push: true },
+  team_updated: { email: false, push: true },
+  inbox_updated: { email: false, push: true },
+  label_updated: { email: false, push: true },
+  canned_response_updated: { email: false, push: true },
+  resolve_category_updated: { email: false, push: true },
+  webhook_updated: { email: false, push: true },
+  conversation_reply_activity: { email: false, push: true },
 };
 
 function parseNotificationPrefs(raw) {

@@ -19,7 +19,7 @@ async function create(req, res) {
     createdBy: req.user.userId,
   });
   res.status(201).json(created);
-  notificationService.logActivity(req, `أضاف تصنيف إغلاق جديد "${created.name}"`, created.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.RESOLVE_CATEGORY_UPDATED, `أضاف تصنيف إغلاق جديد "${created.name}"`, created.id);
 }
 
 async function update(req, res) {
@@ -34,13 +34,13 @@ async function update(req, res) {
   });
   if (!updated) return res.status(404).json({ error: 'التصنيف ده مش موجود' });
   res.json(updated);
-  notificationService.logActivity(req, `عدّل تصنيف إغلاق "${updated.name}"`, updated.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.RESOLVE_CATEGORY_UPDATED, `عدّل تصنيف إغلاق "${updated.name}"`, updated.id);
 }
 
 async function remove(req, res) {
   await repo.deleteResolveCategory(req.params.id);
   res.json({ ok: true });
-  notificationService.logActivity(req, 'مسح تصنيف إغلاق', req.params.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.RESOLVE_CATEGORY_UPDATED, 'مسح تصنيف إغلاق', req.params.id);
 }
 
 // بيستقبل { orderedIds: [3,1,2,...] } بالترتيب الجديد بعد السحب في الواجهة

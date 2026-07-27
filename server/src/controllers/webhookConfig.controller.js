@@ -63,7 +63,7 @@ async function create(req, res) {
   });
 
   res.json({ ok: true, webhook });
-  notificationService.logActivity(req, `أضاف Webhook جديد على ${webhook.url}`, webhook.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.WEBHOOK_UPDATED, `أضاف Webhook جديد على ${webhook.url}`, webhook.id);
 }
 
 async function update(req, res) {
@@ -92,7 +92,7 @@ async function update(req, res) {
 
   const webhook = await webhookConfigRepo.update(req.params.id, fields);
   res.json({ ok: true, webhook });
-  notificationService.logActivity(req, `عدّل إعدادات Webhook (${webhook.url})`, webhook.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.WEBHOOK_UPDATED, `عدّل إعدادات Webhook (${webhook.url})`, webhook.id);
 }
 
 async function remove(req, res) {
@@ -101,7 +101,7 @@ async function remove(req, res) {
 
   await webhookConfigRepo.remove(req.params.id);
   res.json({ ok: true });
-  notificationService.logActivity(req, `مسح Webhook (${existing.url})`, req.params.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.WEBHOOK_UPDATED, `مسح Webhook (${existing.url})`, req.params.id);
 }
 
 // بتولّد secret جديد للـ Webhook (لو حصل تسريب مثلاً واليوزر عايز يغيّره)

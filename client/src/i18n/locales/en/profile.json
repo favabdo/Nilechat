@@ -73,6 +73,7 @@
     "email": "Email",
     "push": "Push",
     "labels": {
+      "login": "A new login to your account",
       "conversation_created": "A new conversation is created",
       "conversation_assigned": "A conversation is assigned to you",
       "conversation_mention": "You are mentioned in a conversation",
@@ -81,7 +82,14 @@
       "contact_created": "A new contact/customer is created",
       "contact_updated": "A contact/customer is updated",
       "scheduled_task_created": "A new scheduled task is created",
-      "settings_updated": "Settings are changed"
+      "settings_updated": "Settings are changed",
+      "team_updated": "A team is created/updated/deleted",
+      "inbox_updated": "An inbox is created/updated/deleted",
+      "label_updated": "A label is created/updated/deleted",
+      "canned_response_updated": "A canned response is created/updated/deleted",
+      "resolve_category_updated": "A resolve category is created/updated/deleted",
+      "webhook_updated": "A webhook is created/updated/deleted",
+      "conversation_reply_activity": "Any reply is sent on a conversation (general activity)"
     }
   },
   "accessToken": {

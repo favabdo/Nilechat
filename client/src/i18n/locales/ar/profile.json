@@ -73,6 +73,7 @@
     "email": "البريد الإلكتروني",
     "push": "الإشعار الفوري",
     "labels": {
+      "login": "تسجيل دخول جديد لحسابك",
       "conversation_created": "إنشاء محادثة جديدة",
       "conversation_assigned": "إسناد محادثة إليك",
       "conversation_mention": "الإشارة إليك في محادثة",
@@ -81,7 +82,14 @@
       "contact_created": "إنشاء عميل جديد",
       "contact_updated": "تعديل على عميل",
       "scheduled_task_created": "إنشاء تاسك مجدول جديد",
-      "settings_updated": "تعديل في الإعدادات"
+      "settings_updated": "تعديل في الإعدادات",
+      "team_updated": "إنشاء/تعديل/مسح تيم",
+      "inbox_updated": "إنشاء/تعديل/مسح Inbox",
+      "label_updated": "إنشاء/تعديل/مسح ليبل",
+      "canned_response_updated": "إنشاء/تعديل/مسح رد جاهز",
+      "resolve_category_updated": "إنشاء/تعديل/مسح تصنيف إغلاق",
+      "webhook_updated": "إنشاء/تعديل/مسح Webhook",
+      "conversation_reply_activity": "أي رد على محادثة (نشاط عام)"
     }
   },
   "accessToken": {

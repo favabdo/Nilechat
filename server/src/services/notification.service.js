@@ -19,6 +19,13 @@ const NOTIFICATION_TYPES = {
   CONTACT_UPDATED: 'contact_updated',
   SCHEDULED_TASK_CREATED: 'scheduled_task_created',
   SETTINGS_UPDATED: 'settings_updated',
+  TEAM_UPDATED: 'team_updated',
+  INBOX_UPDATED: 'inbox_updated',
+  LABEL_UPDATED: 'label_updated',
+  CANNED_RESPONSE_UPDATED: 'canned_response_updated',
+  RESOLVE_CATEGORY_UPDATED: 'resolve_category_updated',
+  WEBHOOK_UPDATED: 'webhook_updated',
+  CONVERSATION_REPLY_ACTIVITY: 'conversation_reply_activity',
 };
 
 // عنوان ثابت لكل نوع من الأنواع الجديدة دي (يتعرض في الإشعار نفسه)
@@ -27,6 +34,13 @@ const ACTIVITY_TYPE_TITLES = {
   [NOTIFICATION_TYPES.CONTACT_UPDATED]: 'تعديل على عميل',
   [NOTIFICATION_TYPES.SCHEDULED_TASK_CREATED]: 'تاسك جديد',
   [NOTIFICATION_TYPES.SETTINGS_UPDATED]: 'تعديل في الإعدادات',
+  [NOTIFICATION_TYPES.TEAM_UPDATED]: 'تعديل على تيم',
+  [NOTIFICATION_TYPES.INBOX_UPDATED]: 'تعديل على Inbox',
+  [NOTIFICATION_TYPES.LABEL_UPDATED]: 'تعديل على ليبل',
+  [NOTIFICATION_TYPES.CANNED_RESPONSE_UPDATED]: 'تعديل على رد جاهز',
+  [NOTIFICATION_TYPES.RESOLVE_CATEGORY_UPDATED]: 'تعديل على تصنيف إغلاق',
+  [NOTIFICATION_TYPES.WEBHOOK_UPDATED]: 'تعديل على Webhook',
+  [NOTIFICATION_TYPES.CONVERSATION_REPLY_ACTIVITY]: 'رد على محادثة',
 };
 
 // io بتاع socket.io — بيتظبط مرة واحدة من app.js وقت الإقلاع عشان الخدمة دي تقدر
@@ -83,68 +97,47 @@ async function notifyEvent(type, { title, message, referenceId = null, targetUse
   );
 }
 
-// إشعار تسجيل الدخول — بيتسجل دايمًا (In-App) بغض النظر عن تفضيلات اليوزر، لأنه
-// إشعار أمان أساسي مش حدث عادي
+// إشعار تسجيل الدخول — زي أي نوع تاني بالظبط، بيتبعت بس لو اليوزر مفعّل النوع
+// ده (login) من تفضيلاته في البروفايل
 async function notifyLogin(user, { ip = null } = {}) {
   try {
+    const userId = user.userId || user.id;
+    const [prefs, fullUser] = await Promise.all([
+      userRepo.getNotificationPrefs(userId),
+      userRepo.findUserById(userId),
+    ]);
+    const pref = (prefs && prefs[NOTIFICATION_TYPES.LOGIN]) || { email: false, push: false };
+    if (!pref.push && !pref.email) return;
+
     const time = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
-    const notification = await notificationRepo.createNotification({
-      userId: user.userId || user.id,
-      type: NOTIFICATION_TYPES.LOGIN,
-      title: 'تسجيل دخول جديد',
-      message: `تم تسجيل الدخول لحسابك بتاريخ ${time}${ip ? ` من عنوان IP: ${ip}` : ''}`,
-    });
-    emitToUser(user.userId || user.id, notification);
+    const title = 'تسجيل دخول جديد';
+    const message = `تم تسجيل الدخول لحسابك بتاريخ ${time}${ip ? ` من عنوان IP: ${ip}` : ''}`;
+
+    if (pref.push) {
+      const notification = await notificationRepo.createNotification({
+        userId,
+        type: NOTIFICATION_TYPES.LOGIN,
+        title,
+        message,
+      });
+      emitToUser(userId, notification);
+    }
+
+    if (pref.email && fullUser?.email) {
+      mailerService
+        .sendNotificationEmail({ to: fullUser.email, title, message })
+        .catch((err) => logger.error('❌ فشل إرسال إيميل إشعار تسجيل الدخول:', err.message));
+    }
   } catch (err) {
     logger.error('❌ فشل تسجيل إشعار تسجيل الدخول:', err.message);
   }
 }
 
-// نشاط عام (رد جديد اتبعت / تغيير في الإعدادات) — بيوصل لكل الإيجنتس النشطين
-// (audit log مرئي للجميع)، بغض النظر عن تفضيلات الإشعارات الشخصية بتاعتهم
-async function broadcastActivity({ actorId, actorName, action, referenceId = null }) {
-  try {
-    const users = await userRepo.listUsers();
-    const activeUserIds = (users || [])
-      .filter((u) => u.status === 'active')
-      .map((u) => u.id);
-    if (activeUserIds.length === 0) return;
-
-    const title = 'نشاط جديد';
-    const message = `${actorName || 'أحد الإيجنتس'} ${action}`;
-
-    const notifications = await notificationRepo.createNotificationForUsers(activeUserIds, {
-      type: NOTIFICATION_TYPES.ACTIVITY,
-      title,
-      message,
-      referenceId,
-      actorId,
-      actorName,
-    });
-    notifications.forEach((n) => emitToUser(n.user_id, n));
-  } catch (err) {
-    logger.error('❌ فشل تسجيل نشاط عام (broadcastActivity):', err.message);
-  }
-}
-
-// اختصار: بيجيب اسم الإيجنت من req.user.userId ويعمل broadcastActivity — مستخدم
-// من كل الكونترولرز اللي بتغيّر إعدادات عامة (تيمز/إنبوكسز/ويبهوكس/ليبلز...)
-async function logActivity(req, action, referenceId = null) {
-  try {
-    const actingUser = await userRepo.findUserById(req.user.userId);
-    const actorName = actingUser ? userRepo.resolveDisplayName(actingUser) : req.user.email;
-    await broadcastActivity({ actorId: req.user.userId, actorName, action, referenceId });
-  } catch (err) {
-    logger.error('❌ فشل تسجيل نشاط (logActivity):', err.message);
-  }
-}
-
-// زي logActivity تمامًا (بيتبعت لكل الإيجنتس النشطين، وبيتضمّن اسم الإيجنت اللي
-// عمل الحدث)، لكن — خلاف logActivity/broadcastActivity — بيحترم تفضيلات كل
-// يوزر (push/email) بتاعة النوع ده بالظبط بدل ما يفرض الإشعار على الكل. ده
-// اللي بيتستخدم للأنواع الجديدة (عميل جديد/تعديل عميل/تاسك جديد/تعديل
-// إعدادات) عشان لو حد قفل نوع معين من الإشعارات فعلاً ميوصلوش، لا Push ولا
-// إيميل ولا حتى صف في صفحة الإشعارات
+// اختصار: بيجيب اسم الإيجنت من req.user.userId ويعمل notifyTypedActivity —
+// مستخدم من كل الكونترولرز اللي بتغيّر إعدادات عامة (تيمز/إنبوكسز/ويبهوكس/
+// ليبلز/ردود جاهزة/تصنيفات إغلاق/عملاء/تاسكس/إعدادات). بيحترم تفضيلات كل
+// يوزر (push/email) بتاعة النوع ده بالظبط: لو حد قافل نوع معين من الإشعارات
+// فعلاً ميوصلوش — لا Push ولا إيميل ولا حتى صف في صفحة الإشعارات
 async function notifyTypedActivity(req, type, action, referenceId = null) {
   try {
     const actingUser = await userRepo.findUserById(req.user.userId);
@@ -173,7 +166,5 @@ module.exports = {
   setIo,
   notifyEvent,
   notifyLogin,
-  broadcastActivity,
-  logActivity,
   notifyTypedActivity,
 };

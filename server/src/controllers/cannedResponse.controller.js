@@ -18,7 +18,7 @@ async function create(req, res) {
     createdBy: req.user.userId,
   });
   res.status(201).json(created);
-  notificationService.logActivity(req, `أضاف رد جاهز جديد "${created.label}"`, created.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CANNED_RESPONSE_UPDATED, `أضاف رد جاهز جديد "${created.label}"`, created.id);
 }
 
 async function update(req, res) {
@@ -32,13 +32,13 @@ async function update(req, res) {
   });
   if (!updated) return res.status(404).json({ error: 'الرد ده مش موجود' });
   res.json(updated);
-  notificationService.logActivity(req, `عدّل رد جاهز "${updated.label}"`, updated.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CANNED_RESPONSE_UPDATED, `عدّل رد جاهز "${updated.label}"`, updated.id);
 }
 
 async function remove(req, res) {
   await repo.deleteCannedResponse(req.params.id);
   res.json({ ok: true });
-  notificationService.logActivity(req, 'مسح رد جاهز', req.params.id);
+  notificationService.notifyTypedActivity(req, notificationService.NOTIFICATION_TYPES.CANNED_RESPONSE_UPDATED, 'مسح رد جاهز', req.params.id);
 }
 
 // بيستقبل { orderedIds: [3,1,2,...] } بالترتيب الجديد بعد السحب في الواجهة
