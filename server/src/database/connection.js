@@ -338,6 +338,34 @@ async function ensureMessagesHaveMediaColumns() {
   }
 }
 
+// بيضيف الإندكسات الناقصة على جدول الرسائل: conversation_id (بيتفلتر بيه في كل
+// فتح شات، وبيتحدّث بيه last_message_at) و wa_message_id (بيتدور بيه مع كل
+// status update جاي من ميتا). من غيرهم بتحصل full table scan على الجدول ده مع
+// نمو عدد الرسائل — تحسين أداء بحت، مفيش أي تغيير في المنطق أو النتائج، بس بيسرّع
+// نفس الاستعلامات اللي شغالة أصلاً (لازم تتنفذ بعد ما عمود conversation_id يتضاف
+// فعليًا لو الجدول قديم — شوف ترتيبها في ensureSchema تحت)
+async function ensureMessagesHaveIndexes() {
+  const pool = await getPool();
+  await pool.request().query(`
+    IF NOT EXISTS (
+      SELECT * FROM sys.indexes
+      WHERE object_id = OBJECT_ID('dbo.${TABLE_NAME}') AND name = 'IX_${TABLE_NAME}_conversation_id'
+    )
+    BEGIN
+      CREATE INDEX IX_${TABLE_NAME}_conversation_id ON [dbo].[${TABLE_NAME}](conversation_id);
+    END
+  `);
+  await pool.request().query(`
+    IF NOT EXISTS (
+      SELECT * FROM sys.indexes
+      WHERE object_id = OBJECT_ID('dbo.${TABLE_NAME}') AND name = 'IX_${TABLE_NAME}_wa_message_id'
+    )
+    BEGIN
+      CREATE INDEX IX_${TABLE_NAME}_wa_message_id ON [dbo].[${TABLE_NAME}](wa_message_id);
+    END
+  `);
+}
+
 // ===== الكونتاكتس (العملاء الحقيقيين) =====
 // كونتاكت ممكن يبقى ليه أكتر من رقم واحد مرتبط بيه (لو العميل بعت من رقم جديد وربطناه بنفس الكونتاكت القديم)
 async function ensureContactsTableExists() {
@@ -1170,6 +1198,7 @@ async function ensureSchema() {
   await ensureMessagesHaveSenderColumns();
   await ensureMessagesHaveMediaColumns();
   await ensureMessagesHavePostResolveColumn();
+  await ensureMessagesHaveIndexes();
   await ensureInboxesTableExists();
   await ensureInboxesHaveExtraColumns();
   await ensureInboxAgentsTableExists();
@@ -1219,6 +1248,7 @@ module.exports = {
   ensureUsersTableExists,
   ensureMessagesHaveConversationColumn,
   ensureMessagesHaveSenderColumns,
+  ensureMessagesHaveIndexes,
   ensureMessagesHaveMediaColumns,
   ensureMessagesHavePostResolveColumn,
   ensureInboxesTableExists,

@@ -216,6 +216,26 @@ async function listConversations(hideRatingMessages = false) {
 }
 
 
+// نسخة خفيفة من getConversationById لمسار "بعت رد" (reply/reply-media) بس —
+// المسار ده مش محتاج غير 5 أعمدة (id, contact_number, contact_name, inbox_id,
+// locked_at)، ومش بيستخدم أسماء الإيجنت المعين/اللي عمل resolve، اسم الـ Inbox،
+// بيانات الكونتاكت (location/VIP/فروع)، ولا تواريخ عقد الصيانة — كل دي بس لازمة
+// لشاشة تفاصيل المحادثة الكاملة (getConversationById الأصلية). استعلام واحد،
+// من غير أي LEFT JOIN ولا OUTER APPLY ولا رحلة تانية للداتابيز لجلب الفروع —
+// نفس النتيجة بالظبط للحقول اللي reply() فعليًا بيستخدمها، بس أسرع بكتير.
+async function getConversationForReply(id) {
+  const pool = await getPool();
+  const result = await pool
+    .request()
+    .input('id', sql.BigInt, id)
+    .query(`
+      SELECT id, contact_number, contact_name, inbox_id, locked_at
+      FROM [dbo].[NileChat_Conversations_byA]
+      WHERE id = @id
+    `);
+  return result.recordset[0] || null;
+}
+
 async function getConversationById(id) {
   const pool = await getPool();
   const result = await pool
@@ -603,6 +623,7 @@ module.exports = {
   touchConversation,
   listConversations,
   getConversationById,
+  getConversationForReply,
   assignConversation,
   resolveConversation,
   reopenConversation,

@@ -35,18 +35,20 @@ async function sendReply(conversation, text, sender) {
 // ما تستنى ميتا، وبعدين تكمل الإرسال الفعلي في الخلفية وتنادي onFinalized
 // بالحالة النهائية (sent/failed) أول ما توصل — عشان الكنترولر يقدر يبعت
 // حدثين منفصلين على الـ socket: واحد فوري ("بيتبعت")، وواحد لما فعلاً يتبعت/يفشل
-async function sendReplyLive(conversation, text, sender, onFinalized) {
+async function sendReplyLive(conversation, text, sender, onFinalized, timer) {
   // بنسجل الرسالة وبنحدّث آخر وقت للمحادثة في نفس الوقت (مش الواحدة بعد التانية)
   // — الاتنين مش معتمدين على نتيجة بعض، والفرق ده بيوفر رحلة كاملة (round trip) للداتابيز
+  const insertPromise = whatsappService.createOutgoingMessage(
+    conversation.contact_number,
+    text,
+    conversation.id,
+    conversation.inbox_id,
+    sender
+  );
+  const touchPromise = conversationRepo.touchConversation(conversation.id);
   const [savedMessage] = await Promise.all([
-    whatsappService.createOutgoingMessage(
-      conversation.contact_number,
-      text,
-      conversation.id,
-      conversation.inbox_id,
-      sender
-    ),
-    conversationRepo.touchConversation(conversation.id),
+    timer ? timer.time('sql:insert_outgoing_message', insertPromise) : insertPromise,
+    timer ? timer.time('sql:touch_conversation', touchPromise) : touchPromise,
   ]);
 
   // مش بنعمل await هنا عمدًا — الكنترولر لازم يرجع للإيجنت فورًا من غير ما يستنى ميتا
@@ -55,9 +57,13 @@ async function sendReplyLive(conversation, text, sender, onFinalized) {
       savedMessage,
       { toNumber: conversation.contact_number, text, inboxId: conversation.inbox_id },
       async (finalRow) => {
-        if (finalRow) await conversationRepo.touchConversation(conversation.id);
+        if (finalRow) {
+          const p = conversationRepo.touchConversation(conversation.id);
+          await (timer ? timer.time('sql:touch_conversation_after_deliver', p) : p);
+        }
         if (onFinalized) onFinalized(finalRow);
-      }
+      },
+      timer
     )
     .catch(() => {
       /* أي استثناء غير متوقع اتلقط واتسجل جوه deliverOutgoingMessage نفسها بالفعل */
@@ -70,18 +76,20 @@ async function sendReplyLive(conversation, text, sender, onFinalized) {
 // بتسجل الرسالة فورًا برابط الملف المحلي (بيظهر في الشات على طول) وترجعها،
 // وفي الخلفية بترفع الملف لواتساب فعليًا وتبعت الرسالة، وتنادي onFinalized
 // بالنتيجة النهائية (sent/failed) عشان الكنترولر يبعتها لايف على الـ socket
-async function sendMediaReplyLive(conversation, fileInfo, sender, onFinalized) {
+async function sendMediaReplyLive(conversation, fileInfo, sender, onFinalized, timer) {
   const { buffer, mimeType, fileName, messageType, caption } = fileInfo;
 
+  const insertPromise = whatsappService.createOutgoingMediaMessage(
+    conversation.contact_number,
+    { messageType, mediaUrl: fileInfo.publicUrl, mimeType, fileName, caption },
+    conversation.id,
+    conversation.inbox_id,
+    sender
+  );
+  const touchPromise = conversationRepo.touchConversation(conversation.id);
   const [savedMessage] = await Promise.all([
-    whatsappService.createOutgoingMediaMessage(
-      conversation.contact_number,
-      { messageType, mediaUrl: fileInfo.publicUrl, mimeType, fileName, caption },
-      conversation.id,
-      conversation.inbox_id,
-      sender
-    ),
-    conversationRepo.touchConversation(conversation.id),
+    timer ? timer.time('sql:insert_outgoing_media_message', insertPromise) : insertPromise,
+    timer ? timer.time('sql:touch_conversation', touchPromise) : touchPromise,
   ]);
 
   whatsappService
@@ -97,9 +105,13 @@ async function sendMediaReplyLive(conversation, fileInfo, sender, onFinalized) {
         inboxId: conversation.inbox_id,
       },
       async (finalRow) => {
-        if (finalRow) await conversationRepo.touchConversation(conversation.id);
+        if (finalRow) {
+          const p = conversationRepo.touchConversation(conversation.id);
+          await (timer ? timer.time('sql:touch_conversation_after_deliver', p) : p);
+        }
         if (onFinalized) onFinalized(finalRow);
-      }
+      },
+      timer
     )
     .catch(() => {
       /* أي استثناء غير متوقع اتلقط واتسجل جوه deliverOutgoingMediaMessage نفسها بالفعل */

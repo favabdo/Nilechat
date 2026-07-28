@@ -14,6 +14,18 @@ const socketService = require('../sockets/socket');
 const env = require('../config/env');
 const logger = require('../utils/logger');
 
+// بيطبع تقرير التوقيت الحقيقي في اللوج دايمًا (بغض النظر عن أي إعداد)، وبيرجّع
+// جسم إضافي (_timing) لو وبس لو: (1) DEBUG_TIMING=true في الـ env، و(2) الطلب
+// نفسه فيه هيدر x-debug-timing:1. من غير الاتنين مع بعض، جسم الاستجابة العادي
+// نفسه بالظبط زي ما كان — مفيش أي تغيير افتراضي في شكل الـ API.
+function reportTiming(req, event) {
+  if (!req.timing) return null;
+  const report = req.timing.report(event);
+  logger.info(`⏱️ ${event}`, report);
+  const wantsDebugBody = env.DEBUG_TIMING && req.headers['x-debug-timing'] === '1';
+  return wantsDebugBody ? report : null;
+}
+
 // ===== المحادثات =====
 
 // المحادثة المقفولة (اتعمللها Resolve) مقفولة نهائيًا — أي إجراء عليها (رد/تعيين/
@@ -331,12 +343,17 @@ async function generateReply(req, res) {
 async function reply(req, res) {
   const { text } = req.body;
   if (!text) return res.status(400).json({ error: 'لازم تبعت text' });
+  req.timing?.mark('validation');
 
   // بنجيب المحادثة وبيانات الإيجنت في نفس الوقت (مش الواحدة بعد التانية)
   // لأن الاتنين مستقلين عن بعض تمامًا، وده بيوفر رحلة كاملة (round trip) للداتابيز
   const [conversation, sender] = await Promise.all([
-    conversationRepo.getConversationById(req.params.id),
-    userRepo.findUserById(req.user.userId),
+    req.timing
+      ? req.timing.time('sql:get_conversation_for_reply', conversationRepo.getConversationForReply(req.params.id))
+      : conversationRepo.getConversationForReply(req.params.id),
+    req.timing
+      ? req.timing.time('sql:find_user_by_id', userRepo.findUserById(req.user.userId))
+      : userRepo.findUserById(req.user.userId),
   ]);
   if (!conversation) return res.status(404).json({ error: 'المحادثة مش موجودة' });
 
@@ -346,6 +363,7 @@ async function reply(req, res) {
   if (isConversationLocked(conversation)) {
     return res.status(409).json({ error: LOCKED_ERROR });
   }
+  req.timing?.mark('authorization:lock_check');
 
   const senderInfo = sender ? { id: sender.id, name: userRepo.resolveDisplayName(sender) } : null;
 
@@ -356,16 +374,24 @@ async function reply(req, res) {
   // تأكيدها الحقيقي عن طريق حدث الـ socket 'new_message' مش من رد الـ HTTP ده.
   // لو التسجيل فشل فعليًا في الخلفية (حالة نادرة)، بنبعت 'message_failed' عشان
   // الواجهة توضح للإيجنت إنها معملتش وتحتاج تتبعت تاني.
-  res.json({ ok: true });
+  req.timing?.mark('response:ready_to_send');
+  const preResponseTiming = reportTiming(req, 'reply:pre_response');
+  res.json(preResponseTiming ? { ok: true, _timing: preResponseTiming } : { ok: true });
 
   conversationService
-    .sendReplyLive(conversation, text, senderInfo, () => {})
+    .sendReplyLive(conversation, text, senderInfo, (finalRow) => {
+      // بيتنادى لما مرحلة التسليم الفعلية لواتساب (Graph API) + finalize في
+      // الداتابيز يخلصوا — ده بيحصل بعد الاستجابة بوقت (ثانية أو أكتر أحيانًا)
+      reportTiming(req, 'reply:background_finalized');
+    }, req.timing)
     .then((message) => {
+      req.timing?.mark('background:message_persisted');
       if (io) {
         socketService.emitToConversationRoom(io, conversation.id, 'new_message', { conversationId: conversation.id, message });
         io.emit('conversation_updated', socketService.buildConversationSummary(conversation.id, message));
       }
-      webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
+      req.timing?.mark('background:socket_emit');
+      const webhookPromise = webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
         conversation_id: conversation.id,
         message: {
           id: message.id,
@@ -374,7 +400,9 @@ async function reply(req, res) {
           sent_by: senderInfo,
           created_at: message.created_at,
         },
-      }).catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
+      });
+      (req.timing ? req.timing.time('background:webhook_dispatch', webhookPromise) : webhookPromise)
+        .catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
 
       // "أي إضافة رد" — نشاط عام يوصل لكل الإيجنتس اللي مفعّلين النوع ده (audit log)
       if (senderInfo) {
@@ -385,6 +413,7 @@ async function reply(req, res) {
           conversation.id
         );
       }
+      reportTiming(req, 'reply:background_dispatched');
     })
     .catch((err) => {
       logger.error('❌ فشل تسجيل/إرسال الرد:', err.message);
@@ -408,15 +437,21 @@ async function replyMedia(req, res) {
 
   const caption = (req.body?.caption || '').trim() || null;
   const clientId = req.body?.clientId || null;
+  req.timing?.mark('validation');
 
   const [conversation, sender] = await Promise.all([
-    conversationRepo.getConversationById(req.params.id),
-    userRepo.findUserById(req.user.userId),
+    req.timing
+      ? req.timing.time('sql:get_conversation_for_reply', conversationRepo.getConversationForReply(req.params.id))
+      : conversationRepo.getConversationForReply(req.params.id),
+    req.timing
+      ? req.timing.time('sql:find_user_by_id', userRepo.findUserById(req.user.userId))
+      : userRepo.findUserById(req.user.userId),
   ]);
   if (!conversation) return res.status(404).json({ error: 'المحادثة مش موجودة' });
   if (isConversationLocked(conversation)) {
     return res.status(409).json({ error: LOCKED_ERROR });
   }
+  req.timing?.mark('authorization:lock_check');
 
   const senderInfo = sender ? { id: sender.id, name: userRepo.resolveDisplayName(sender) } : null;
   const messageType = resolveWhatsappMessageType(req.file.mimetype);
@@ -428,9 +463,12 @@ async function replyMedia(req, res) {
     mimeType: req.file.mimetype,
     originalName: req.file.originalname,
   });
+  req.timing?.mark('media:local_save');
 
   const io = req.app.get('io');
-  res.json({ ok: true, clientId });
+  req.timing?.mark('response:ready_to_send');
+  const preResponseTiming = reportTiming(req, 'reply_media:pre_response');
+  res.json(preResponseTiming ? { ok: true, clientId, _timing: preResponseTiming } : { ok: true, clientId });
 
   conversationService
     .sendMediaReplyLive(
@@ -444,14 +482,19 @@ async function replyMedia(req, res) {
         publicUrl,
       },
       senderInfo,
-      () => {}
+      () => {
+        reportTiming(req, 'reply_media:background_finalized');
+      },
+      req.timing
     )
     .then((message) => {
+      req.timing?.mark('background:message_persisted');
       if (io) {
         socketService.emitToConversationRoom(io, conversation.id, 'new_message', { conversationId: conversation.id, message: { ...message, client_id: clientId } });
         io.emit('conversation_updated', socketService.buildConversationSummary(conversation.id, message));
       }
-      webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
+      req.timing?.mark('background:socket_emit');
+      const webhookPromise = webhookDispatchService.dispatchEvent(webhookDispatchService.EVENT_TYPES.MESSAGE_CREATED, {
         conversation_id: conversation.id,
         message: {
           id: message.id,
@@ -460,7 +503,9 @@ async function replyMedia(req, res) {
           sent_by: senderInfo,
           created_at: message.created_at,
         },
-      }).catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
+      });
+      (req.timing ? req.timing.time('background:webhook_dispatch', webhookPromise) : webhookPromise)
+        .catch((err) => logger.error('❌ فشل إرسال Webhook message_created:', err.message));
 
       if (senderInfo) {
         notificationService.notifyTypedActivity(
@@ -470,6 +515,7 @@ async function replyMedia(req, res) {
           conversation.id
         );
       }
+      reportTiming(req, 'reply_media:background_dispatched');
     })
     .catch((err) => {
       logger.error('❌ فشل تسجيل/إرسال رد الوسائط:', err.message);

@@ -81,7 +81,7 @@ async function createOutgoingMessage(toNumber, text, conversationId, inboxId, se
  * -> بتقفلها بحالة 'failed'. الكولباك onFinalized بيتنادى بالنتيجة النهائية
  * عشان اللي استدعى الدالة (الكنترولر) يبعتها لايف على الـ socket فورًا.
  */
-async function deliverOutgoingMessage(savedMessage, { toNumber, text, inboxId }, onFinalized) {
+async function deliverOutgoingMessage(savedMessage, { toNumber, text, inboxId }, onFinalized, timer) {
   let finalRow;
   try {
     const { phoneNumberId, accessToken } = await resolveCredentials(inboxId);
@@ -97,18 +97,20 @@ async function deliverOutgoingMessage(savedMessage, { toNumber, text, inboxId },
       text: { body: text },
     };
 
-    const response = await axios.post(url, payload, {
+    const postPromise = axios.post(url, payload, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
+    const response = await (timer ? timer.time('http:whatsapp_graph_api_send', postPromise) : postPromise);
 
     const waMessageId = response.data?.messages?.[0]?.id || null;
-    finalRow = await conversationRepo.finalizeOutgoingMessage(savedMessage.id, {
+    const finalizePromise = conversationRepo.finalizeOutgoingMessage(savedMessage.id, {
       waMessageId,
       status: waMessageId ? 'sent' : 'failed',
     });
+    finalRow = await (timer ? timer.time('sql:finalize_outgoing_message', finalizePromise) : finalizePromise);
   } catch (err) {
     // فشل الاتصال بميتا (مفيش نت من السيرفر، أو توكن غلط، أو أي سبب تاني) —
     // بنقفل الرسالة بحالة 'failed' بدل ما تفضل عالقة على 'sending' للأبد
@@ -538,7 +540,8 @@ async function createOutgoingMediaMessage(
 async function deliverOutgoingMediaMessage(
   savedMessage,
   { toNumber, buffer, messageType, mimeType, fileName, caption, inboxId },
-  onFinalized
+  onFinalized,
+  timer
 ) {
   let finalRow;
   try {
@@ -547,7 +550,8 @@ async function deliverOutgoingMediaMessage(
       throw new Error('مفيش بيانات اعتماد واتساب متاحة — ضيف Inbox من الإعدادات أو اضبط متغيرات الـ .env');
     }
 
-    const waMediaId = await uploadMediaToWhatsapp({ buffer, mimeType, fileName }, inboxId);
+    const uploadPromise = uploadMediaToWhatsapp({ buffer, mimeType, fileName }, inboxId);
+    const waMediaId = await (timer ? timer.time('http:whatsapp_media_upload', uploadPromise) : uploadPromise);
 
     const mediaPayload = { id: waMediaId };
     if (caption && messageType !== 'audio' && messageType !== 'sticker') {
@@ -565,18 +569,20 @@ async function deliverOutgoingMediaMessage(
       [messageType]: mediaPayload,
     };
 
-    const response = await axios.post(url, payload, {
+    const postPromise = axios.post(url, payload, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
+    const response = await (timer ? timer.time('http:whatsapp_graph_api_send', postPromise) : postPromise);
 
     const waMessageId = response.data?.messages?.[0]?.id || null;
-    finalRow = await conversationRepo.finalizeOutgoingMessage(savedMessage.id, {
+    const finalizePromise = conversationRepo.finalizeOutgoingMessage(savedMessage.id, {
       waMessageId,
       status: waMessageId ? 'sent' : 'failed',
     });
+    finalRow = await (timer ? timer.time('sql:finalize_outgoing_message', finalizePromise) : finalizePromise);
   } catch (err) {
     logger.error('❌ فشل إرسال رسالة وسائط لواتساب:', err.response?.data?.error?.message || err.message);
     finalRow = await conversationRepo.finalizeOutgoingMessage(savedMessage.id, { status: 'failed' });

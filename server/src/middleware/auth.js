@@ -69,12 +69,14 @@ function requireAuth(req, res, next) {
   let payload;
   try {
     payload = jwt.verify(token, env.JWT_SECRET);
+    if (req.timing) req.timing.mark('auth:jwt_verify');
   } catch (err) {
     // مش JWT صحيح — ممكن يكون توكن وصول شخصي (Access Token) من صفحة
     // البروفايل، مستخدم في تكامل خارجي عن طريق الـ API
     userRepo
       .findUserByAccessToken(token)
       .then((user) => {
+        if (req.timing) req.timing.mark('auth:access_token_lookup');
         if (!user || user.status !== 'active') {
           return res.status(401).json({ error: 'التوكن غير صحيح أو الحساب غير مفعّل' });
         }
@@ -88,6 +90,7 @@ function requireAuth(req, res, next) {
 
   getUserStatus(payload.userId)
     .then((status) => {
+      if (req.timing) req.timing.mark('auth:status_check');
       if (status !== 'active') {
         return res.status(401).json({ error: 'الحساب موقوف أو محذوف، سجل دخول تاني' });
       }

@@ -4,6 +4,17 @@ const multer = require('multer');
 const conversationController = require('../controllers/conversation.controller');
 const { requireAuth } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/helpers');
+const { createTimer } = require('../utils/timing');
+
+// بنحط تايمر حقيقي على كل request جاي للراوتر ده *قبل* requireAuth، عشان مرحلة
+// الـ authentication نفسها (JWT verify + status check) تتقاس هي كمان مش بس اللي
+// بعدها. req.timing مش بيأثر على أي حاجة تانية — أي كود تاني بيستخدمه بس لو
+// موجود (شوف middleware/auth.js وconversation.controller.js)
+router.use((req, res, next) => {
+  req.timing = createTimer();
+  req.timing.mark('request:start');
+  next();
+});
 
 // بنستقبل الملف في الذاكرة (مش على الديسك مباشرة) عشان نقدر نستخدم نفس الـ
 // buffer مرتين: مرة نخزنه محليًا للعرض الفوري في الشات، ومرة نرفعه لواتساب.

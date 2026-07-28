@@ -31,6 +31,13 @@ module.exports = {
   GROQ_MODEL: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
 
   DB_TABLE_NAME: process.env.DB_TABLE_NAME || 'NileChat_byA',
+
+  // لو true: تقرير التوقيت الحقيقي (كل مرحلة في مسار reply) بيترجع كمان جوه
+  // جسم استجابة الـ HTTP نفسه (تحت مفتاح _timing) بجانب اللوج العادي، لكن بس
+  // لو الطلب نفسه فيه هيدر x-debug-timing:1 برضه (الاتنين لازم يكونوا مظبوطين)
+  // — عشان في الإنتاج العادي الاستجابة تفضل زي ما هي بالظبط من غير أي تغيير.
+  // اللوج (logger.info) بيحصل دايمًا بغض النظر عن المتغير ده.
+  DEBUG_TIMING: process.env.DEBUG_TIMING === 'true',
   DB: {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
