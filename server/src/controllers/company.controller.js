@@ -113,13 +113,15 @@ async function getAutomationSettings(req, res) {
   }
 
   // نفس الفكرة بالظبط بس لكل قاعدة من قواعد الـ Keyword Routing: بنرجع اسم
-  // التيم بتاعها جنب الـ id، عشان الواجهة تعرضه من غير ما تحتاج تدور بنفسها
+  // التيم بتاعها جنب الـ id، عشان الواجهة تعرضه من غير ما تحتاج تدور بنفسها.
+  // كل تيم مستقل عن التاني تمامًا، فبدل ما نجيبهم واحد ورا التاني (N رحلات
+  // متتالية للداتابيز)، بنجيبهم كلهم مع بعض في نفس اللحظة
   const teamIds = [...new Set((settings.keyword_routing_rules || []).map((r) => r.team_id).filter(Boolean))];
+  const teams = await Promise.all(teamIds.map((teamId) => teamRepo.getTeamById(teamId)));
   const teamsById = new Map();
-  for (const teamId of teamIds) {
-    const team = await teamRepo.getTeamById(teamId);
-    if (team) teamsById.set(String(teamId), team);
-  }
+  teamIds.forEach((teamId, i) => {
+    if (teams[i]) teamsById.set(String(teamId), teams[i]);
+  });
   const keywordRoutingRules = (settings.keyword_routing_rules || []).map((rule) => ({
     ...rule,
     team_name: teamsById.get(String(rule.team_id))?.name || null,
@@ -285,11 +287,22 @@ async function updateAutomationSettings(req, res) {
     }
   }
 
+  // الأربع تحققات تحت كلهم ممكن يحتاجوا يقروا الإعدادات الحالية (existing)، وبما
+  // إن مفيش أي كتابة بتحصل في الداتابيز بين التحققات دي، نتيجة القراءة هتفضل
+  // نفسها بالظبط أي عدد مرات اتقرت — فبدل ما تتقرا لحد 4 مرات (لو اليوزر فعّل
+  // أكتر من قاعدة في نفس الطلب)، بنقراها مرة واحدة بس أول ما حد يحتاجها ونعيد
+  // استخدام نفس النتيجة
+  let existingSettingsPromise = null;
+  function getExistingSettings() {
+    if (!existingSettingsPromise) existingSettingsPromise = companyRepo.getAutomationSettings(company.id);
+    return existingSettingsPromise;
+  }
+
   // لو حد فعّل قاعدة الـ Auto-assign لازم يكون في إيجنت مختار (سواء دلوقتي أو
   // متحدد من قبل كده وموجود في الداتابيز بالفعل)
   const willBeEnabled = fields.autoAssignEnabled !== undefined ? fields.autoAssignEnabled : undefined;
   if (willBeEnabled) {
-    const existing = await companyRepo.getAutomationSettings(company.id);
+    const existing = await getExistingSettings();
     const finalAgentId = fields.autoAssignAgentId !== undefined ? fields.autoAssignAgentId : existing.auto_assign_agent_id;
     if (!finalAgentId) {
       return res.status(400).json({ error: 'لازم تختار الإيجنت اللي هيتعينله المحادثات الجديدة الأول' });
@@ -300,7 +313,7 @@ async function updateAutomationSettings(req, res) {
   // العادية ورسالة خارج أوقات العمل موجودين (سواء اتبعتوا دلوقتي أو كانوا محفوظين قبل كده)
   const willScheduleBeEnabled = fields.welcomeScheduleEnabled !== undefined ? fields.welcomeScheduleEnabled : undefined;
   if (willScheduleBeEnabled) {
-    const existing = await companyRepo.getAutomationSettings(company.id);
+    const existing = await getExistingSettings();
     const finalWelcomeMessage = fields.welcomeMessage !== undefined ? fields.welcomeMessage : existing.welcome_message;
     const finalOffhoursMessage = fields.welcomeOffhoursMessage !== undefined ? fields.welcomeOffhoursMessage : existing.welcome_offhours_message;
     if (!finalWelcomeMessage) {
@@ -315,7 +328,7 @@ async function updateAutomationSettings(req, res) {
   // كلمة) على الأقل، سواء دلوقتي أو متحددة من قبل كده وموجودة في الداتابيز بالفعل
   const willKeywordRoutingBeEnabled = fields.keywordRoutingEnabled !== undefined ? fields.keywordRoutingEnabled : undefined;
   if (willKeywordRoutingBeEnabled) {
-    const existing = await companyRepo.getAutomationSettings(company.id);
+    const existing = await getExistingSettings();
     const finalRules = fields.keywordRoutingRules !== undefined ? fields.keywordRoutingRules : existing.keyword_routing_rules;
     if (!finalRules || !finalRules.length) {
       return res.status(400).json({ error: 'لازم تضيف قاعدة واحدة على الأقل (تيم + كلمة مفتاحية) قبل التفعيل' });
@@ -328,7 +341,7 @@ async function updateAutomationSettings(req, res) {
   const willContractExpiredBeEnabled = fields.contractExpiredEnabled !== undefined ? fields.contractExpiredEnabled : undefined;
   const willContractExpiredRepeatBeEnabled = fields.contractExpiredRepeatEnabled !== undefined ? fields.contractExpiredRepeatEnabled : undefined;
   if (willContractExpiredBeEnabled || willContractExpiredRepeatBeEnabled) {
-    const existing = await companyRepo.getAutomationSettings(company.id);
+    const existing = await getExistingSettings();
     const finalMessage = fields.contractExpiredMessage !== undefined ? fields.contractExpiredMessage : existing.contract_expired_message;
     if (!finalMessage) {
       return res.status(400).json({ error: 'لازم تكتب رسالة "عقد الصيانة منتهي" الأول قبل التفعيل' });

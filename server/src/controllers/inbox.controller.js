@@ -152,9 +152,11 @@ async function deleteInbox(req, res) {
 
 // ===== Step 3: Add Agents =====
 async function getInboxAgents(req, res) {
-  const inbox = await inboxRepo.getInboxById(req.params.id);
+  const [inbox, agents] = await Promise.all([
+    inboxRepo.getInboxById(req.params.id),
+    inboxRepo.getAgentsForInbox(req.params.id),
+  ]);
   if (!inbox) return res.status(404).json({ error: 'الـ Inbox مش موجود' });
-  const agents = await inboxRepo.getAgentsForInbox(req.params.id);
   res.json(agents);
 }
 

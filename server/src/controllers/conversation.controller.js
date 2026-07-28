@@ -61,9 +61,14 @@ async function listConversations(req, res) {
 }
 
 async function getConversationMessages(req, res) {
-  const conversation = await conversationRepo.getConversationById(req.params.id);
+  // الاستعلامين مستقلين عن بعض تمامًا — جلب الرسايل محتاج بس الـ id نفسه، مش أي
+  // بيانات من المحادثة، فبنجيبهم مع بعض بدل ما نستنى تأكيد وجود المحادثة الأول
+  const [conversation, allMessages] = await Promise.all([
+    conversationRepo.getConversationById(req.params.id),
+    conversationRepo.getMessagesForConversation(req.params.id),
+  ]);
   if (!conversation) return res.status(404).json({ error: 'المحادثة مش موجودة' });
-  let messages = await conversationRepo.getMessagesForConversation(req.params.id);
+  let messages = allMessages;
   // الإيجنت مش المفروض يشوف رسايل أتمتة "ما بعد الحل" (CSAT + فلو التقييم بكل
   // مراحله + ردود العميل عليها) — آخر حاجة يشوفها هي رسالة "Resolve" نفسها.
   // التقييم ده للـ admin/owner بس.
@@ -556,15 +561,14 @@ async function receiveWebhook(req, res) {
     // اتطابق بالـ phone_number_id، فمفيش أي حاجة إضافية مطلوبة من المستخدم
     const wabaId = entry?.id || null;
 
-    // --- رسائل واردة من العملاء ---
-    if (Array.isArray(value.messages)) {
-      await conversationService.processIncomingMessages(value, io, wabaId);
-    }
-
-    // --- تحديثات حالة الرسائل اللي بعتناها (sent/delivered/read/failed) ---
-    if (Array.isArray(value.statuses)) {
-      await conversationService.processStatusUpdates(value);
-    }
+    // --- رسائل واردة من العملاء + تحديثات حالة الرسائل اللي بعتناها ---
+    // الاتنين مستقلين تمامًا عن بعض (بيقروا من value.messages و value.statuses
+    // بشكل منفصل، ومفيش أي حالة عملية بيتعامل فيها الاتنين مع نفس الصف في
+    // الداتابيز في نفس اللحظة)، فبنشغلهم مع بعض بدل الواحد بعد التاني
+    await Promise.all([
+      Array.isArray(value.messages) ? conversationService.processIncomingMessages(value, io, wabaId) : Promise.resolve(),
+      Array.isArray(value.statuses) ? conversationService.processStatusUpdates(value) : Promise.resolve(),
+    ]);
   } catch (err) {
     logger.error('❌ خطأ أثناء معالجة الـ webhook:', err);
   }

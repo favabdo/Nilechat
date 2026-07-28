@@ -4,10 +4,13 @@ const deviceRepo = require('../repositories/device.repo');
 const contactRepo = require('../repositories/contact.repo');
 
 async function listDevices(req, res) {
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  // الاستعلامين مستقلين عن بعض — جلب الأجهزة محتاج بس الـ contactId نفسه،
+  // فبنجيبهم مع بعض بدل ما نستنى تأكيد وجود الكونتاكت الأول
+  const [contact, devices] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    deviceRepo.listDevicesForContact(req.params.contactId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
-
-  const devices = await deviceRepo.listDevicesForContact(req.params.contactId);
   res.json(devices);
 }
 

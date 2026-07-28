@@ -140,9 +140,11 @@ async function notifyLogin(user, { ip = null } = {}) {
 // فعلاً ميوصلوش — لا Push ولا إيميل ولا حتى صف في صفحة الإشعارات
 async function notifyTypedActivity(req, type, action, referenceId = null) {
   try {
-    const actingUser = await userRepo.findUserById(req.user.userId);
+    const [actingUser, users] = await Promise.all([
+      userRepo.findUserById(req.user.userId),
+      userRepo.listUsers(),
+    ]);
     const actorName = actingUser ? userRepo.resolveDisplayName(actingUser) : req.user.email;
-    const users = await userRepo.listUsers();
     const activeUserIds = (users || []).filter((u) => u.status === 'active').map((u) => u.id);
     if (activeUserIds.length === 0) return;
 

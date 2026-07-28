@@ -77,9 +77,11 @@ function broadcastTeamsList(req) {
 }
 
 async function getMembers(req, res) {
-  const team = await repo.getTeamById(req.params.id);
+  const [team, members] = await Promise.all([
+    repo.getTeamById(req.params.id),
+    repo.getMembersForTeam(req.params.id),
+  ]);
   if (!team) return res.status(404).json({ error: 'التيم ده مش موجود' });
-  const members = await repo.getMembersForTeam(req.params.id);
   res.json(members);
 }
 

@@ -16,17 +16,23 @@ function httpError(status, message) {
 // كل عقود الصيانة الخاصة بعميل معين — بتتعرض في صفحة تفاصيل العميل تحت
 // "سجل الصيانة"، جمب سيكشن الزيارات بالظبط
 async function listContractsForContact(req, res) {
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  const [contact, contracts] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    maintenanceContractRepo.listContractsForContact(req.params.contactId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
-
-  const contracts = await maintenanceContractRepo.listContractsForContact(req.params.contactId);
   res.json(contracts);
 }
 
 // إضافة عقد صيانة جديد للعميل (تجديد كامل بتاريخ بدء ونهاية جديدين، حتى لو عقده
 // القديم لسه ساري أو لو خلص من مدة) — أدمن/أونر بس
 async function addContractForContact(req, res) {
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  // الاستعلامين مستقلين تمامًا عن بعض — بنجيبهم مع بعض، وترتيب التحقق (وجود
+  // الكونتاكت الأول، بعدين صحة التواريخ) فاضل زي ما هو بالظبط تحت
+  const [contact, agent] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    userRepo.findUserById(req.user.userId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
 
   const { startDate, endDate, notes } = req.body || {};
@@ -39,7 +45,6 @@ async function addContractForContact(req, res) {
   const trimmedNotes = (notes || '').trim();
   if (trimmedNotes.length > 500) throw httpError(400, 'الملاحظة طويلة أوي');
 
-  const agent = await userRepo.findUserById(req.user.userId);
   const agentName = agent ? userRepo.resolveDisplayName(agent) : (req.user.email || 'Unknown');
 
   const contract = await maintenanceContractRepo.addContract({
@@ -68,10 +73,12 @@ async function addContractForContact(req, res) {
 // إيقاف عقد صيانة (بيفضل في السجل بس ملوش تأثير على إحصائيات "العميل الحالي" -
 // أدمن/أونر بس، نفس صلاحية الإضافة
 async function stopContractForContact(req, res) {
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  const [contact, agent] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    userRepo.findUserById(req.user.userId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
 
-  const agent = await userRepo.findUserById(req.user.userId);
   const agentName = agent ? userRepo.resolveDisplayName(agent) : req.user.email || 'Unknown';
 
   const contract = await maintenanceContractRepo.stopContract(req.params.contractId, {

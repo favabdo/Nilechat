@@ -24,12 +24,64 @@ const config = {
 
 let poolPromise;
 
+// بيربط مستمعين حقيقيين على أحداث الـ pool الداخلية (tarn، اللي مكتبة mssql
+// بتستخدمها جوه) عشان نجاوب فعليًا (مش تخمين) على: هل بيتفتح كونكشن جديد مع كل
+// طلب؟ وكام مللي ثانية فعليًا بتاخدها عملية "acquire" (سحب كونكشن من الـ pool)
+// لوحدها، منفصلة تمامًا عن وقت تنفيذ الاستعلام نفسه. لوجينج بس — مفيش أي تأثير
+// على سلوك الاتصال أو الاستعلامات.
+function attachPoolDiagnostics(pool) {
+  const tarnPool = pool.pool;
+  if (!tarnPool || typeof tarnPool.on !== 'function') {
+    logger.warn('⚠️ تعذر الوصول لإحصائيات الـ connection pool الداخلية في نسخة mssql دي — تشخيص الـ pool محدود');
+    return;
+  }
+
+  const acquireStarts = new Map();
+  const createStarts = new Map();
+  let totalAcquires = 0;
+  let totalConnectionsCreated = 0;
+
+  function poolStats() {
+    return {
+      used: tarnPool.numUsed?.(),
+      free: tarnPool.numFree?.(),
+      pendingCreates: tarnPool.numPendingCreates?.(),
+      pendingAcquires: tarnPool.numPendingAcquires?.(),
+    };
+  }
+
+  tarnPool.on('acquireRequest', (eventId) => acquireStarts.set(eventId, process.hrtime.bigint()));
+  tarnPool.on('acquireSuccess', (eventId) => {
+    const start = acquireStarts.get(eventId);
+    acquireStarts.delete(eventId);
+    totalAcquires += 1;
+    const ms = start ? Math.round(Number(process.hrtime.bigint() - start) / 1e4) / 100 : null;
+    logger.info('🔌 pool:acquire', { ms, totalAcquiresSinceStartup: totalAcquires, ...poolStats() });
+  });
+
+  // createRequest/createSuccess بيحصلوا بس لما الـ pool فعليًا يفتح كونكشن TDS
+  // جديد (TCP + login handshake) — مش مع كل استعلام لو الـ pooling شغال صح.
+  // لو العدد ده بيزيد مع كل رد بيتبعت، يبقى فعليًا بيتفتح كونكشن جديد كل مرة.
+  tarnPool.on('createRequest', (eventId) => createStarts.set(eventId, process.hrtime.bigint()));
+  tarnPool.on('createSuccess', (eventId) => {
+    const start = createStarts.get(eventId);
+    createStarts.delete(eventId);
+    totalConnectionsCreated += 1;
+    const ms = start ? Math.round(Number(process.hrtime.bigint() - start) / 1e4) / 100 : null;
+    logger.info('🆕 pool:new_connection_opened', { ms, totalConnectionsCreatedSinceStartup: totalConnectionsCreated, ...poolStats() });
+  });
+  tarnPool.on('createFail', (eventId, err) => {
+    logger.error('❌ pool:connection_create_failed', err?.message);
+  });
+}
+
 function getPool() {
   if (!poolPromise) {
     poolPromise = new sql.ConnectionPool(config)
       .connect()
       .then((pool) => {
         logger.info('✅ متصل بنجاح بقاعدة بيانات SQL Server:', env.DB.database);
+        attachPoolDiagnostics(pool);
         return pool;
       })
       .catch((err) => {

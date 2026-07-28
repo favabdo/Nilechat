@@ -315,10 +315,15 @@ async function deleteContact(req, res) {
     return res.status(400).json({ error: 'لازم تأكد بكلمة سرك الشخصية عشان تمسح العميل ده' });
   }
 
-  const contact = await contactRepo.getContactByIdWithPhones(req.params.id);
+  // الاستعلامين مستقلين تمامًا (جدول مختلف لكل واحد، ومفيش أي اعتماد بين نتيجة
+  // الواحد والتاني) — بنجيبهم مع بعض بدل الواحد بعد التاني. ترتيب التحقق نفسه
+  // (الكونتاكت الأول، بعدين هوية الأدمن) فاضل زي ما هو بالظبط تحت
+  const [contact, actingUser] = await Promise.all([
+    contactRepo.getContactByIdWithPhones(req.params.id),
+    userRepo.findUserByEmail(req.user.email),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
 
-  const actingUser = await userRepo.findUserByEmail(req.user.email);
   if (!actingUser) {
     return res.status(401).json({ error: 'الجلسة غير صالحة، سجل دخول تاني' });
   }

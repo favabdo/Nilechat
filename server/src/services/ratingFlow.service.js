@@ -55,15 +55,19 @@ function isSkipReply(text) {
 }
 
 async function sendPlainFlowMessage(pending, text, io) {
-  const message = await whatsappService.sendTextMessage(
-    pending.contact_number,
-    text,
-    pending.conversation_id,
-    pending.inbox_id,
-    { id: null, name: 'Automation' },
-    true
-  );
-  await conversationRepo.touchConversation(pending.conversation_id);
+  // إرسال الرسالة وتحديث آخر وقت للمحادثة مستقلين تمامًا عن بعض (التحديث مش
+  // محتاج نتيجة الإرسال خالص)، فبنشغلهم مع بعض
+  const [message] = await Promise.all([
+    whatsappService.sendTextMessage(
+      pending.contact_number,
+      text,
+      pending.conversation_id,
+      pending.inbox_id,
+      { id: null, name: 'Automation' },
+      true
+    ),
+    conversationRepo.touchConversation(pending.conversation_id),
+  ]);
   if (io && message) {
     emitToPrivilegedRoom(io, 'new_message', { conversationId: pending.conversation_id, message });
   }
@@ -72,15 +76,17 @@ async function sendPlainFlowMessage(pending, text, io) {
 
 // بيبعت سؤال تقييم كقايمة اختيار (1 لـ 5) بدل ما يسيب العميل يكتب الرقم بنفسه
 async function sendStarRatingFlowMessage(pending, text, io) {
-  const message = await whatsappService.sendStarRatingMessage(
-    pending.contact_number,
-    text,
-    pending.conversation_id,
-    pending.inbox_id,
-    { id: null, name: 'Automation' },
-    true
-  );
-  await conversationRepo.touchConversation(pending.conversation_id);
+  const [message] = await Promise.all([
+    whatsappService.sendStarRatingMessage(
+      pending.contact_number,
+      text,
+      pending.conversation_id,
+      pending.inbox_id,
+      { id: null, name: 'Automation' },
+      true
+    ),
+    conversationRepo.touchConversation(pending.conversation_id),
+  ]);
   if (io && message) {
     emitToPrivilegedRoom(io, 'new_message', { conversationId: pending.conversation_id, message });
   }
@@ -90,16 +96,18 @@ async function sendStarRatingFlowMessage(pending, text, io) {
 // بيبعت سؤال التعليق النصي مع زرار "تخطي" — العميل يقدر يدوس تخطي فورًا من غير
 // ما يكتب حاجة، أو يفضل يكتب تعليقه عادي بالكتابة
 async function sendSkippableFlowMessage(pending, text, io) {
-  const message = await whatsappService.sendSkippableTextMessage(
-    pending.contact_number,
-    text,
-    pending.conversation_id,
-    pending.inbox_id,
-    { id: null, name: 'Automation' },
-    'تخطي',
-    true
-  );
-  await conversationRepo.touchConversation(pending.conversation_id);
+  const [message] = await Promise.all([
+    whatsappService.sendSkippableTextMessage(
+      pending.contact_number,
+      text,
+      pending.conversation_id,
+      pending.inbox_id,
+      { id: null, name: 'Automation' },
+      'تخطي',
+      true
+    ),
+    conversationRepo.touchConversation(pending.conversation_id),
+  ]);
   if (io && message) {
     emitToPrivilegedRoom(io, 'new_message', { conversationId: pending.conversation_id, message });
   }
@@ -114,15 +122,17 @@ async function sendCsatMessage(conversation, io) {
   if (!conversation || !conversation.contact_number) return null;
 
   const text = resolveMessage(settings.csat_message, DEFAULT_CSAT_MESSAGE);
-  const message = await whatsappService.sendTextMessage(
-    conversation.contact_number,
-    text,
-    conversation.id,
-    conversation.inbox_id,
-    { id: null, name: 'Automation' },
-    true
-  );
-  await conversationRepo.touchConversation(conversation.id);
+  const [message] = await Promise.all([
+    whatsappService.sendTextMessage(
+      conversation.contact_number,
+      text,
+      conversation.id,
+      conversation.inbox_id,
+      { id: null, name: 'Automation' },
+      true
+    ),
+    conversationRepo.touchConversation(conversation.id),
+  ]);
   if (io && message) {
     emitToPrivilegedRoom(io, 'new_message', { conversationId: conversation.id, message });
   }
@@ -155,15 +165,17 @@ async function startRatingFlow(conversation, io) {
       stage: 'awaiting_flow_response',
     });
 
-    const message = await whatsappService.sendRatingFlowMessage(
-      pending.contact_number,
-      { flowId, flowToken: String(pending.id), bodyText: introText },
-      pending.conversation_id,
-      pending.inbox_id,
-      { id: null, name: 'Automation' },
-      true
-    );
-    await conversationRepo.touchConversation(pending.conversation_id);
+    const [message] = await Promise.all([
+      whatsappService.sendRatingFlowMessage(
+        pending.contact_number,
+        { flowId, flowToken: String(pending.id), bodyText: introText },
+        pending.conversation_id,
+        pending.inbox_id,
+        { id: null, name: 'Automation' },
+        true
+      ),
+      conversationRepo.touchConversation(pending.conversation_id),
+    ]);
     if (io && message) {
       emitToPrivilegedRoom(io, 'new_message', { conversationId: pending.conversation_id, message });
     }
@@ -201,13 +213,16 @@ async function handleFlowSubmit(pending, nfmReply, io) {
   const agentRating = parseStarRating(payload.agent_rating);
   const feedbackText = String(payload.feedback_text || '').trim() || null;
 
-  const updated = await ratingRepo.completeFromFlowResponse(pending.id, {
-    issueRating,
-    agentRating,
-    feedbackText,
-  });
+  // إكمال الطلب في الداتابيز وجلب إعدادات الأتمتة مستقلين تمامًا عن بعض
+  const [updated, settings] = await Promise.all([
+    ratingRepo.completeFromFlowResponse(pending.id, {
+      issueRating,
+      agentRating,
+      feedbackText,
+    }),
+    companyRepo.getAutomationSettings(),
+  ]);
 
-  const settings = await companyRepo.getAutomationSettings();
   const thanksText = resolveMessage(settings?.rating_thanks_message, DEFAULT_THANKS_MESSAGE);
   await sendPlainFlowMessage(updated || pending, thanksText, io);
 

@@ -8,10 +8,11 @@ const userRepo = require('../repositories/user.repo');
 const notificationService = require('../services/notification.service');
 
 async function listTasks(req, res) {
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  const [contact, tasks] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    scheduledTaskRepo.listScheduledTasksForContact(req.params.contactId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
-
-  const tasks = await scheduledTaskRepo.listScheduledTasksForContact(req.params.contactId);
   res.json(tasks);
 }
 
@@ -27,11 +28,13 @@ async function addTask(req, res) {
   if (!trimmedTask) return res.status(400).json({ error: 'لازم تكتب التاسك المطلوب' });
   if (!dueDate) return res.status(400).json({ error: 'لازم تحدد تاريخ التسليم' });
 
-  const contact = await contactRepo.getContactById(req.params.contactId);
+  const [contact, agent] = await Promise.all([
+    contactRepo.getContactById(req.params.contactId),
+    userRepo.findUserById(req.user.userId),
+  ]);
   if (!contact) return res.status(404).json({ error: 'الكونتاكت مش موجود' });
 
   // اسم الإيجنت بيتحدد من الجلسة الحالية بس (مش من الفرونت)
-  const agent = await userRepo.findUserById(req.user.userId);
   const agentName = agent ? userRepo.resolveDisplayName(agent) : (req.user.email || 'Unknown');
 
   const task = await scheduledTaskRepo.addScheduledTask(req.params.contactId, {

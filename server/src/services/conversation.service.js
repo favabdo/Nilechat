@@ -248,22 +248,25 @@ async function processIncomingMessages(value, io, wabaId = null) {
       matchedInbox?.id || null,
       matchedContact?.id || null
     );
-    await conversationRepo.touchConversation(conversationId);
-
-    const saved = await conversationRepo.saveMessage({
-      waMessageId: msg.id,
-      conversationId,
-      direction: 'in',
-      fromNumber: msg.from,
-      toNumber: value.metadata?.display_phone_number || null,
-      contactName,
-      messageType,
-      messageText,
-      mediaUrl,
-      mediaMime,
-      mediaFileName,
-      rawPayload: JSON.stringify(msg),
-    });
+    // التحديث ده وتسجيل الرسالة نفسها مستقلين تمامًا عن بعض (مفيش أي اعتماد
+    // بين نتيجة الواحد والتاني)، فبنشغلهم مع بعض بدل الواحد بعد التاني
+    const [, saved] = await Promise.all([
+      conversationRepo.touchConversation(conversationId),
+      conversationRepo.saveMessage({
+        waMessageId: msg.id,
+        conversationId,
+        direction: 'in',
+        fromNumber: msg.from,
+        toNumber: value.metadata?.display_phone_number || null,
+        contactName,
+        messageType,
+        messageText,
+        mediaUrl,
+        mediaMime,
+        mediaFileName,
+        rawPayload: JSON.stringify(msg),
+      }),
+    ]);
 
     // تيار الرسايل الثقيل (جسم الرسالة كامل) بيتبعت بس لمين فاتح المحادثة دي
     // فعليًا (غرفة الـ Socket.IO). قايمة المحادثات (unread/lastMsg preview)
@@ -393,6 +396,13 @@ async function notifyAgentsAboutIncomingMessage({ conversationId, isNew, contact
 
   const assignedAgentId = conversation.assigned_agent_id || null;
 
+  // جلب مشاركين المحادثة مستقل تمامًا عن إرسال إشعار الإيجنت المعين (مفيش أي
+  // اعتماد بين الاتنين)، فبنبدأه فورًا (من غير await) عشان يشتغل بالتوازي
+  const participantIdsPromise = conversationRepo.getParticipantAgentIds(
+    conversationId,
+    assignedAgentId ? [assignedAgentId] : []
+  );
+
   if (assignedAgentId) {
     await notificationService.notifyEvent(notificationService.NOTIFICATION_TYPES.ASSIGNED_CONVERSATION_MESSAGE, {
       title: 'رسالة جديدة في محادثة معينة عليك',
@@ -402,10 +412,7 @@ async function notifyAgentsAboutIncomingMessage({ conversationId, isNew, contact
     });
   }
 
-  const participantIds = await conversationRepo.getParticipantAgentIds(
-    conversationId,
-    assignedAgentId ? [assignedAgentId] : []
-  );
+  const participantIds = await participantIdsPromise;
   if (participantIds.length) {
     await notificationService.notifyEvent(notificationService.NOTIFICATION_TYPES.PARTICIPATING_CONVERSATION_MESSAGE, {
       title: 'رسالة جديدة في محادثة أنت مشارك فيها',
