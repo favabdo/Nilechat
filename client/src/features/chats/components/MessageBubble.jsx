@@ -56,7 +56,7 @@ export default function MessageBubble({ m, c, searchQuery, onOpenLightbox, onRet
   if (m.from === 'note') {
     return (
       <div className="msg-row note-row fade-in">
-        <div className={`note-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
+        <div className={`note-bubble${m.failed ? ' msg-failed' : ''}`}>
           <div className="note-label">
             <Lock size={11} /> {t('messageBubble.privateNote')}{m.senderName ? ` — ${m.senderName}` : ''}
           </div>
@@ -89,7 +89,7 @@ export default function MessageBubble({ m, c, searchQuery, onOpenLightbox, onRet
       <div className={`msg-row ${m.from === 'agent' ? 'sent' : 'received'} fade-in`}>
         <div className={`msg-col${m.type === 'audio' ? ' msg-col-audio' : ''}`}>
           {senderLabel && <div className="msg-sender-name">{senderLabel}</div>}
-          <div className={`msg-bubble media-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
+          <div className={`msg-bubble media-bubble${m.failed ? ' msg-failed' : ''}`}>
             <MediaBubbleContent m={m} onOpenLightbox={onOpenLightbox} />
           </div>
           <MessageStatusRow m={m} t={t} onRetry={onRetry} onCancel={onCancel} />
@@ -102,7 +102,7 @@ export default function MessageBubble({ m, c, searchQuery, onOpenLightbox, onRet
     <div className={`msg-row ${m.from === 'agent' ? 'sent' : 'received'} fade-in`}>
       <div className="msg-col">
         {senderLabel && <div className="msg-sender-name">{senderLabel}</div>}
-        <div className={`msg-bubble${m._pending ? ' msg-pending' : ''}${m.failed ? ' msg-failed' : ''}`}>
+        <div className={`msg-bubble${m.failed ? ' msg-failed' : ''}`}>
           <HighlightedText text={m.text} query={searchQuery} isActiveMatch={false} />
           <div className="msg-time">{m.time}</div>
         </div>

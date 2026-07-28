@@ -280,7 +280,6 @@ mark.search-hit.active{background:var(--warning);color:#1a1a2e}
 .msg-media-unavailable{padding:10px 14px;font-size:13px;opacity:.8;font-style:italic;display:flex;align-items:center;gap:6px}
 .msg-media-spinner{animation:msg-media-spin 0.9s linear infinite}
 @keyframes msg-media-spin{to{transform:rotate(360deg)}}
-.msg-row .msg-bubble.msg-pending{opacity:.65}
 .msg-row .msg-bubble.msg-failed{outline:1.5px solid var(--danger)}
 .msg-status-row{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px;color:var(--text-secondary)}
 .msg-status-row.msg-status-failed{color:var(--danger)}
@@ -289,7 +288,6 @@ mark.search-hit.active{background:var(--warning);color:#1a1a2e}
 .msg-status-row.msg-status-pending .msg-status-action{color:var(--text-secondary)}
 .msg-status-row.msg-status-failed .msg-status-action{color:var(--danger)}
 .msg-status-row.msg-status-failed .msg-status-action:hover{text-decoration:underline}
-.note-bubble.msg-pending{opacity:.65}
 .note-bubble.msg-failed{outline:1.5px solid var(--danger)}
 .opt-pending{opacity:.6;pointer-events:none}
 .msg-upload-progress{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);border-radius:12px;color:#fff;font-size:11px;font-weight:600}

@@ -29,7 +29,7 @@ export default function MessageList({ conversation, searchQuery, onRetryMessage,
     }
     rows.push(
       <MessageBubble
-        key={m.id || `${m.from}-${m.rawTime}-${m.text}`}
+        key={m._clientId || m.id || `${m.from}-${m.rawTime}-${m.text}`}
         m={m}
         c={conversation}
         searchQuery={searchQuery}

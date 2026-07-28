@@ -113,9 +113,13 @@ export default function ChatsPage() {
         return;
       }
       if (message.direction === 'out') {
+        // ملاحظة: كل رسالة optimistic (نص أو ميديا) بقى ليها _clientId محلي دايمًا
+        // (مستخدم في الـ Retry) — لكن السيرفر بيرجّع client_id بس لرسايل الميديا،
+        // فمينفعش نشترط "!m._clientId" هنا وإلا الرسايل النصية هتفشل تتطابق
+        // وهتتضاف تاني كرسالة جديدة (تكرار) بدل ما تستبدل نفس الفقاعة
         const pending = message.client_id
           ? c.messages.find((m) => m._pending && m._clientId === message.client_id)
-          : c.messages.find((m) => m._pending && !m._clientId && m.text === message.message_text);
+          : c.messages.find((m) => m._pending && m.text === message.message_text);
         if (pending) {
           state.replaceMessage(
             c.id,
