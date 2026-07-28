@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 
 const env = require('./config/env');
-const { ensureSchema } = require('./database/connection');
+const { ensureSchema, getPoolMetrics } = require('./database/connection');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 
@@ -34,6 +34,13 @@ app.use(express.json());
 app.use(cors({ origin: env.DASHBOARD_ORIGIN }));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// راوت مراقبة اختياري لحالة الـ SQL connection pool — مطفي افتراضيًا (لازم
+// DB_POOL_METRICS_ENDPOINT=true في الـ env)، ومفيش أي استعلام DB بيتنفذ هنا،
+// بس قراءة عدادات جاهزة في الميموري (شوف getPoolMetrics في database/connection.js)
+if (env.DB_POOL_METRICS_ENDPOINT) {
+  app.get('/internal/pool-metrics', (req, res) => res.json(getPoolMetrics()));
+}
 
 // لوحة التحكم (بناء الفرونت إند React/Vite الجاهز للإنتاج، جوا client/dist)
 const clientDistPath = path.join(__dirname, '..', '..', 'client', 'dist');

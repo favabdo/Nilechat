@@ -2,10 +2,20 @@ const http = require('http');
 const app = require('./app');
 const env = require('./config/env');
 const logger = require('./utils/logger');
+const { getPool } = require('./database/connection');
 const { initSocket } = require('./sockets/socket');
 const { startAutoResolveScheduler } = require('./services/autoResolve.service');
 const { startContractExpiryScheduler } = require('./services/contractExpiry.service');
 const notificationService = require('./services/notification.service');
+
+// بنسخّن الـ pool من وقت الإقلاع (مش لما أول request يوصل) — عشان أول ريكوست
+// حقيقي من أي إيجنت متستناش فتح TCP + login handshake لـ SQL Server (اللي كان
+// بيحصل قبل كده بس عند أول request لإن getPool() lazy). لو فشل هنا مش مشكلة:
+// نفس الـ app.js middleware (schemaReady) هيحاول تاني تلقائيًا مع أول request
+// حقيقي، فمفيش أي تغيير في السلوك لو الداتابيز كانت لسه مش جاهزة وقت الإقلاع.
+getPool().catch((err) => {
+  logger.warn('⚠️ فشل تسخين (warm-up) الـ SQL pool وقت الإقلاع — هيتعاد المحاولة مع أول request:', err.message);
+});
 
 const server = http.createServer(app);
 const io = initSocket(server);

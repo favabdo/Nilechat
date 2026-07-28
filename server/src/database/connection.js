@@ -4,6 +4,35 @@ const logger = require('../utils/logger');
 
 const TABLE_NAME = env.DB_TABLE_NAME;
 
+// إعدادات الـ pool — كلهم قابلين للتظبيط من env (config/env.js)، والقيم
+// الافتراضية اتحطت لسيناريو CRM إنتاجي: ~100 إيجنت متزامن، آلاف محادثات نشطة،
+// حركة سوكيت عالية، SQL Server أونلاين. مبرر كل قيمة:
+//
+// max: 20 — العدد اللي بيتحسب مش عدد الإيجنتس نفسه، لإن مش كل الـ100 إيجنت
+//   بيضربوا الداتابيز في نفس اللحظة بالظبط؛ الاستعلامات قصيرة (ميلي ثانية لحد
+//   عشرات الميلي ثانية) وبترجع الكونكشن للـ pool فورًا بعد كل query. 20 كونكشن
+//   متزامن بيدّي هامش أمان كويس لبيرست حقيقي (كذا إيجنت بيفتحوا محادثات/يبعتوا
+//   ردود في نفس الثانية) من غير ما نستهلك حد الكونكشنز على السيرفر أو نفتح
+//   كونكشنز زيادة عن اللزوم (كل كونكشن بياخد Memory/Worker Thread على SQL
+//   Server نفسه). لو ظهر تشبع فعلي (اتضح من poolSaturationPct في المتريكس)
+//   يترفع تدريجيًا مش يتضاعف على الفاضي.
+// min: 2 — كونكشن سخن واحد ممكن يبقى نقطة ضعف لو اتقفل / فشل الـ health check
+//   بتاعه فجأة؛ اتنين بيدّوا نفس فايدة "منع cold start" الأصلية من غير ما
+//   يزودوا التكلفة بشكل محسوس (لسه رقم بسيط جدًا قدام max).
+// idleTimeoutMillis: 30000 — القيمة الأصلية كانت صح وفضلت زي ما هي: كفاية عشان
+//   الكونكشنز الزيادة عن الـ min تتقفل لو الحمل قل (مش هتفضل مفتوحة من غير
+//   داعي)، وميعادها مش قريب جدًا عشان ميقفلش كونكشنز بيتم استخدامها فعليًا كل
+//   شوية في نظام فيه حركة مستمرة زي CRM شات.
+// acquireTimeoutMillis: 15000 — لو الـ pool اتشبع فعلاً (كل الكونكشنز مشغولة)
+//   الطلب بينتظر لحد 15 ثانية بس، مش هيفضل معلّق للأبد ويكوّم طلبات فوق بعض
+//   (كان مش متظبط قبل كده = أي تشبع كان ممكن يعلّق الطلبات من غير أي حد أقصى).
+//   15 ثانية كفاية لبيرست عادي وفي نفس الوقت بتفشل بسرعة معقولة لو فيه مشكلة
+//   حقيقية، بدل ما تسيب الـ request معلّق لحد timeout الـ HTTP نفسه.
+// createTimeoutMillis: 15000 — لو فتح كونكشن TDS جديد (TCP + login handshake)
+//   وقف لأي سبب (شبكة/سيرفر مش راد)، منستناهوش للأبد؛ نفس منطق acquireTimeoutMillis
+//   بس لمرحلة إنشاء الكونكشن نفسها.
+// destroyTimeoutMillis: 5000 — سقف زمني معقول لقفل كونكشن قديم/idle بهدوء من
+//   غير ما يعلّق دورة الـ reap.
 const config = {
   user: env.DB.user,
   password: env.DB.password,
@@ -15,20 +44,35 @@ const config = {
     trustServerCertificate: true,
   },
   pool: {
-    max: 10,
-    min: 1, // فضّينا كونكشن واحد سخن دايمًا، عشان أول ريكوست بعد فترة سكون معملهاش
-            // reconnect جديد لـ SQL Server (كان بيضيف مئات المللي ثانية زيادة)
-    idleTimeoutMillis: 30000,
+    max: env.DB.POOL_MAX,
+    min: env.DB.POOL_MIN,
+    idleTimeoutMillis: env.DB.POOL_IDLE_TIMEOUT_MS,
+    acquireTimeoutMillis: env.DB.POOL_ACQUIRE_TIMEOUT_MS,
+    createTimeoutMillis: env.DB.POOL_CREATE_TIMEOUT_MS,
+    destroyTimeoutMillis: env.DB.POOL_DESTROY_TIMEOUT_MS,
   },
 };
 
 let poolPromise;
 
-// بيربط مستمعين حقيقيين على أحداث الـ pool الداخلية (tarn، اللي مكتبة mssql
-// بتستخدمها جوه) عشان نجاوب فعليًا (مش تخمين) على: هل بيتفتح كونكشن جديد مع كل
-// طلب؟ وكام مللي ثانية فعليًا بتاخدها عملية "acquire" (سحب كونكشن من الـ pool)
-// لوحدها، منفصلة تمامًا عن وقت تنفيذ الاستعلام نفسه. لوجينج بس — مفيش أي تأثير
-// على سلوك الاتصال أو الاستعلامات.
+// عدادات خفيفة جدًا في الميموري بس (مفيش أي I/O، مفيش أي لوج بشكل افتراضي) —
+// بتتحدّث مع كل حدث من أحداث الـ pool الداخلية (tarn، اللي مكتبة mssql بتستخدمها
+// جوه) عشان نقدر نجاوب فعليًا وقت ما حد يسأل: هل بيتفتح كونكشن جديد مع كل طلب؟
+// كام مللي ثانية بتاخدها عملية "acquire" (سحب كونكشن من الـ pool) لوحدها،
+// منفصلة عن وقت تنفيذ الاستعلام نفسه؟ هل فيه طلبات مستنية (pool مشبّع)؟
+// getPoolMetrics() بترجّع آخر لقطة عند الطلب — من غير أي console.log على كل
+// query (ده كان بيحصل قبل كده مع كل استعلام في التطبيق، وده اللي بند "لا للوجينج
+// الثقيل" في التدقيق كان بيقصده بالظبط).
+const metrics = {
+  totalAcquires: 0,
+  totalConnectionsCreated: 0,
+  totalCreateFailures: 0,
+  lastAcquireMs: null,
+  acquireMsSum: 0, // لحساب المتوسط من غير ما نخزن كل قيمة لوحدها
+  poolCreatedAt: null,
+  poolReadyMs: null, // كام مللي ثانية استغرقها فتح أول كونكشن (pool warm-up)
+};
+
 function attachPoolDiagnostics(pool) {
   const tarnPool = pool.pool;
   if (!tarnPool || typeof tarnPool.on !== 'function') {
@@ -36,10 +80,10 @@ function attachPoolDiagnostics(pool) {
     return;
   }
 
+  const debugLog = env.DB_POOL_DEBUG_LOG; // مطفي افتراضيًا — شوف config/env.js
+
   const acquireStarts = new Map();
   const createStarts = new Map();
-  let totalAcquires = 0;
-  let totalConnectionsCreated = 0;
 
   function poolStats() {
     return {
@@ -54,9 +98,13 @@ function attachPoolDiagnostics(pool) {
   tarnPool.on('acquireSuccess', (eventId) => {
     const start = acquireStarts.get(eventId);
     acquireStarts.delete(eventId);
-    totalAcquires += 1;
     const ms = start ? Math.round(Number(process.hrtime.bigint() - start) / 1e4) / 100 : null;
-    logger.info('🔌 pool:acquire', { ms, totalAcquiresSinceStartup: totalAcquires, ...poolStats() });
+    metrics.totalAcquires += 1;
+    metrics.lastAcquireMs = ms;
+    if (ms != null) metrics.acquireMsSum += ms;
+    if (debugLog) {
+      logger.info('🔌 pool:acquire', { ms, totalAcquiresSinceStartup: metrics.totalAcquires, ...poolStats() });
+    }
   });
 
   // createRequest/createSuccess بيحصلوا بس لما الـ pool فعليًا يفتح كونكشن TDS
@@ -66,22 +114,64 @@ function attachPoolDiagnostics(pool) {
   tarnPool.on('createSuccess', (eventId) => {
     const start = createStarts.get(eventId);
     createStarts.delete(eventId);
-    totalConnectionsCreated += 1;
+    metrics.totalConnectionsCreated += 1;
     const ms = start ? Math.round(Number(process.hrtime.bigint() - start) / 1e4) / 100 : null;
-    logger.info('🆕 pool:new_connection_opened', { ms, totalConnectionsCreatedSinceStartup: totalConnectionsCreated, ...poolStats() });
+    if (debugLog) {
+      logger.info('🆕 pool:new_connection_opened', { ms, totalConnectionsCreatedSinceStartup: metrics.totalConnectionsCreated, ...poolStats() });
+    }
   });
   tarnPool.on('createFail', (eventId, err) => {
+    metrics.totalCreateFailures += 1;
     logger.error('❌ pool:connection_create_failed', err?.message);
   });
 }
 
+// لقطة خفيفة وآمنة للإنتاج لحالة الـ pool دلوقتي — للاستخدام في مونيتورينج
+// اختياري بس (زي /internal/pool-metrics لو DB_POOL_METRICS_ENDPOINT مفعّل).
+// مفيش أي استعلام حقيقي بيتنفذ هنا، بس قراءة عدادات جاهزة في الميموري.
+function getPoolMetrics() {
+  const tarnPool = poolPromise && poolPromise._resolvedPool ? poolPromise._resolvedPool.pool : null;
+  const live = tarnPool
+    ? {
+        activeConnections: tarnPool.numUsed?.() ?? null,
+        idleConnections: tarnPool.numFree?.() ?? null,
+        waitingRequests: tarnPool.numPendingAcquires?.() ?? null,
+        poolSaturationPct:
+          tarnPool.numUsed != null && env.DB.POOL_MAX
+            ? Math.round(((tarnPool.numUsed() || 0) / env.DB.POOL_MAX) * 10000) / 100
+            : null,
+      }
+    : { activeConnections: null, idleConnections: null, waitingRequests: null, poolSaturationPct: null };
+
+  return {
+    ...live,
+    lastAcquireMs: metrics.lastAcquireMs,
+    avgAcquireMs:
+      metrics.totalAcquires > 0 ? Math.round((metrics.acquireMsSum / metrics.totalAcquires) * 100) / 100 : null,
+    totalAcquiresSinceStartup: metrics.totalAcquires,
+    totalConnectionsCreatedSinceStartup: metrics.totalConnectionsCreated,
+    totalCreateFailuresSinceStartup: metrics.totalCreateFailures,
+    poolCreatedAt: metrics.poolCreatedAt,
+    poolReadyMs: metrics.poolReadyMs,
+    poolMax: env.DB.POOL_MAX,
+    poolMin: env.DB.POOL_MIN,
+  };
+}
+
 function getPool() {
   if (!poolPromise) {
+    const startedAt = process.hrtime.bigint();
+    metrics.poolCreatedAt = new Date().toISOString();
     poolPromise = new sql.ConnectionPool(config)
       .connect()
       .then((pool) => {
+        metrics.poolReadyMs = Math.round(Number(process.hrtime.bigint() - startedAt) / 1e4) / 100;
         logger.info('✅ متصل بنجاح بقاعدة بيانات SQL Server:', env.DB.database);
         attachPoolDiagnostics(pool);
+        // بنخزن مرجع الـ pool الحقيقي على نفس الـ promise عشان getPoolMetrics()
+        // تقدر توصله بشكل sync من غير ما تستنى الـ promise تاني (قراءة بس،
+        // مفيش أي تأثير على سلوك الاتصال).
+        poolPromise._resolvedPool = pool;
         return pool;
       })
       .catch((err) => {
@@ -1294,6 +1384,7 @@ async function ensureSchema() {
 module.exports = {
   sql,
   getPool,
+  getPoolMetrics,
   ensureTableExists,
   ensureConversationsTableExists,
   ensureAgentsTableExists,

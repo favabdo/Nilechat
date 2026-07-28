@@ -44,5 +44,24 @@ module.exports = {
     server: process.env.DB_SERVER,
     port: parseInt(process.env.DB_PORT || '1433', 10),
     database: process.env.DB_NAME,
+    // إعدادات الـ connection pool بتاع mssql (tarn.js تحت السطح) — كلهم قابلين
+    // للتظبيط من متغيرات البيئة من غير أي تغيير في الكود، والقيم الافتراضية دي
+    // مظبوطة على سيناريو CRM إنتاجي (~100 إيجنت متزامن، آلاف المحادثات، حركة
+    // سوكيت عالية). التفاصيل والمبررات في database/connection.js
+    POOL_MAX: parseInt(process.env.DB_POOL_MAX || '20', 10),
+    POOL_MIN: parseInt(process.env.DB_POOL_MIN || '2', 10),
+    POOL_IDLE_TIMEOUT_MS: parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || '30000', 10),
+    POOL_ACQUIRE_TIMEOUT_MS: parseInt(process.env.DB_POOL_ACQUIRE_TIMEOUT_MS || '15000', 10),
+    POOL_CREATE_TIMEOUT_MS: parseInt(process.env.DB_POOL_CREATE_TIMEOUT_MS || '15000', 10),
+    POOL_DESTROY_TIMEOUT_MS: parseInt(process.env.DB_POOL_DESTROY_TIMEOUT_MS || '5000', 10),
   },
+  // متطفّي فقط — يوم بيوم/عند التشخيص. لو true بيطبع سطر لوج على كل acquire/create
+  // كونكشن من الـ pool. لازم يفضل false في الإنتاج العادي (ده أصلاً كان شغال
+  // دايمًا من غير أي مفتاح إيقاف قبل كده — اتصلح عشان منضربش الأداء بلوجينج كتير
+  // على كل استعلام).
+  DB_POOL_DEBUG_LOG: process.env.DB_POOL_DEBUG_LOG === 'true',
+  // لو true بيضيف GET /internal/pool-metrics (JSON خفيف: كونكشنز مستخدمة/فاضية/
+  // منتظرة + متوسط وقت الـ acquire) — مطفي افتراضيًا، مفيش أي راوت إضافي غير لو
+  // اتفعّل صراحةً.
+  DB_POOL_METRICS_ENDPOINT: process.env.DB_POOL_METRICS_ENDPOINT === 'true',
 };
